@@ -23,7 +23,7 @@ describe("initStore", () => {
     expect(existsSync(join(hpDir, "staging"))).toBe(true);
   });
 
-  it("creates config.json with version field", () => {
+  it("creates config.json with version, identity, remote, and protocol fields", () => {
     repoRoot = mkdtempSync(join(tmpdir(), "handprint-init-"));
     initStore(repoRoot);
 
@@ -33,6 +33,15 @@ describe("initStore", () => {
     const config = JSON.parse(readFileSync(configPath, "utf-8"));
     expect(config.version).toBe("0.1.0");
     expect(config.createdAt).toBeDefined();
+    expect(config.identity).toBeDefined();
+    expect(config.identity.handle).toBeDefined();
+    expect(config.identity.name).toBeDefined();
+    expect(config.identity.email).toBeDefined();
+    expect(config.remote).toEqual({ type: "cloudflare-kv", accountId: "", namespaceId: null });
+    expect(config.protocol).toBeDefined();
+    expect(config.protocol.calibration).toBeDefined();
+    expect(config.protocol.calibration.weights.validated).toBe(1.0);
+    expect(config.protocol.heatmap.weeks).toBe(52);
   });
 
   it("refuses to init if .handprint/ already exists", () => {

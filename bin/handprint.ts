@@ -9,6 +9,7 @@ import { resolveHandprint } from "../src/commands/resolve.js";
 import { exportHandprints } from "../src/commands/export.js";
 import { scan } from "../src/commands/scan.js";
 import { ingest } from "../src/commands/ingest.js";
+import { loadConfig, saveConfig, getConfigValue, setConfigValue } from "../src/commands/config.js";
 import { HandprintType } from "../src/model/handprint.js";
 import { ResolutionStatus } from "../src/model/resolution.js";
 
@@ -182,6 +183,56 @@ program
         console.log(`${" ".repeat(prefix.length)}  "${handprint.quote}"`);
         console.log();
       }
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
+  });
+
+const configCmd = program
+  .command("config")
+  .description("Read or write handprint configuration");
+
+configCmd
+  .command("show")
+  .description("Dump full config as JSON")
+  .action(() => {
+    try {
+      const config = loadConfig(process.cwd());
+      console.log(JSON.stringify(config, null, 2));
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
+  });
+
+configCmd
+  .command("get <path>")
+  .description("Get a config value by dot-separated path")
+  .action((path: string) => {
+    try {
+      const config = loadConfig(process.cwd());
+      const value = getConfigValue(config, path);
+      if (value === undefined) {
+        console.error(`no value at path: ${path}`);
+        process.exit(1);
+      }
+      console.log(typeof value === "object" ? JSON.stringify(value, null, 2) : String(value));
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
+  });
+
+configCmd
+  .command("set <path> <value>")
+  .description("Set a config value by dot-separated path")
+  .action((path: string, value: string) => {
+    try {
+      const config = loadConfig(process.cwd());
+      const updated = setConfigValue(config, path, value);
+      saveConfig(process.cwd(), updated);
+      console.log(`set ${path} = ${JSON.stringify(getConfigValue(updated, path))}`);
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
