@@ -4,5 +4,6 @@ export { listHandprints } from "./commands/log.js";
 export { showHandprint } from "./commands/show.js";
 export { resolveHandprint } from "./commands/resolve.js";
 export { exportHandprints } from "./commands/export.js";
+export { scan, scanGitHistory, scanClaudeTranscripts } from "./commands/scan.js";
 export { HandprintType } from "./model/handprint.js";
 export { ResolutionStatus } from "./model/resolution.js";

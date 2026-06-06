@@ -7,6 +7,7 @@ import { listHandprints } from "../src/commands/log.js";
 import { showHandprint } from "../src/commands/show.js";
 import { resolveHandprint } from "../src/commands/resolve.js";
 import { exportHandprints } from "../src/commands/export.js";
+import { scan } from "../src/commands/scan.js";
 import { HandprintType } from "../src/model/handprint.js";
 import { ResolutionStatus } from "../src/model/resolution.js";
 
@@ -120,6 +121,37 @@ program
       console.error((err as Error).message);
       process.exit(1);
     }
+  });
+
+program
+  .command("scan")
+  .description("Scan git history and Claude Code transcripts for handprint candidates")
+  .option("-n, --limit <n>", "Number of git commits to scan", "50")
+  .action(() => {
+    const result = scan(process.cwd());
+    const total = result.gitCandidates.length + result.transcriptCandidates.length;
+
+    if (total === 0) {
+      console.log("no handprint candidates found");
+      return;
+    }
+
+    if (result.gitCandidates.length > 0) {
+      console.log(`\n— git commits (${result.gitCandidates.length}) —`);
+      for (const c of result.gitCandidates) {
+        console.log(`  ${c.commit.hash.slice(0, 7)}  [${c.suggestedType}]  ${c.commit.message}`);
+      }
+    }
+
+    if (result.transcriptCandidates.length > 0) {
+      console.log(`\n— claude code (${result.transcriptCandidates.length}) —`);
+      for (const c of result.transcriptCandidates) {
+        const preview = c.pair.user.text.slice(0, 80);
+        console.log(`  [${c.suggestedType}]  "${preview}${c.pair.user.text.length > 80 ? "..." : ""}"`);
+      }
+    }
+
+    console.log(`\n${total} candidates found. Use 'handprint seal' to record.`);
   });
 
 program.parse();
