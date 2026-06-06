@@ -1,0 +1,23 @@
+{
+  "name": "handprint",
+  "version": "0.1.0",
+  "type": "module",
+  "bin": {
+    "handprint": "./bin/handprint.ts"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "handprint": "tsx bin/handprint.ts"
+  },
+  "description": "Human decision provenance for the age of AI",
+  "dependencies": {
+    "commander": "^14.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.2",
+    "tsx": "^4.22.4",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.8"
+  }
+}
