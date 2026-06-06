@@ -8,6 +8,7 @@ import { showHandprint } from "../src/commands/show.js";
 import { resolveHandprint } from "../src/commands/resolve.js";
 import { exportHandprints } from "../src/commands/export.js";
 import { scan } from "../src/commands/scan.js";
+import { verifyChain } from "../src/commands/verify.js";
 import { ingest } from "../src/commands/ingest.js";
 import { loadConfig, saveConfig, getConfigValue, setConfigValue } from "../src/commands/config.js";
 import { HandprintType } from "../src/model/handprint.js";
@@ -89,6 +90,38 @@ program
       process.exit(1);
     }
     console.log(JSON.stringify(detail, null, 2));
+  });
+
+program
+  .command("verify")
+  .description("Verify the integrity of the hash chain")
+  .action(() => {
+    try {
+      const result = verifyChain(process.cwd());
+
+      if (result.chainLength === 0) {
+        console.log("chain: empty (no handprints sealed yet)");
+        console.log("status: ✓ valid");
+        return;
+      }
+
+      console.log(`chain: ${result.chainLength} handprint${result.chainLength === 1 ? "" : "s"}`);
+      console.log(`head: ${result.head!.slice(0, 12)}`);
+
+      if (result.valid) {
+        console.log("status: ✓ valid — all hashes verified, chain intact");
+      } else {
+        console.log("status: ✗ INVALID");
+        console.log("errors:");
+        for (const { hash, error } of result.errors) {
+          console.log(`  ${hash.slice(0, 12)} — ${error}`);
+        }
+        process.exit(1);
+      }
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
   });
 
 program
