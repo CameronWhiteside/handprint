@@ -25,6 +25,7 @@ export interface Handprint {
   source: string | null;
   anchors: Anchor[];
   status: "open" | "resolved";
+  parent: string | null;
 }
 
 export interface CreateHandprintInput {
@@ -37,6 +38,7 @@ export interface CreateHandprintInput {
   source?: string | null;
   anchors?: Anchor[];
   author?: string;
+  parent?: string | null;
 }
 
 function currentAuthor(): string {
@@ -69,6 +71,7 @@ export function createHandprint(input: CreateHandprintInput): Handprint {
     source: input.source ?? null,
     anchors: input.anchors ?? [],
     status: "open",
+    parent: input.parent ?? null,
   };
 }
 

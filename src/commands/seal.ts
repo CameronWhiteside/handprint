@@ -1,6 +1,7 @@
 import { existsSync, appendFileSync } from "node:fs";
 import { join } from "node:path";
 import { writeObject } from "../store/objects.js";
+import { getRef, setRef } from "../store/refs.js";
 import { createHandprint, HandprintType } from "../model/handprint.js";
 import type { Anchor } from "../model/handprint.js";
 import { HANDPRINT_DIR } from "./init.js";
@@ -30,9 +31,11 @@ export function sealHandprint(repoRoot: string, input: SealInput): string {
     throw new Error("not initialized");
   }
 
-  const hp = createHandprint(input);
+  const currentHead = getRef(hpDir, "HEAD");
+  const hp = createHandprint({ ...input, parent: currentHead });
   const hash = writeObject(hpDir, hp as unknown as Record<string, unknown>);
 
+  setRef(hpDir, "HEAD", hash);
   appendFileSync(join(hpDir, "log"), hash + "\n", "utf-8");
 
   return hash;

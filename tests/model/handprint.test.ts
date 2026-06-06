@@ -45,6 +45,28 @@ describe("createHandprint", () => {
     expect(hp.source).toBeNull();
     expect(hp.anchors).toEqual([]);
     expect(hp.status).toBe("open");
+    expect(hp.parent).toBeNull();
+  });
+
+  it("sets parent to null by default", () => {
+    const hp = createHandprint({
+      type: HandprintType.Direction,
+      intent: "Test parent default",
+      risk: "None",
+      context: "Testing",
+    });
+    expect(hp.parent).toBeNull();
+  });
+
+  it("accepts an explicit parent hash", () => {
+    const hp = createHandprint({
+      type: HandprintType.Direction,
+      intent: "Test explicit parent",
+      risk: "None",
+      context: "Testing",
+      parent: "abc123def456",
+    });
+    expect(hp.parent).toBe("abc123def456");
   });
 
   it("accepts optional fields", () => {
@@ -82,6 +104,7 @@ describe("validateHandprint", () => {
     source: null,
     anchors: [],
     status: "open",
+    parent: null,
   };
 
   it("returns empty array for valid handprint", () => {

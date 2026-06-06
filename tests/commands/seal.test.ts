@@ -5,6 +5,7 @@ import { tmpdir } from "node:os";
 import { sealHandprint } from "../../src/commands/seal.js";
 import { initStore, HANDPRINT_DIR } from "../../src/commands/init.js";
 import { readObject } from "../../src/store/objects.js";
+import { getRef } from "../../src/store/refs.js";
 import { HandprintType } from "../../src/model/handprint.js";
 
 describe("sealHandprint", () => {
@@ -68,5 +69,68 @@ describe("sealHandprint", () => {
     } finally {
       rmSync(emptyRoot, { recursive: true, force: true });
     }
+  });
+
+  it("first sealed handprint has parent: null", () => {
+    const hash = sealHandprint(repoRoot, minimalInput);
+    const hpDir = join(repoRoot, HANDPRINT_DIR);
+    const stored = readObject(hpDir, hash);
+
+    expect(stored).not.toBeNull();
+    expect(stored!.parent).toBeNull();
+  });
+
+  it("second sealed handprint has parent equal to first hash", () => {
+    const hash1 = sealHandprint(repoRoot, minimalInput);
+    const hash2 = sealHandprint(repoRoot, {
+      ...minimalInput,
+      intent: "Second decision",
+    });
+
+    const hpDir = join(repoRoot, HANDPRINT_DIR);
+    const stored = readObject(hpDir, hash2);
+
+    expect(stored).not.toBeNull();
+    expect(stored!.parent).toBe(hash1);
+  });
+
+  it("updates HEAD ref after each seal", () => {
+    const hpDir = join(repoRoot, HANDPRINT_DIR);
+
+    expect(getRef(hpDir, "HEAD")).toBeNull();
+
+    const hash1 = sealHandprint(repoRoot, minimalInput);
+    expect(getRef(hpDir, "HEAD")).toBe(hash1);
+
+    const hash2 = sealHandprint(repoRoot, {
+      ...minimalInput,
+      intent: "Second decision",
+    });
+    expect(getRef(hpDir, "HEAD")).toBe(hash2);
+  });
+
+  it("chain is walkable from HEAD back to genesis", () => {
+    const hash1 = sealHandprint(repoRoot, minimalInput);
+    const hash2 = sealHandprint(repoRoot, {
+      ...minimalInput,
+      intent: "Second decision",
+    });
+    const hash3 = sealHandprint(repoRoot, {
+      ...minimalInput,
+      intent: "Third decision",
+    });
+
+    const hpDir = join(repoRoot, HANDPRINT_DIR);
+    expect(getRef(hpDir, "HEAD")).toBe(hash3);
+
+    // Walk the chain
+    const obj3 = readObject(hpDir, hash3);
+    expect(obj3!.parent).toBe(hash2);
+
+    const obj2 = readObject(hpDir, hash2);
+    expect(obj2!.parent).toBe(hash1);
+
+    const obj1 = readObject(hpDir, hash1);
+    expect(obj1!.parent).toBeNull();
   });
 });
