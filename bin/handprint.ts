@@ -8,6 +8,7 @@ import { showHandprint } from "../src/commands/show.js";
 import { resolveHandprint } from "../src/commands/resolve.js";
 import { exportHandprints } from "../src/commands/export.js";
 import { scan } from "../src/commands/scan.js";
+import { ingest } from "../src/commands/ingest.js";
 import { HandprintType } from "../src/model/handprint.js";
 import { ResolutionStatus } from "../src/model/resolution.js";
 
@@ -151,7 +152,40 @@ program
       }
     }
 
-    console.log(`\n${total} candidates found. Use 'handprint seal' to record.`);
+    console.log(`\n${total} candidates found. Use 'handprint ingest' to auto-extract.`);
+  });
+
+program
+  .command("ingest")
+  .description("Auto-extract handprints from Claude Code transcripts using AI")
+  .option("-n, --limit <n>", "Number of recent sessions to scan", parseInt)
+  .option("--dry-run", "Show what would be extracted without sealing")
+  .action(async (opts) => {
+    try {
+      const result = await ingest(process.cwd(), {
+        limit: opts.limit,
+        dryRun: opts.dryRun,
+      });
+
+      if (result.sealed.length === 0) {
+        console.log("no handprints found");
+        return;
+      }
+
+      const verb = opts.dryRun ? "found" : "sealed";
+      console.log(`\n${result.sealed.length} handprints ${verb} from ${result.sessionsScanned} sessions (${result.messagesAnalyzed} messages analyzed)\n`);
+
+      for (const { hash, handprint } of result.sealed) {
+        const prefix = opts.dryRun ? "  " : `  ${hash.slice(0, 10)}  `;
+        const symbol = { direction: "→", override: "⤴", rejection: "⌀", constraint: "▮", wager: "◇" }[handprint.type] ?? "?";
+        console.log(`${prefix}${symbol} [${handprint.type}]  ${handprint.intent}`);
+        console.log(`${" ".repeat(prefix.length)}  "${handprint.quote}"`);
+        console.log();
+      }
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
   });
 
 program.parse();
