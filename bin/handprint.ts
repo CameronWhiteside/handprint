@@ -1,7 +1,9 @@
 #!/usr/bin/env npx tsx
 
+import { writeFileSync } from "node:fs";
+import { join } from "node:path";
 import { Command } from "commander";
-import { initStore } from "../src/commands/init.js";
+import { initStore, HANDPRINT_DIR } from "../src/commands/init.js";
 import { sealHandprint } from "../src/commands/seal.js";
 import { listHandprints } from "../src/commands/log.js";
 import { showHandprint } from "../src/commands/show.js";
@@ -11,6 +13,8 @@ import { scan } from "../src/commands/scan.js";
 import { verifyChain } from "../src/commands/verify.js";
 import { ingest } from "../src/commands/ingest.js";
 import { loadConfig, saveConfig, getConfigValue, setConfigValue } from "../src/commands/config.js";
+import { computeProfile } from "../src/profile/compute.js";
+import { getRef } from "../src/store/refs.js";
 import { HandprintType } from "../src/model/handprint.js";
 import { ResolutionStatus } from "../src/model/resolution.js";
 
@@ -266,6 +270,42 @@ configCmd
       const updated = setConfigValue(config, path, value);
       saveConfig(process.cwd(), updated);
       console.log(`set ${path} = ${JSON.stringify(getConfigValue(updated, path))}`);
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command("profile")
+  .description("Compute and write the handprint profile")
+  .action(() => {
+    try {
+      const cwd = process.cwd();
+      const config = loadConfig(cwd);
+      const exported = exportHandprints(cwd);
+      const hpDir = join(cwd, HANDPRINT_DIR);
+      const head = getRef(hpDir, "HEAD");
+      const profile = computeProfile(exported.handprints, config, head);
+
+      const outPath = join(hpDir, "profile.json");
+      writeFileSync(outPath, JSON.stringify(profile, null, 2), "utf-8");
+
+      console.log(`profile written to ${outPath}`);
+      console.log();
+      console.log(`  handle:   ${profile.handle}`);
+      console.log(`  total:    ${profile.total} handprints`);
+      console.log(`  types:    ${Object.entries(profile.typeCounts).filter(([_, v]) => v > 0).map(([k, v]) => `${v} ${k}`).join(", ")}`);
+      if (profile.calibration.score !== null) {
+        console.log(`  calibr:   ${(profile.calibration.score * 100).toFixed(1)}% (${profile.calibration.resolved} resolved)`);
+      } else {
+        console.log(`  calibr:   pending (${profile.calibration.resolved}/${config.protocol.calibration.minResolved} resolved)`);
+      }
+      console.log(`  domains:  ${profile.domains.map((d) => `${d.name} (${d.count})`).join(", ") || "none"}`);
+      console.log(`  streak:   ${profile.streak.current}d current, ${profile.streak.longest}d longest`);
+      if (profile.merkleRoot) {
+        console.log(`  chain:    ${profile.merkleRoot.slice(0, 12)}`);
+      }
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
