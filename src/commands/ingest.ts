@@ -9,6 +9,8 @@ import {
 import { sealHandprint } from "./seal.js";
 import { HANDPRINT_DIR } from "./init.js";
 import { HandprintType } from "../model/handprint.js";
+import { enrichAnchors } from "../profile/anchors.js";
+import { loadConfig } from "./config.js";
 
 const TYPE_MAP: Record<string, HandprintType> = {
   direction: HandprintType.Direction,
@@ -63,6 +65,24 @@ export async function ingest(
     );
     result.messagesAnalyzed += extraction.messagesAnalyzed;
 
+    // Derive git context from the session's transcript entries
+    const sessionCwd = entries[0]?.cwd || repoRoot;
+    const sessionBranch = entries[0]?.gitBranch || undefined;
+
+    // Load anchor config (best-effort, fallback to defaults)
+    let anchorConfig = {
+      commitWindowBefore: "PT30M",
+      commitWindowAfter: "PT60M",
+      linkPRs: true,
+      linkRepo: true,
+    };
+    try {
+      const cfg = loadConfig(repoRoot);
+      anchorConfig = cfg.protocol.anchors;
+    } catch {
+      /* use defaults */
+    }
+
     for (const hp of extraction.handprints) {
       if (options?.dryRun) {
         result.sealed.push({ hash: "(dry-run)", handprint: hp });
@@ -72,6 +92,15 @@ export async function ingest(
       const type = TYPE_MAP[hp.type];
       if (!type) continue;
 
+      const anchors = enrichAnchors(
+        {
+          cwd: sessionCwd,
+          timestamp: hp.timestamp,
+          gitBranch: sessionBranch,
+        },
+        anchorConfig,
+      );
+
       const hash = sealHandprint(repoRoot, {
         type,
         intent: hp.intent,
@@ -80,6 +109,7 @@ export async function ingest(
         horizon: hp.horizon ?? undefined,
         confidence: hp.confidence,
         source: hp.source || "claude-code",
+        anchors,
       });
       result.sealed.push({ hash, handprint: hp });
     }

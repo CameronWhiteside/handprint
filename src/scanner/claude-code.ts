@@ -4,6 +4,7 @@ export interface TranscriptEntry {
   timestamp: string;
   cwd: string;
   sessionId: string;
+  gitBranch: string;
 }
 
 export interface ConversationPair {
@@ -31,6 +32,7 @@ interface RawEntry {
   timestamp?: string;
   cwd?: string;
   sessionId?: string;
+  gitBranch?: string;
 }
 
 function extractText(content: string | ContentItem[]): string {
@@ -61,6 +63,7 @@ export function parseTranscriptLine(line: string): TranscriptEntry | null {
       timestamp: raw.timestamp ?? "",
       cwd: raw.cwd ?? "",
       sessionId: raw.sessionId ?? "",
+      gitBranch: raw.gitBranch ?? "",
     };
   } catch {
     return null;

@@ -117,6 +117,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t1",
           cwd: "/test",
           sessionId: "s1",
+          gitBranch: "",
         },
         {
           role: "assistant",
@@ -124,6 +125,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t2",
           cwd: "/test",
           sessionId: "s1",
+          gitBranch: "",
         },
         {
           role: "user",
@@ -131,6 +133,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t3",
           cwd: "/test",
           sessionId: "s1",
+          gitBranch: "",
         },
         {
           role: "assistant",
@@ -138,6 +141,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t4",
           cwd: "/test",
           sessionId: "s1",
+          gitBranch: "",
         },
       ];
       const pairs = extractConversationPairs(entries);
@@ -154,6 +158,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t1",
           cwd: "/test",
           sessionId: "s1",
+          gitBranch: "",
         },
         {
           role: "user",
@@ -161,6 +166,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t2",
           cwd: "/test",
           sessionId: "s1",
+          gitBranch: "",
         },
         {
           role: "assistant",
@@ -168,6 +174,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t3",
           cwd: "/test",
           sessionId: "s1",
+          gitBranch: "",
         },
       ];
       const pairs = extractConversationPairs(entries);
@@ -189,6 +196,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
         assistant: {
           role: "assistant",
@@ -196,6 +204,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
       });
       expect(result).not.toBeNull();
@@ -210,6 +219,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
         assistant: {
           role: "assistant",
@@ -217,6 +227,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
       });
       expect(result).not.toBeNull();
@@ -231,6 +242,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
         assistant: {
           role: "assistant",
@@ -238,6 +250,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
       });
       expect(result).not.toBeNull();
@@ -252,6 +265,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
         assistant: {
           role: "assistant",
@@ -259,6 +273,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
       });
       expect(result).not.toBeNull();
@@ -273,6 +288,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
         assistant: {
           role: "assistant",
@@ -280,6 +296,7 @@ describe("Claude Code transcript scanner", () => {
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
+          gitBranch: "",
         },
       });
       expect(result).toBeNull();
