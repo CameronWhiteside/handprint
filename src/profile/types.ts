@@ -83,6 +83,8 @@ export interface HandprintProfile {
     url: string;
     handprintCount: number;
   }>;
+
+  merkleRoot: string | null;
 }
 
 export interface ProtocolConfig {
