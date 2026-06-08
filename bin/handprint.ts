@@ -15,6 +15,7 @@ import { ingest } from "../src/commands/ingest.js";
 import { loadConfig, saveConfig, getConfigValue, setConfigValue } from "../src/commands/config.js";
 import { computeProfile } from "../src/profile/compute.js";
 import { getRef } from "../src/store/refs.js";
+import { push } from "../src/commands/push.js";
 import { HandprintType } from "../src/model/handprint.js";
 import { ResolutionStatus } from "../src/model/resolution.js";
 
@@ -306,6 +307,20 @@ program
       if (profile.merkleRoot) {
         console.log(`  chain:    ${profile.merkleRoot.slice(0, 12)}`);
       }
+    } catch (err) {
+      console.error((err as Error).message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command("push")
+  .description("Push profile to Cloudflare KV for publishing on handprint.sh")
+  .action(async () => {
+    try {
+      const result = await push(process.cwd());
+      console.log(`pushed ${result.handle} to KV (${result.keysWritten} keys)`);
+      console.log(`namespace: ${result.namespaceId}`);
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
