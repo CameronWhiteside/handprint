@@ -1,8 +1,24 @@
+export type Visibility = "public" | "connections" | "private";
+
+export interface SocialLink {
+  url: string;
+  visibility: Visibility;
+  verified?: boolean;
+}
+
+export interface SocialProfile {
+  github?: SocialLink;
+  linkedin?: SocialLink;
+  website?: SocialLink;
+  email?: SocialLink;
+}
+
 export interface HandprintProfile {
   version: string;
   generatedAt: string;
   handle: string;
   name: string;
+  social?: SocialProfile;
 
   typeCounts: {
     vision: number;
@@ -120,6 +136,7 @@ export interface HandprintConfig {
     name: string;
     email: string;
   };
+  social?: SocialProfile;
   remote: {
     type: string;
     accountId: string;

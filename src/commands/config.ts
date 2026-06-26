@@ -18,6 +18,7 @@ export function loadConfig(repoRoot: string): HandprintConfig {
     version: raw.version ?? "0.1.0",
     createdAt: raw.createdAt ?? new Date().toISOString(),
     identity: raw.identity ?? detectIdentity(),
+    social: raw.social ?? undefined,
     remote: raw.remote ?? { type: "cloudflare-kv", accountId: "", namespaceId: null },
     protocol: deepMerge(DEFAULT_PROTOCOL, raw.protocol ?? {}),
   };

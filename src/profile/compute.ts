@@ -1,4 +1,4 @@
-import type { HandprintProfile, HandprintConfig } from "./types.js";
+import type { HandprintProfile, HandprintConfig, SocialProfile, SocialLink } from "./types.js";
 import type { DecisionMeta } from "../model/meta.js";
 
 const MONTH_NAMES = [
@@ -38,11 +38,14 @@ export function computeProfile(
     ? (sorted[0].ts ?? sorted[0].seal)
     : "";
 
+  const social = filterSocial(config.social);
+
   return {
     version: config.version,
     generatedAt: new Date().toISOString(),
     handle: config.identity.handle,
     name: config.identity.name,
+    social,
     typeCounts,
     subtypeCounts,
     total: sorted.length,
@@ -289,4 +292,15 @@ function computeRepos(entries: DecisionMeta[]): HandprintProfile["repos"] {
   return [...repoCounts.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([url, handprintCount]) => ({ url, handprintCount }));
+}
+
+function filterSocial(social?: SocialProfile): SocialProfile | undefined {
+  if (!social) return undefined;
+  const out: SocialProfile = {};
+  for (const [key, link] of Object.entries(social) as [keyof SocialProfile, SocialLink | undefined][]) {
+    if (!link) continue;
+    if (link.visibility === "private") continue;
+    out[key] = { ...link };
+  }
+  return Object.keys(out).length > 0 ? out : undefined;
 }
