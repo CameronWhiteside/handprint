@@ -56,21 +56,35 @@ async function ensureNamespace(
 ): Promise<string> {
   if (config.remote.namespaceId) return config.remote.namespaceId;
 
-  // Create KV namespace
-  const data = await cfApi(
+  // Try to create, or find existing
+  try {
+    const data = await cfApi(
+      `/accounts/${accountId}/storage/kv/namespaces`,
+      token,
+      "POST",
+      { title: "handprint-profiles" },
+    );
+    const nsId = data.result.id;
+    config.remote.namespaceId = nsId;
+    saveConfig(repoRoot, config);
+    console.error(`created KV namespace: ${nsId}`);
+    return nsId;
+  } catch (e: any) {
+    if (!e.message?.includes("already exists")) throw e;
+  }
+
+  // Namespace exists — find it
+  const list = await cfApi(
     `/accounts/${accountId}/storage/kv/namespaces`,
     token,
-    "POST",
-    { title: "handprint-profiles" },
   );
-  const nsId = data.result.id;
+  const ns = list.result.find((n: any) => n.title === "handprint-profiles");
+  if (!ns) throw new Error("namespace exists but not found in list");
 
-  // Save to config
-  config.remote.namespaceId = nsId;
+  config.remote.namespaceId = ns.id;
   saveConfig(repoRoot, config);
-  console.error(`created KV namespace: ${nsId}`);
-
-  return nsId;
+  console.error(`found existing KV namespace: ${ns.id}`);
+  return ns.id;
 }
 
 export async function push(repoRoot: string): Promise<PushResult> {
