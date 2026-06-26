@@ -23,7 +23,7 @@ describe("sealHandprint", () => {
   });
 
   const minimalInput = {
-    type: HandprintType.Direction,
+    type: HandprintType.Vision,
     intent: "Ship the MVP by Friday",
     risk: "May miss edge cases",
     context: "Sprint planning session",
@@ -41,7 +41,7 @@ describe("sealHandprint", () => {
 
     expect(stored).not.toBeNull();
     expect(stored!.intent).toBe("Ship the MVP by Friday");
-    expect(stored!.type).toBe("direction");
+    expect(stored!.type).toBe("vision");
   });
 
   it("appends hash to the log index file", () => {

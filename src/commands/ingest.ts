@@ -11,13 +11,12 @@ import { HANDPRINT_DIR } from "./init.js";
 import { HandprintType } from "../model/handprint.js";
 import { enrichAnchors } from "../profile/anchors.js";
 import { loadConfig } from "./config.js";
+import { sanitize } from "../sanitizer/sanitize.js";
 
 const TYPE_MAP: Record<string, HandprintType> = {
-  direction: HandprintType.Direction,
-  override: HandprintType.Override,
-  rejection: HandprintType.Rejection,
-  constraint: HandprintType.Constraint,
-  wager: HandprintType.Wager,
+  vision: HandprintType.Vision,
+  choice: HandprintType.Choice,
+  method: HandprintType.Method,
 };
 
 export interface IngestResult {
@@ -103,9 +102,9 @@ export async function ingest(
 
       const hash = sealHandprint(repoRoot, {
         type,
-        intent: hp.intent,
-        risk: hp.risk,
-        context: hp.context,
+        intent: sanitize(hp.intent),
+        risk: sanitize(hp.risk),
+        context: sanitize(hp.context),
         horizon: hp.horizon ?? undefined,
         confidence: hp.confidence,
         source: hp.source || "claude-code",

@@ -22,7 +22,7 @@ describe("listHandprints", () => {
   });
 
   const minimalInput = {
-    type: HandprintType.Direction,
+    type: HandprintType.Vision,
     intent: "Ship the MVP by Friday",
     risk: "May miss edge cases",
     context: "Sprint planning session",
@@ -53,32 +53,32 @@ describe("listHandprints", () => {
     expect(entries).toHaveLength(1);
     expect(entries[0].hash).toBe(hash);
     expect(entries[0].intent).toBe("Ship the MVP by Friday");
-    expect(entries[0].type).toBe(HandprintType.Direction);
+    expect(entries[0].type).toBe(HandprintType.Vision);
   });
 
   it("filters by type", () => {
     sealHandprint(repoRoot, minimalInput);
     sealHandprint(repoRoot, {
       ...minimalInput,
-      type: HandprintType.Override,
-      intent: "Override decision",
+      type: HandprintType.Choice,
+      intent: "Choice decision",
     });
     sealHandprint(repoRoot, {
       ...minimalInput,
-      type: HandprintType.Constraint,
-      intent: "Constraint decision",
+      type: HandprintType.Method,
+      intent: "Method decision",
     });
 
-    const overrides = listHandprints(repoRoot, {
-      type: HandprintType.Override,
+    const choices = listHandprints(repoRoot, {
+      type: HandprintType.Choice,
     });
-    expect(overrides).toHaveLength(1);
-    expect(overrides[0].intent).toBe("Override decision");
+    expect(choices).toHaveLength(1);
+    expect(choices[0].intent).toBe("Choice decision");
 
-    const directions = listHandprints(repoRoot, {
-      type: HandprintType.Direction,
+    const visions = listHandprints(repoRoot, {
+      type: HandprintType.Vision,
     });
-    expect(directions).toHaveLength(1);
-    expect(directions[0].intent).toBe("Ship the MVP by Friday");
+    expect(visions).toHaveLength(1);
+    expect(visions[0].intent).toBe("Ship the MVP by Friday");
   });
 });

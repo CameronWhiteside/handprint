@@ -194,38 +194,52 @@ program
     console.log(`\n${total} candidates found. Use 'handprint ingest' to auto-extract.`);
   });
 
+const grabAction = async (opts: { limit?: number; dryRun?: boolean }) => {
+  try {
+    const result = await ingest(process.cwd(), {
+      limit: opts.limit,
+      dryRun: opts.dryRun,
+    });
+
+    if (result.sealed.length === 0) {
+      console.log("no handprints found");
+      return;
+    }
+
+    const verb = opts.dryRun ? "found" : "sealed";
+    console.log(`\n${result.sealed.length} handprints ${verb} from ${result.sessionsScanned} sessions (${result.messagesAnalyzed} messages analyzed)\n`);
+
+    for (const { hash, handprint } of result.sealed) {
+      const prefix = opts.dryRun ? "  " : `  ${hash.slice(0, 10)}  `;
+      const symbol = { vision: "◎", choice: "⊕", method: "⚙" }[handprint.type] ?? "?";
+      console.log(`${prefix}${symbol} [${handprint.type}]  ${handprint.intent}`);
+      console.log(`${" ".repeat(prefix.length)}  "${handprint.quote}"`);
+      console.log();
+    }
+  } catch (err) {
+    console.error((err as Error).message);
+    process.exit(1);
+  }
+};
+
 program
-  .command("ingest")
+  .command("grab")
   .description("Auto-extract handprints from Claude Code transcripts using AI")
   .option("-n, --limit <n>", "Number of recent sessions to scan", parseInt)
   .option("--dry-run", "Show what would be extracted without sealing")
-  .action(async (opts) => {
-    try {
-      const result = await ingest(process.cwd(), {
-        limit: opts.limit,
-        dryRun: opts.dryRun,
-      });
+  .action(grabAction);
 
-      if (result.sealed.length === 0) {
-        console.log("no handprints found");
-        return;
-      }
+program
+  .command("ingest", { hidden: true })
+  .description("Alias for grab")
+  .option("-n, --limit <n>", "Number of recent sessions to scan", parseInt)
+  .option("--dry-run", "Show what would be extracted without sealing")
+  .action(grabAction);
 
-      const verb = opts.dryRun ? "found" : "sealed";
-      console.log(`\n${result.sealed.length} handprints ${verb} from ${result.sessionsScanned} sessions (${result.messagesAnalyzed} messages analyzed)\n`);
-
-      for (const { hash, handprint } of result.sealed) {
-        const prefix = opts.dryRun ? "  " : `  ${hash.slice(0, 10)}  `;
-        const symbol = { direction: "→", override: "⤴", rejection: "⌀", constraint: "▮", wager: "◇" }[handprint.type] ?? "?";
-        console.log(`${prefix}${symbol} [${handprint.type}]  ${handprint.intent}`);
-        console.log(`${" ".repeat(prefix.length)}  "${handprint.quote}"`);
-        console.log();
-      }
-    } catch (err) {
-      console.error((err as Error).message);
-      process.exit(1);
-    }
-  });
+program
+  .command("sign")
+  .description("Select and sign handprints for publishing")
+  .action(() => console.log("coming soon"));
 
 const configCmd = program
   .command("config")

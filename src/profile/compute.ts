@@ -68,11 +68,9 @@ export function computeProfile(
 
 function computeTypeCounts(entries: ExportedEntry[]): HandprintProfile["typeCounts"] {
   const counts: HandprintProfile["typeCounts"] = {
-    direction: 0,
-    override: 0,
-    rejection: 0,
-    constraint: 0,
-    wager: 0,
+    vision: 0,
+    choice: 0,
+    method: 0,
   };
   for (const e of entries) {
     if (e.type in counts) {

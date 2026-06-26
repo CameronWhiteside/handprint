@@ -35,7 +35,7 @@ describe("git scanner", () => {
   });
 
   describe("classifyCommit", () => {
-    it("detects override signals", () => {
+    it("detects choice signals (override)", () => {
       const commit: GitCommit = {
         hash: "abc",
         timestamp: "2026-06-01",
@@ -44,10 +44,10 @@ describe("git scanner", () => {
       };
       const result = classifyCommit(commit);
       expect(result).not.toBeNull();
-      expect(result!.suggestedType).toBe("override");
+      expect(result!.suggestedType).toBe("choice");
     });
 
-    it("detects rejection signals", () => {
+    it("detects choice signals (rejection)", () => {
       const commit: GitCommit = {
         hash: "abc",
         timestamp: "2026-06-01",
@@ -57,10 +57,10 @@ describe("git scanner", () => {
       };
       const result = classifyCommit(commit);
       expect(result).not.toBeNull();
-      expect(result!.suggestedType).toBe("rejection");
+      expect(result!.suggestedType).toBe("choice");
     });
 
-    it("detects constraint signals", () => {
+    it("detects choice signals (constraint)", () => {
       const commit: GitCommit = {
         hash: "abc",
         timestamp: "2026-06-01",
@@ -69,7 +69,7 @@ describe("git scanner", () => {
       };
       const result = classifyCommit(commit);
       expect(result).not.toBeNull();
-      expect(result!.suggestedType).toBe("constraint");
+      expect(result!.suggestedType).toBe("choice");
     });
 
     it("returns null for routine commits", () => {

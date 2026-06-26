@@ -22,7 +22,7 @@ describe("showHandprint", () => {
   });
 
   const minimalInput = {
-    type: HandprintType.Direction,
+    type: HandprintType.Vision,
     intent: "Ship the MVP by Friday",
     risk: "May miss edge cases",
     context: "Sprint planning session",
@@ -35,7 +35,7 @@ describe("showHandprint", () => {
     expect(detail).not.toBeNull();
     expect(detail!.hash).toBe(hash);
     expect(detail!.intent).toBe("Ship the MVP by Friday");
-    expect(detail!.type).toBe(HandprintType.Direction);
+    expect(detail!.type).toBe(HandprintType.Vision);
     expect(detail!.risk).toBe("May miss edge cases");
     expect(detail!.context).toBe("Sprint planning session");
   });

@@ -89,31 +89,36 @@ interface PatternCategory {
 
 const CATEGORIES: PatternCategory[] = [
   {
-    type: "override",
+    type: "vision",
+    patterns: [
+      /(?:want|going) to (?:achieve|build|create|ship)/i,
+      /goal is/i,
+      /let's go with/i,
+      /planning to/i,
+      /the vision is/i,
+      /aiming for/i,
+      /direction is/i,
+      /strategy is/i,
+    ],
+  },
+  {
+    type: "choice",
     patterns: [
       /instead/i,
       /no,? (?:use|do|go with|switch)/i,
       /not that/i,
       /rather than/i,
       /I(?:'d| would) prefer/i,
-      /let's go with/i,
       /actually,? (?:use|do|let)/i,
-    ],
-  },
-  {
-    type: "rejection",
-    patterns: [
+      /decided/i,
+      /not doing/i,
+      /choosing/i,
       /(?:don't|do not|skip|remove|drop) (?:that|this|the)/i,
       /we(?:'re| are) not (?:building|doing|adding)/i,
       /off the table/i,
       /out of scope/i,
       /not (?:ready|worth|needed)/i,
       /decline/i,
-    ],
-  },
-  {
-    type: "constraint",
-    patterns: [
       /never|always/i,
       /must not|cannot|can't/i,
       /(?:hard|strict) (?:rule|constraint|requirement)/i,
@@ -122,12 +127,16 @@ const CATEGORIES: PatternCategory[] = [
     ],
   },
   {
-    type: "wager",
+    type: "method",
     patterns: [
-      /I (?:bet|predict|think|expect) .+ will/i,
-      /betting (?:that|on)/i,
-      /within \d+ months/i,
-      /by (?:Q[1-4]|next|end of)/i,
+      /using (?:the|a|this)/i,
+      /with (?:the|a|this) (?:tool|library|framework|api|sdk)/i,
+      /(?:cloudflare|aws|gcp|azure|vercel|netlify|supabase)/i,
+      /(?:react|vue|svelte|next|nuxt|astro|hono|express)/i,
+      /(?:postgres|redis|sqlite|drizzle|prisma)/i,
+      /method/i,
+      /powered by/i,
+      /integrat(?:e|ing|ed)/i,
     ],
   },
 ];

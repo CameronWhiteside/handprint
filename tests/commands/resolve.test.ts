@@ -25,7 +25,7 @@ describe("resolveHandprint", () => {
   });
 
   const minimalInput = {
-    type: HandprintType.Direction,
+    type: HandprintType.Vision,
     intent: "Ship the MVP by Friday",
     risk: "May miss edge cases",
     context: "Sprint planning session",

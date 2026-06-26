@@ -1,11 +1,9 @@
 import { execSync } from "node:child_process";
 
 export enum HandprintType {
-  Direction = "direction",
-  Override = "override",
-  Rejection = "rejection",
-  Constraint = "constraint",
-  Wager = "wager",
+  Vision = "vision",
+  Choice = "choice",
+  Method = "method",
 }
 
 export interface Anchor {

@@ -188,7 +188,7 @@ describe("Claude Code transcript scanner", () => {
   });
 
   describe("classifyPair", () => {
-    it("detects override when user chooses an alternative", () => {
+    it("detects choice when user chooses an alternative", () => {
       const result = classifyPair({
         user: {
           role: "user",
@@ -208,10 +208,10 @@ describe("Claude Code transcript scanner", () => {
         },
       });
       expect(result).not.toBeNull();
-      expect(result!.suggestedType).toBe("override");
+      expect(result!.suggestedType).toBe("choice");
     });
 
-    it("detects rejection when user declines", () => {
+    it("detects choice when user declines", () => {
       const result = classifyPair({
         user: {
           role: "user",
@@ -231,10 +231,10 @@ describe("Claude Code transcript scanner", () => {
         },
       });
       expect(result).not.toBeNull();
-      expect(result!.suggestedType).toBe("rejection");
+      expect(result!.suggestedType).toBe("choice");
     });
 
-    it("detects constraint signals", () => {
+    it("detects choice for constraint signals", () => {
       const result = classifyPair({
         user: {
           role: "user",
@@ -254,14 +254,14 @@ describe("Claude Code transcript scanner", () => {
         },
       });
       expect(result).not.toBeNull();
-      expect(result!.suggestedType).toBe("constraint");
+      expect(result!.suggestedType).toBe("choice");
     });
 
-    it("detects wager signals", () => {
+    it("detects method for tool usage", () => {
       const result = classifyPair({
         user: {
           role: "user",
-          text: "I bet serverless will dominate within 12 months",
+          text: "use the cloudflare workers SDK for this",
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
@@ -269,7 +269,7 @@ describe("Claude Code transcript scanner", () => {
         },
         assistant: {
           role: "assistant",
-          text: "Interesting prediction.",
+          text: "Setting up Cloudflare Workers.",
           timestamp: "t",
           cwd: "/c",
           sessionId: "s",
@@ -277,7 +277,7 @@ describe("Claude Code transcript scanner", () => {
         },
       });
       expect(result).not.toBeNull();
-      expect(result!.suggestedType).toBe("wager");
+      expect(result!.suggestedType).toBe("method");
     });
 
     it("returns null for routine exchanges", () => {

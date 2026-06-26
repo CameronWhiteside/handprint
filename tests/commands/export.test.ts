@@ -24,7 +24,7 @@ describe("exportHandprints", () => {
   });
 
   const minimalInput = {
-    type: HandprintType.Direction,
+    type: HandprintType.Vision,
     intent: "Ship the MVP by Friday",
     risk: "May miss edge cases",
     context: "Sprint planning session",
@@ -34,8 +34,8 @@ describe("exportHandprints", () => {
     sealHandprint(repoRoot, minimalInput);
     sealHandprint(repoRoot, {
       ...minimalInput,
-      type: HandprintType.Override,
-      intent: "Override decision",
+      type: HandprintType.Choice,
+      intent: "Choice decision",
     });
 
     const result = exportHandprints(repoRoot);
@@ -44,7 +44,7 @@ describe("exportHandprints", () => {
     expect(result.exportedAt).toBeTruthy();
     expect(result.handprints).toHaveLength(2);
     expect(result.handprints[0].intent).toBe("Ship the MVP by Friday");
-    expect(result.handprints[1].intent).toBe("Override decision");
+    expect(result.handprints[1].intent).toBe("Choice decision");
     expect(result.handprints[0].resolutions).toEqual([]);
     expect(result.handprints[1].resolutions).toEqual([]);
   });
@@ -53,8 +53,8 @@ describe("exportHandprints", () => {
     const hash1 = sealHandprint(repoRoot, minimalInput);
     sealHandprint(repoRoot, {
       ...minimalInput,
-      type: HandprintType.Override,
-      intent: "Override decision",
+      type: HandprintType.Choice,
+      intent: "Choice decision",
     });
 
     resolveHandprint(repoRoot, {
@@ -78,7 +78,7 @@ describe("exportHandprints", () => {
     expect(hp1!.resolutions[0].handprintHash).toBe(hash1);
 
     const hp2 = result.handprints.find(
-      (h) => h.intent === "Override decision",
+      (h) => h.intent === "Choice decision",
     );
     expect(hp2).toBeDefined();
     expect(hp2!.resolutions).toEqual([]);

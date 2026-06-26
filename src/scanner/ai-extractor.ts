@@ -4,7 +4,7 @@ import { execSync } from "node:child_process";
 import { parseTranscriptLine, type TranscriptEntry } from "./claude-code.js";
 
 export interface ExtractedHandprint {
-  type: "direction" | "override" | "rejection" | "constraint" | "wager";
+  type: "vision" | "choice" | "method";
   intent: string;
   risk: string;
   context: string;
@@ -54,25 +54,24 @@ function buildConversationWindow(entries: TranscriptEntry[], maxChars: number = 
 
 const SYSTEM_PROMPT = `You are a handprint detector. You analyze conversations between a human and an AI coding assistant to identify moments of human judgment — decisions where the human steered the work rather than just accepting what the AI suggested.
 
-There are five types of handprints:
+There are three types of handprints:
 
-1. **direction** — The human sets a goal or direction for the work. "Switching the pipeline to streaming so latency drops below 100ms."
-2. **override** — The human rejects the AI's suggestion and chooses a different approach. "No, use edge JWT instead of the centralized gateway."
-3. **rejection** — The human decides NOT to build something. "We're not adding a recommendations engine in v2."
-4. **constraint** — The human establishes a boundary that must hold. "Never use gendered language in tile suggestions."
-5. **wager** — The human makes a prediction with a timeline. "Token sizes will stay under 4KB for 12 months."
+1. **vision** — What did the human want to achieve? Goal-setting, direction, planning. "Switching the pipeline to streaming so latency drops below 100ms." "We're building a CLI tool for decision provenance."
+2. **choice** — What decisions did the human make? Overrides, rejections, constraints, trade-offs. "No, use edge JWT instead of the centralized gateway." "We're not adding a recommendations engine in v2." "Never use gendered language in tile suggestions."
+3. **method** — What tools and knowledge did the human apply? Tool selection, framework choices, integrations. "Using Cloudflare Workers with Hono for the API layer." "Wire up Drizzle ORM instead of raw SQL."
 
 IMPORTANT rules:
 - Only flag moments where a HUMAN made a real decision that shaped the work
 - Routine instructions ("format the code", "deploy please", "commit and push") are NOT handprints
 - Approvals of AI suggestions ("yes", "go ahead", "looks good") are NOT handprints unless the human adds meaningful constraints
-- The human choosing between options the AI presented IS a handprint (direction or override)
-- "Never do X" and "always do Y" are constraints
-- Short steering corrections ("no, use X instead") count as overrides
+- The human choosing between options the AI presented IS a handprint (vision or choice)
+- "Never do X" and "always do Y" are choices (constraints)
+- Short steering corrections ("no, use X instead") count as choices
+- Tool/framework/library selections are method
 - Extract the EXACT quote from the human that constitutes the handprint
 
 For each handprint, extract:
-- type: one of direction, override, rejection, constraint, wager
+- type: one of vision, choice, method
 - intent: one sentence capturing what the human decided (in third person, like a log entry)
 - risk: what could go wrong if this decision is wrong (one sentence)
 - context: the project/feature area this applies to

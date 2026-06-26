@@ -5,11 +5,9 @@ export interface HandprintProfile {
   name: string;
 
   typeCounts: {
-    direction: number;
-    override: number;
-    rejection: number;
-    constraint: number;
-    wager: number;
+    vision: number;
+    choice: number;
+    method: number;
   };
   total: number;
 

@@ -7,12 +7,10 @@ import {
 import type { Handprint } from "../../src/model/handprint.js";
 
 describe("HandprintType enum", () => {
-  it("defines all five values", () => {
-    expect(HandprintType.Direction).toBe("direction");
-    expect(HandprintType.Override).toBe("override");
-    expect(HandprintType.Rejection).toBe("rejection");
-    expect(HandprintType.Constraint).toBe("constraint");
-    expect(HandprintType.Wager).toBe("wager");
+  it("defines all three values", () => {
+    expect(HandprintType.Vision).toBe("vision");
+    expect(HandprintType.Choice).toBe("choice");
+    expect(HandprintType.Method).toBe("method");
   });
 });
 
@@ -28,13 +26,13 @@ describe("createHandprint", () => {
 
   it("builds a valid record with defaults", () => {
     const hp = createHandprint({
-      type: HandprintType.Direction,
+      type: HandprintType.Vision,
       intent: "Chose React over Vue",
       risk: "Lock-in to JSX ecosystem",
       context: "Frontend framework selection for v2",
     });
 
-    expect(hp.type).toBe(HandprintType.Direction);
+    expect(hp.type).toBe(HandprintType.Vision);
     expect(hp.intent).toBe("Chose React over Vue");
     expect(hp.risk).toBe("Lock-in to JSX ecosystem");
     expect(hp.context).toBe("Frontend framework selection for v2");
@@ -50,7 +48,7 @@ describe("createHandprint", () => {
 
   it("sets parent to null by default", () => {
     const hp = createHandprint({
-      type: HandprintType.Direction,
+      type: HandprintType.Vision,
       intent: "Test parent default",
       risk: "None",
       context: "Testing",
@@ -60,7 +58,7 @@ describe("createHandprint", () => {
 
   it("accepts an explicit parent hash", () => {
     const hp = createHandprint({
-      type: HandprintType.Direction,
+      type: HandprintType.Vision,
       intent: "Test explicit parent",
       risk: "None",
       context: "Testing",
@@ -71,7 +69,7 @@ describe("createHandprint", () => {
 
   it("accepts optional fields", () => {
     const hp = createHandprint({
-      type: HandprintType.Wager,
+      type: HandprintType.Method,
       intent: "Bet on serverless",
       risk: "Cold start latency",
       context: "Infrastructure decision",
@@ -93,7 +91,7 @@ describe("createHandprint", () => {
 
 describe("validateHandprint", () => {
   const validHandprint: Handprint = {
-    type: HandprintType.Direction,
+    type: HandprintType.Vision,
     intent: "Chose React",
     risk: "Lock-in",
     context: "Framework selection",

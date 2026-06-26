@@ -24,7 +24,7 @@ function makeEntry(
   overrides: Partial<ExportedEntry> & { hash: string },
 ): ExportedEntry {
   return {
-    type: HandprintType.Direction,
+    type: HandprintType.Vision,
     intent: "test intent",
     risk: "test risk",
     context: "test-domain",
@@ -47,21 +47,19 @@ describe("computeProfile", () => {
   describe("typeCounts", () => {
     it("counts entries by type", () => {
       const entries: ExportedEntry[] = [
-        makeEntry({ hash: "a1", type: HandprintType.Direction }),
-        makeEntry({ hash: "a2", type: HandprintType.Direction }),
-        makeEntry({ hash: "a3", type: HandprintType.Override }),
-        makeEntry({ hash: "a4", type: HandprintType.Rejection }),
-        makeEntry({ hash: "a5", type: HandprintType.Constraint }),
-        makeEntry({ hash: "a6", type: HandprintType.Wager }),
-        makeEntry({ hash: "a7", type: HandprintType.Wager }),
+        makeEntry({ hash: "a1", type: HandprintType.Vision }),
+        makeEntry({ hash: "a2", type: HandprintType.Vision }),
+        makeEntry({ hash: "a3", type: HandprintType.Choice }),
+        makeEntry({ hash: "a4", type: HandprintType.Choice }),
+        makeEntry({ hash: "a5", type: HandprintType.Method }),
+        makeEntry({ hash: "a6", type: HandprintType.Method }),
+        makeEntry({ hash: "a7", type: HandprintType.Method }),
       ];
       const profile = computeProfile(entries, config, null);
       expect(profile.typeCounts).toEqual({
-        direction: 2,
-        override: 1,
-        rejection: 1,
-        constraint: 1,
-        wager: 2,
+        vision: 2,
+        choice: 2,
+        method: 3,
       });
       expect(profile.total).toBe(7);
     });
@@ -69,11 +67,9 @@ describe("computeProfile", () => {
     it("returns zeros for empty entries", () => {
       const profile = computeProfile([], config, null);
       expect(profile.typeCounts).toEqual({
-        direction: 0,
-        override: 0,
-        rejection: 0,
-        constraint: 0,
-        wager: 0,
+        vision: 0,
+        choice: 0,
+        method: 0,
       });
       expect(profile.total).toBe(0);
     });
@@ -508,7 +504,7 @@ describe("computeProfile", () => {
         makeEntry({
           hash: "t1",
           timestamp: "2026-06-01T14:30:00.000Z",
-          type: HandprintType.Override,
+          type: HandprintType.Choice,
           context: "auth",
           intent: "use edge JWT",
           risk: "latency",
@@ -519,7 +515,7 @@ describe("computeProfile", () => {
       expect(entry.hash).toBe("t1");
       expect(entry.day).toBe("01");
       expect(entry.time).toBe("14:30");
-      expect(entry.type).toBe("override");
+      expect(entry.type).toBe("choice");
       expect(entry.context).toBe("auth");
       expect(entry.intent).toBe("use edge JWT");
       expect(entry.risk).toBe("latency");

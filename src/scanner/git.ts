@@ -38,7 +38,16 @@ interface PatternCategory {
 
 const CATEGORIES: PatternCategory[] = [
   {
-    type: "override",
+    type: "vision",
+    patterns: [
+      /goal:/i,
+      /roadmap/i,
+      /strategy/i,
+      /plan(?:ning|ned)?:/i,
+    ],
+  },
+  {
+    type: "choice",
     patterns: [
       /instead of/i,
       /over (?:the|a) /i,
@@ -46,28 +55,26 @@ const CATEGORIES: PatternCategory[] = [
       /replacing/i,
       /switch(?:ing|ed)? (?:from|to)/i,
       /chose .+ over/i,
-    ],
-  },
-  {
-    type: "rejection",
-    patterns: [
       /remov(?:e|ing|ed)/i,
       /declin(?:e|ing|ed)/i,
       /not ready/i,
       /drop(?:ping|ped)?/i,
       /won't|will not/i,
       /rip(?:ping|ped)? out/i,
-    ],
-  },
-  {
-    type: "constraint",
-    patterns: [
       /enforce/i,
       /never|always/i,
       /must not|cannot/i,
       /no .+ in .+ path/i,
       /boundary|guardrail/i,
       /cap(?:ped)? at/i,
+    ],
+  },
+  {
+    type: "method",
+    patterns: [
+      /(?:add|use|adopt|integrate|wire up) .+(?:lib|tool|sdk|api|service)/i,
+      /powered by/i,
+      /migrate(?:d|ing)? (?:to|from)/i,
     ],
   },
 ];
