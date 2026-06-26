@@ -86,7 +86,7 @@ export async function grab(
 
   const transcripts = discoverTranscripts(options?.claudeDir);
   const limit = options?.limit ?? transcripts.length;
-  const toProcess = transcripts.slice(-limit);
+  const toProcess = transcripts.slice(0, limit);
 
   const result: GrabResult = {
     sealsCreated: 0,
@@ -171,14 +171,28 @@ export async function grab(
           anchorConfig,
         );
 
-        // Write meta entry referencing the seal hash
+        // Resolve project links from the session's working directory
+        let repo: string | undefined;
+        let branch: string | undefined;
+        try {
+          const { execSync } = await import("node:child_process");
+          if (existsSync(join(sessionCwd, ".git"))) {
+            repo = execSync("git remote get-url origin", { cwd: sessionCwd, encoding: "utf-8" }).trim() || undefined;
+            branch = firstEntry.gitBranch || execSync("git branch --show-current", { cwd: sessionCwd, encoding: "utf-8" }).trim() || undefined;
+          }
+        } catch { /* no git */ }
+
         const meta: DecisionMeta = {
           seal: sealHash,
+          ts: hp.timestamp || ts,
           type: hp.type,
           subtype: hp.subtype,
           intent: hp.intent,
           risk: hp.risk,
           context: hp.context,
+          project: transcript.project,
+          repo,
+          branch,
           confidence: hp.confidence,
           horizon: hp.horizon,
           anchors,

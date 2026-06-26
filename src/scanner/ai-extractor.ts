@@ -1,4 +1,4 @@
-import { readFileSync, existsSync, readdirSync } from "node:fs";
+import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { parseTranscriptLine, type TranscriptEntry } from "./claude-code.js";
@@ -280,6 +280,14 @@ export function discoverTranscripts(
       });
     }
   }
+
+  results.sort((a, b) => {
+    try {
+      return statSync(b.path).mtimeMs - statSync(a.path).mtimeMs;
+    } catch {
+      return 0;
+    }
+  });
 
   return results;
 }
