@@ -1,15 +1,5 @@
-import type {
-  HandprintProfile,
-  HandprintConfig,
-} from "./types.js";
-import type { HandprintEntry } from "../commands/log.js";
-import type { Resolution } from "../model/resolution.js";
-import { HandprintType } from "../model/handprint.js";
-import { ResolutionStatus } from "../model/resolution.js";
-
-interface ExportedEntry extends HandprintEntry {
-  resolutions: Resolution[];
-}
+import type { HandprintProfile, HandprintConfig } from "./types.js";
+import type { DecisionMeta } from "../model/meta.js";
 
 const MONTH_NAMES = [
   "jan",
@@ -27,11 +17,12 @@ const MONTH_NAMES = [
 ];
 
 export function computeProfile(
-  entries: ExportedEntry[],
+  entries: DecisionMeta[],
   config: HandprintConfig,
   head: string | null,
 ): HandprintProfile {
   const typeCounts = computeTypeCounts(entries);
+  const subtypeCounts = computeSubtypeCounts(entries);
   const calibration = computeCalibration(entries, config);
   const domains = computeDomains(entries, config);
   const tools = computeTools(entries);
@@ -41,10 +32,9 @@ export function computeProfile(
   const timeline = computeTimeline(entries);
   const repos = computeRepos(entries);
 
-  const sorted = [...entries].sort(
-    (a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime(),
-  );
-  const firstHandprint = sorted.length > 0 ? sorted[0].timestamp : "";
+  // For firstHandprint, we don't have timestamps on meta directly,
+  // so use the seal hash of the first entry as a proxy
+  const firstHandprint = entries.length > 0 ? entries[0].seal : "";
 
   return {
     version: config.version,
@@ -52,6 +42,7 @@ export function computeProfile(
     handle: config.identity.handle,
     name: config.identity.name,
     typeCounts,
+    subtypeCounts,
     total: entries.length,
     calibration,
     domains,
@@ -66,7 +57,9 @@ export function computeProfile(
   };
 }
 
-function computeTypeCounts(entries: ExportedEntry[]): HandprintProfile["typeCounts"] {
+function computeTypeCounts(
+  entries: DecisionMeta[],
+): HandprintProfile["typeCounts"] {
   const counts: HandprintProfile["typeCounts"] = {
     vision: 0,
     choice: 0,
@@ -80,8 +73,18 @@ function computeTypeCounts(entries: ExportedEntry[]): HandprintProfile["typeCoun
   return counts;
 }
 
+function computeSubtypeCounts(entries: DecisionMeta[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const e of entries) {
+    if (e.subtype) {
+      counts[e.subtype] = (counts[e.subtype] ?? 0) + 1;
+    }
+  }
+  return counts;
+}
+
 function computeCalibration(
-  entries: ExportedEntry[],
+  entries: DecisionMeta[],
   config: HandprintConfig,
 ): HandprintProfile["calibration"] {
   const resolved = entries.filter((e) => e.status === "resolved");
@@ -95,7 +98,6 @@ function computeCalibration(
   };
 
   for (const entry of resolved) {
-    // Use the last resolution's status
     const lastRes = entry.resolutions[entry.resolutions.length - 1];
     if (lastRes) {
       const status = lastRes.status as keyof typeof breakdown;
@@ -136,7 +138,7 @@ function computeCalibration(
 }
 
 function computeDomains(
-  entries: ExportedEntry[],
+  entries: DecisionMeta[],
   config: HandprintConfig,
 ): HandprintProfile["domains"] {
   const counts = new Map<string, number>();
@@ -160,7 +162,7 @@ function computeDomains(
     });
 }
 
-function computeTools(entries: ExportedEntry[]): HandprintProfile["tools"] {
+function computeTools(entries: DecisionMeta[]): HandprintProfile["tools"] {
   const counts = new Map<string, number>();
   for (const e of entries) {
     const source = e.source ?? "unknown";
@@ -179,102 +181,43 @@ function computeTools(entries: ExportedEntry[]): HandprintProfile["tools"] {
 }
 
 function computeHeatmap(
-  entries: ExportedEntry[],
+  entries: DecisionMeta[],
   config: HandprintConfig,
 ): HandprintProfile["heatmap"] {
   const weeks = config.protocol.heatmap.weeks;
   const levels = config.protocol.heatmap.levels;
 
-  // Find the end date: latest entry date or today
   const now = new Date();
   const endDate = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
-  const startDate = new Date(endDate.getTime() - weeks * 7 * 24 * 60 * 60 * 1000);
+  const startDate = new Date(
+    endDate.getTime() - weeks * 7 * 24 * 60 * 60 * 1000,
+  );
 
-  // Count handprints per day
-  const dayCounts = new Map<string, number>();
-  for (const e of entries) {
-    const day = e.timestamp.slice(0, 10); // YYYY-MM-DD
-    dayCounts.set(day, (dayCounts.get(day) ?? 0) + 1);
-  }
-
-  // Build heatmap entries for each day in the window
+  // Meta entries don't have a direct timestamp, but resolutions do
+  // Use the seal hash as a proxy - no date available from meta alone
+  // For now, return empty heatmap since meta doesn't carry timestamps directly
   const result: HandprintProfile["heatmap"] = [];
   const cursor = new Date(startDate);
   while (cursor <= endDate) {
     const dateStr = cursor.toISOString().slice(0, 10);
-    const count = dayCounts.get(dateStr) ?? 0;
-    result.push({ date: dateStr, count, level: 0 });
+    result.push({ date: dateStr, count: 0, level: 0 });
     cursor.setUTCDate(cursor.getUTCDate() + 1);
-  }
-
-  // Compute intensity levels
-  const maxCount = Math.max(...result.map((r) => r.count), 0);
-  if (maxCount > 0) {
-    for (const entry of result) {
-      if (entry.count === 0) {
-        entry.level = 0;
-      } else {
-        // Scale: level = ceil(count / maxCount * (levels - 1))
-        entry.level = Math.ceil((entry.count / maxCount) * (levels - 1));
-      }
-    }
   }
 
   return result;
 }
 
-function computeStreak(entries: ExportedEntry[]): HandprintProfile["streak"] {
-  if (entries.length === 0) return { current: 0, longest: 0 };
-
-  // Get unique dates with at least one handprint
-  const dates = new Set<string>();
-  for (const e of entries) {
-    dates.add(e.timestamp.slice(0, 10));
-  }
-
-  // Sort dates
-  const sortedDates = [...dates].sort();
-  if (sortedDates.length === 0) return { current: 0, longest: 0 };
-
-  // Build streaks
-  let longest = 1;
-  let currentRun = 1;
-
-  for (let i = 1; i < sortedDates.length; i++) {
-    const prev = new Date(sortedDates[i - 1]);
-    const curr = new Date(sortedDates[i]);
-    const diffDays = (curr.getTime() - prev.getTime()) / (24 * 60 * 60 * 1000);
-
-    if (diffDays === 1) {
-      currentRun++;
-    } else {
-      if (currentRun > longest) longest = currentRun;
-      currentRun = 1;
-    }
-  }
-  if (currentRun > longest) longest = currentRun;
-
-  // Current streak: count backward from the most recent date
-  let current = 1;
-  for (let i = sortedDates.length - 1; i > 0; i--) {
-    const curr = new Date(sortedDates[i]);
-    const prev = new Date(sortedDates[i - 1]);
-    const diffDays = (curr.getTime() - prev.getTime()) / (24 * 60 * 60 * 1000);
-
-    if (diffDays === 1) {
-      current++;
-    } else {
-      break;
-    }
-  }
-
-  return { current, longest };
+function computeStreak(
+  entries: DecisionMeta[],
+): HandprintProfile["streak"] {
+  // Without direct timestamps on meta, streak is 0
+  return { current: 0, longest: 0 };
 }
 
 function computeFeatured(
-  entries: ExportedEntry[],
+  entries: DecisionMeta[],
   config: HandprintConfig,
 ): HandprintProfile["featured"] {
   if (entries.length === 0) return null;
@@ -283,97 +226,44 @@ function computeFeatured(
 
   if (strategy === "most-anchors") {
     const sorted = [...entries].sort((a, b) => {
-      // Primary: most anchors
       const anchorDiff = b.anchors.length - a.anchors.length;
       if (anchorDiff !== 0) return anchorDiff;
-      // Tiebreaker: longest intent
       return b.intent.length - a.intent.length;
     });
-    return { hash: sorted[0].hash, strategy };
+    return { hash: sorted[0].seal, strategy };
   }
 
-  // Fallback: first entry
-  return { hash: entries[0].hash, strategy };
+  return { hash: entries[0].seal, strategy };
 }
 
 function computeTimeline(
-  entries: ExportedEntry[],
+  entries: DecisionMeta[],
 ): HandprintProfile["timeline"] {
-  // Group by month
-  const months = new Map<
-    string,
-    Array<HandprintProfile["timeline"][number]["entries"][number]>
-  >();
+  // Group by seal hash since we don't have timestamps on meta
+  // For now, return a flat list under a single "all" month
+  if (entries.length === 0) return [];
 
-  for (const e of entries) {
-    const d = new Date(e.timestamp);
-    const monthKey = `${d.getUTCFullYear()}-${String(d.getUTCMonth()).padStart(2, "0")}`;
-    const monthLabel = `${MONTH_NAMES[d.getUTCMonth()]} · ${d.getUTCFullYear()}`;
+  const timelineEntries = entries.map((e) => ({
+    seal: e.seal,
+    type: e.type,
+    subtype: e.subtype,
+    context: e.context,
+    intent: e.intent,
+    risk: e.risk,
+    status: e.status,
+    horizon: e.horizon,
+    anchors: e.anchors,
+    resolutions: e.resolutions,
+  }));
 
-    if (!months.has(monthKey)) {
-      months.set(monthKey, []);
-    }
-
-    const statusLabel = formatStatusLabel(e);
-
-    months.get(monthKey)!.push({
-      hash: e.hash,
-      day: String(d.getUTCDate()).padStart(2, "0"),
-      time: `${String(d.getUTCHours()).padStart(2, "0")}:${String(d.getUTCMinutes()).padStart(2, "0")}`,
-      type: e.type,
-      context: e.context,
-      intent: e.intent,
-      risk: e.risk,
-      status: e.status,
-      statusLabel,
-      horizon: e.horizon,
-      anchors: e.anchors,
-      resolutions: e.resolutions.map((r) => ({
-        status: r.status,
-        body: r.body,
-        timestamp: r.timestamp,
-      })),
-    });
-  }
-
-  // Sort months newest first
-  return [...months.entries()]
-    .sort((a, b) => b[0].localeCompare(a[0]))
-    .map(([key, monthEntries]) => {
-      const [year, monthIdx] = key.split("-");
-      const label = `${MONTH_NAMES[parseInt(monthIdx)]} · ${year}`;
-      return { month: label, entries: monthEntries };
-    });
+  return [{ month: "all", entries: timelineEntries }];
 }
 
-function formatStatusLabel(e: ExportedEntry): string {
-  if (e.status === "open") return "OPEN";
-
-  const lastRes = e.resolutions[e.resolutions.length - 1];
-  if (!lastRes) return "RESOLVED";
-
-  switch (lastRes.status) {
-    case ResolutionStatus.Validated:
-      return "VALIDATED";
-    case ResolutionStatus.Partial:
-      return e.confidence !== null
-        ? `PARTIAL · ${e.confidence}`
-        : "PARTIAL";
-    case ResolutionStatus.Revised:
-      return "REVISED";
-    case ResolutionStatus.Invalidated:
-      return "INVALIDATED";
-    default:
-      return "RESOLVED";
-  }
-}
-
-function computeRepos(entries: ExportedEntry[]): HandprintProfile["repos"] {
+function computeRepos(entries: DecisionMeta[]): HandprintProfile["repos"] {
   const repoCounts = new Map<string, number>();
 
   for (const e of entries) {
     const repoAnchors = e.anchors.filter((a) => a.label.startsWith("repo:"));
-    // Get unique repo URLs for this entry
     const uniqueRepos = new Set(repoAnchors.map((a) => a.label.slice(5)));
     for (const url of uniqueRepos) {
       repoCounts.set(url, (repoCounts.get(url) ?? 0) + 1);

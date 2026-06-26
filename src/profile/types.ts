@@ -9,6 +9,7 @@ export interface HandprintProfile {
     choice: number;
     method: number;
   };
+  subtypeCounts?: Record<string, number>;
   total: number;
 
   calibration: {
@@ -58,15 +59,13 @@ export interface HandprintProfile {
   timeline: Array<{
     month: string;
     entries: Array<{
-      hash: string;
-      day: string;
-      time: string;
+      seal: string;
       type: string;
+      subtype?: string;
       context: string;
       intent: string;
       risk: string;
       status: string;
-      statusLabel: string;
       horizon: string | null;
       anchors: Array<{ label: string; verified: boolean }>;
       resolutions: Array<{
@@ -131,10 +130,15 @@ export interface HandprintConfig {
 
 export const DEFAULT_PROTOCOL: ProtocolConfig = {
   calibration: {
-    weights: { validated: 1.0, partial: 0.5, revised: 0.25, invalidated: 0.0 },
+    weights: {
+      validated: 1.0,
+      partial: 0.5,
+      revised: 0.25,
+      invalidated: 0.0,
+    },
     minResolved: 5,
   },
-  domains: { strongThreshold: 0.10 },
+  domains: { strongThreshold: 0.1 },
   heatmap: { weeks: 52, levels: 5 },
   featured: { strategy: "most-anchors" },
   anchors: {

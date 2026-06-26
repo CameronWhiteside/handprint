@@ -4,20 +4,18 @@ import { writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { Command } from "commander";
 import { initStore, HANDPRINT_DIR } from "../src/commands/init.js";
-import { sealHandprint } from "../src/commands/seal.js";
-import { listHandprints } from "../src/commands/log.js";
-import { showHandprint } from "../src/commands/show.js";
-import { resolveHandprint } from "../src/commands/resolve.js";
+import { sealChunk } from "../src/commands/seal.js";
+import { listSeals, listDecisions } from "../src/commands/log.js";
+import { showSeal } from "../src/commands/show.js";
 import { exportHandprints } from "../src/commands/export.js";
 import { scan } from "../src/commands/scan.js";
 import { verifyChain } from "../src/commands/verify.js";
-import { ingest } from "../src/commands/ingest.js";
+import { grab } from "../src/commands/grab.js";
 import { loadConfig, saveConfig, getConfigValue, setConfigValue } from "../src/commands/config.js";
 import { computeProfile } from "../src/profile/compute.js";
+import { listAllMeta } from "../src/store/meta.js";
 import { getRef } from "../src/store/refs.js";
 import { push } from "../src/commands/push.js";
-import { HandprintType } from "../src/model/handprint.js";
-import { ResolutionStatus } from "../src/model/resolution.js";
 
 const program = new Command();
 
@@ -41,24 +39,20 @@ program
 
 program
   .command("seal")
-  .description("Seal a new handprint")
-  .requiredOption("-t, --type <type>", `handprint type (${Object.values(HandprintType).join(", ")})`)
-  .requiredOption("-i, --intent <intent>", "what you intend to achieve")
-  .requiredOption("-r, --risk <risk>", "what could go wrong")
-  .requiredOption("-c, --context <context>", "relevant context for this decision")
-  .option("--horizon <horizon>", "time horizon for evaluation")
-  .option("--confidence <n>", "confidence level (0-1)", parseFloat)
-  .option("-s, --source <source>", "source of the decision")
+  .description("Seal a conversation chunk (low-level)")
+  .requiredOption("-s, --session <session>", "session/chat ID")
+  .requiredOption("-p, --project <project>", "project identifier")
+  .requiredOption("--plaintext <text>", "plaintext conversation to seal")
+  .option("--ts <timestamp>", "ISO timestamp", new Date().toISOString())
+  .option("--author <author>", "author identity", "unknown")
   .action((opts) => {
     try {
-      const hash = sealHandprint(process.cwd(), {
-        type: opts.type as HandprintType,
-        intent: opts.intent,
-        risk: opts.risk,
-        context: opts.context,
-        horizon: opts.horizon ?? null,
-        confidence: opts.confidence ?? null,
-        source: opts.source ?? null,
+      const hash = sealChunk(process.cwd(), {
+        ts: opts.ts,
+        session: opts.session,
+        project: opts.project,
+        author: opts.author,
+        plaintext: opts.plaintext,
       });
       console.log(`sealed ${hash.slice(0, 12)}`);
     } catch (err) {
@@ -69,29 +63,47 @@ program
 
 program
   .command("log")
-  .description("List sealed handprints")
-  .option("-t, --type <type>", "filter by handprint type")
+  .description("List decisions (meta entries)")
+  .option("-t, --type <type>", "filter by decision type (vision, choice, method)")
+  .option("--seals", "list seals instead of decisions")
   .action((opts) => {
-    const entries = listHandprints(process.cwd(), opts.type ? { type: opts.type as HandprintType } : undefined);
-    if (entries.length === 0) {
-      console.log("no handprints yet");
-      return;
-    }
-    for (const entry of entries) {
-      const hash10 = entry.hash.slice(0, 10);
-      const typePadded = entry.type.padEnd(11);
-      const date = entry.timestamp.slice(0, 10);
-      console.log(`${hash10}  ${typePadded}  ${date}  ${entry.intent}`);
+    if (opts.seals) {
+      const entries = listSeals(process.cwd());
+      if (entries.length === 0) {
+        console.log("no seals yet");
+        return;
+      }
+      for (const entry of entries) {
+        const hash10 = entry.hash.slice(0, 10);
+        const ts = entry.seal.ts?.slice(0, 10) ?? "unknown";
+        const session = entry.seal.session?.slice(0, 8) ?? "unknown";
+        console.log(`${hash10}  ${ts}  session:${session}  ${entry.seal.project ?? ""}`);
+      }
+    } else {
+      const metas = listDecisions(process.cwd(), opts.type ? { type: opts.type } : undefined);
+      if (metas.length === 0) {
+        console.log("no decisions yet");
+        return;
+      }
+      for (const m of metas) {
+        const sealPrefix = m.seal.slice(0, 10);
+        const typePadded = m.type.padEnd(8);
+        const subtype = m.subtype ? `(${m.subtype})` : "";
+        console.log(`${sealPrefix}  ${typePadded} ${subtype.padEnd(14)} ${m.intent}`);
+      }
     }
   });
 
 program
   .command("show <ref>")
-  .description("Show a handprint by hash or prefix")
-  .action((ref: string) => {
-    const detail = showHandprint(process.cwd(), ref);
+  .description("Show a seal by hash or prefix")
+  .option("--decrypt", "Decrypt the sealed payload")
+  .action((ref: string, opts) => {
+    const detail = showSeal(process.cwd(), ref, {
+      decryptPayload: opts.decrypt,
+    });
     if (!detail) {
-      console.error("handprint not found");
+      console.error("seal not found");
       process.exit(1);
     }
     console.log(JSON.stringify(detail, null, 2));
@@ -99,24 +111,28 @@ program
 
 program
   .command("verify")
-  .description("Verify the integrity of the hash chain")
+  .description("Verify the integrity of the seal chain")
   .action(() => {
     try {
       const result = verifyChain(process.cwd());
 
       if (result.chainLength === 0) {
-        console.log("chain: empty (no handprints sealed yet)");
-        console.log("status: ✓ valid");
+        console.log("chain: empty (no seals yet)");
+        console.log("status: valid");
         return;
       }
 
-      console.log(`chain: ${result.chainLength} handprint${result.chainLength === 1 ? "" : "s"}`);
+      console.log(
+        `chain: ${result.chainLength} seal${result.chainLength === 1 ? "" : "s"}`,
+      );
       console.log(`head: ${result.head!.slice(0, 12)}`);
 
       if (result.valid) {
-        console.log("status: ✓ valid — all hashes verified, chain intact");
+        console.log(
+          "status: valid — all hashes verified, signatures valid, chain intact",
+        );
       } else {
-        console.log("status: ✗ INVALID");
+        console.log("status: INVALID");
         console.log("errors:");
         for (const { hash, error } of result.errors) {
           console.log(`  ${hash.slice(0, 12)} — ${error}`);
@@ -130,29 +146,8 @@ program
   });
 
 program
-  .command("resolve <ref>")
-  .description("Resolve a handprint")
-  .requiredOption("-s, --status <status>", `resolution status (${Object.values(ResolutionStatus).join(", ")})`)
-  .requiredOption("-b, --body <body>", "resolution body")
-  .option("-l, --learnings <items>", "comma-separated learnings")
-  .action((ref: string, opts) => {
-    try {
-      const hash = resolveHandprint(process.cwd(), {
-        handprintRef: ref,
-        status: opts.status as ResolutionStatus,
-        body: opts.body,
-        learnings: opts.learnings ? opts.learnings.split(",").map((s: string) => s.trim()) : undefined,
-      });
-      console.log(`resolved → ${hash.slice(0, 12)}`);
-    } catch (err) {
-      console.error((err as Error).message);
-      process.exit(1);
-    }
-  });
-
-program
   .command("export")
-  .description("Export all handprints with resolutions as JSON")
+  .description("Export all seals and meta entries as JSON")
   .action(() => {
     try {
       const result = exportHandprints(process.cwd());
@@ -169,7 +164,8 @@ program
   .option("-n, --limit <n>", "Number of git commits to scan", "50")
   .action(() => {
     const result = scan(process.cwd());
-    const total = result.gitCandidates.length + result.transcriptCandidates.length;
+    const total =
+      result.gitCandidates.length + result.transcriptCandidates.length;
 
     if (total === 0) {
       console.log("no handprint candidates found");
@@ -177,44 +173,60 @@ program
     }
 
     if (result.gitCandidates.length > 0) {
-      console.log(`\n— git commits (${result.gitCandidates.length}) —`);
+      console.log(`\n-- git commits (${result.gitCandidates.length}) --`);
       for (const c of result.gitCandidates) {
-        console.log(`  ${c.commit.hash.slice(0, 7)}  [${c.suggestedType}]  ${c.commit.message}`);
+        console.log(
+          `  ${c.commit.hash.slice(0, 7)}  [${c.suggestedType}]  ${c.commit.message}`,
+        );
       }
     }
 
     if (result.transcriptCandidates.length > 0) {
-      console.log(`\n— claude code (${result.transcriptCandidates.length}) —`);
+      console.log(
+        `\n-- claude code (${result.transcriptCandidates.length}) --`,
+      );
       for (const c of result.transcriptCandidates) {
         const preview = c.pair.user.text.slice(0, 80);
-        console.log(`  [${c.suggestedType}]  "${preview}${c.pair.user.text.length > 80 ? "..." : ""}"`);
+        console.log(
+          `  [${c.suggestedType}]  "${preview}${c.pair.user.text.length > 80 ? "..." : ""}"`,
+        );
       }
     }
 
-    console.log(`\n${total} candidates found. Use 'handprint ingest' to auto-extract.`);
+    console.log(
+      `\n${total} candidates found. Use 'handprint grab' to auto-extract.`,
+    );
   });
 
 const grabAction = async (opts: { limit?: number; dryRun?: boolean }) => {
   try {
-    const result = await ingest(process.cwd(), {
+    const result = await grab(process.cwd(), {
       limit: opts.limit,
       dryRun: opts.dryRun,
     });
 
-    if (result.sealed.length === 0) {
-      console.log("no handprints found");
+    if (result.sealsCreated === 0 && result.decisionsExtracted === 0) {
+      console.log("no decisions found");
       return;
     }
 
     const verb = opts.dryRun ? "found" : "sealed";
-    console.log(`\n${result.sealed.length} handprints ${verb} from ${result.sessionsScanned} sessions (${result.messagesAnalyzed} messages analyzed)\n`);
+    console.log(
+      `\n${result.sealsCreated} chunks ${verb}, ${result.decisionsExtracted} decisions extracted from ${result.sessionsScanned} sessions\n`,
+    );
 
-    for (const { hash, handprint } of result.sealed) {
-      const prefix = opts.dryRun ? "  " : `  ${hash.slice(0, 10)}  `;
-      const symbol = { vision: "◎", choice: "⊕", method: "⚙" }[handprint.type] ?? "?";
-      console.log(`${prefix}${symbol} [${handprint.type}]  ${handprint.intent}`);
-      console.log(`${" ".repeat(prefix.length)}  "${handprint.quote}"`);
-      console.log();
+    for (const { sealHash, decisions } of result.details) {
+      const prefix = opts.dryRun ? "  " : `  ${sealHash.slice(0, 10)}  `;
+      for (const hp of decisions) {
+        const symbol =
+          { vision: "o", choice: "+", method: "*" }[hp.type] ?? "?";
+        const subLabel = hp.subtype ? `/${hp.subtype}` : "";
+        console.log(
+          `${prefix}${symbol} [${hp.type}${subLabel}]  ${hp.intent}`,
+        );
+        console.log(`${" ".repeat(prefix.length)}  "${hp.quote}"`);
+        console.log();
+      }
     }
   } catch (err) {
     console.error((err as Error).message);
@@ -224,15 +236,25 @@ const grabAction = async (opts: { limit?: number; dryRun?: boolean }) => {
 
 program
   .command("grab")
-  .description("Auto-extract handprints from Claude Code transcripts using AI")
-  .option("-n, --limit <n>", "Number of recent sessions to scan", parseInt)
+  .description(
+    "Auto-extract decisions from Claude Code transcripts using AI",
+  )
+  .option(
+    "-n, --limit <n>",
+    "Number of recent sessions to scan",
+    parseInt,
+  )
   .option("--dry-run", "Show what would be extracted without sealing")
   .action(grabAction);
 
 program
   .command("ingest", { hidden: true })
   .description("Alias for grab")
-  .option("-n, --limit <n>", "Number of recent sessions to scan", parseInt)
+  .option(
+    "-n, --limit <n>",
+    "Number of recent sessions to scan",
+    parseInt,
+  )
   .option("--dry-run", "Show what would be extracted without sealing")
   .action(grabAction);
 
@@ -269,7 +291,11 @@ configCmd
         console.error(`no value at path: ${path}`);
         process.exit(1);
       }
-      console.log(typeof value === "object" ? JSON.stringify(value, null, 2) : String(value));
+      console.log(
+        typeof value === "object"
+          ? JSON.stringify(value, null, 2)
+          : String(value),
+      );
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
@@ -284,7 +310,9 @@ configCmd
       const config = loadConfig(process.cwd());
       const updated = setConfigValue(config, path, value);
       saveConfig(process.cwd(), updated);
-      console.log(`set ${path} = ${JSON.stringify(getConfigValue(updated, path))}`);
+      console.log(
+        `set ${path} = ${JSON.stringify(getConfigValue(updated, path))}`,
+      );
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
@@ -298,10 +326,10 @@ program
     try {
       const cwd = process.cwd();
       const config = loadConfig(cwd);
-      const exported = exportHandprints(cwd);
       const hpDir = join(cwd, HANDPRINT_DIR);
       const head = getRef(hpDir, "HEAD");
-      const profile = computeProfile(exported.handprints, config, head);
+      const metas = listAllMeta(hpDir);
+      const profile = computeProfile(metas, config, head);
 
       const outPath = join(hpDir, "profile.json");
       writeFileSync(outPath, JSON.stringify(profile, null, 2), "utf-8");
@@ -309,15 +337,28 @@ program
       console.log(`profile written to ${outPath}`);
       console.log();
       console.log(`  handle:   ${profile.handle}`);
-      console.log(`  total:    ${profile.total} handprints`);
-      console.log(`  types:    ${Object.entries(profile.typeCounts).filter(([_, v]) => v > 0).map(([k, v]) => `${v} ${k}`).join(", ")}`);
+      console.log(`  total:    ${profile.total} decisions`);
+      console.log(
+        `  types:    ${Object.entries(profile.typeCounts)
+          .filter(([_, v]) => v > 0)
+          .map(([k, v]) => `${v} ${k}`)
+          .join(", ")}`,
+      );
       if (profile.calibration.score !== null) {
-        console.log(`  calibr:   ${(profile.calibration.score * 100).toFixed(1)}% (${profile.calibration.resolved} resolved)`);
+        console.log(
+          `  calibr:   ${(profile.calibration.score * 100).toFixed(1)}% (${profile.calibration.resolved} resolved)`,
+        );
       } else {
-        console.log(`  calibr:   pending (${profile.calibration.resolved}/${config.protocol.calibration.minResolved} resolved)`);
+        console.log(
+          `  calibr:   pending (${profile.calibration.resolved}/${config.protocol.calibration.minResolved} resolved)`,
+        );
       }
-      console.log(`  domains:  ${profile.domains.map((d) => `${d.name} (${d.count})`).join(", ") || "none"}`);
-      console.log(`  streak:   ${profile.streak.current}d current, ${profile.streak.longest}d longest`);
+      console.log(
+        `  domains:  ${profile.domains.map((d) => `${d.name} (${d.count})`).join(", ") || "none"}`,
+      );
+      console.log(
+        `  streak:   ${profile.streak.current}d current, ${profile.streak.longest}d longest`,
+      );
       if (profile.merkleRoot) {
         console.log(`  chain:    ${profile.merkleRoot.slice(0, 12)}`);
       }
@@ -329,11 +370,15 @@ program
 
 program
   .command("push")
-  .description("Push profile to Cloudflare KV for publishing on handprint.sh")
+  .description(
+    "Push profile to Cloudflare KV for publishing on handprint.sh",
+  )
   .action(async () => {
     try {
       const result = await push(process.cwd());
-      console.log(`pushed ${result.handle} to KV (${result.keysWritten} keys)`);
+      console.log(
+        `pushed ${result.handle} to KV (${result.keysWritten} keys)`,
+      );
       console.log(`namespace: ${result.namespaceId}`);
     } catch (err) {
       console.error((err as Error).message);

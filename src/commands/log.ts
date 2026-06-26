@@ -1,26 +1,25 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { readObject } from "../store/objects.js";
+import { listAllMeta } from "../store/meta.js";
 import { HANDPRINT_DIR } from "./init.js";
-import type { Handprint, HandprintType } from "../model/handprint.js";
+import type { Seal } from "../model/seal.js";
+import type { DecisionMeta } from "../model/meta.js";
 
-export interface HandprintEntry extends Handprint {
+export interface SealEntry {
   hash: string;
+  seal: Seal;
 }
 
 export interface ListOptions {
-  type?: HandprintType;
+  type?: string;
 }
 
 /**
- * Lists all sealed handprints from the log index.
- * Optionally filters by handprint type.
+ * Lists all sealed entries from the log index.
  * Returns an empty array if no log file exists.
  */
-export function listHandprints(
-  repoRoot: string,
-  options?: ListOptions,
-): HandprintEntry[] {
+export function listSeals(repoRoot: string): SealEntry[] {
   const hpDir = join(repoRoot, HANDPRINT_DIR);
   const logPath = join(hpDir, "log");
 
@@ -31,20 +30,36 @@ export function listHandprints(
   const logContent = readFileSync(logPath, "utf-8");
   const hashes = logContent.split("\n").filter(Boolean);
 
-  const entries: HandprintEntry[] = [];
+  const entries: SealEntry[] = [];
 
   for (const hash of hashes) {
     const obj = readObject(hpDir, hash);
     if (!obj) continue;
-
-    const entry = { ...obj, hash } as unknown as HandprintEntry;
-
-    if (options?.type && entry.type !== options.type) {
-      continue;
-    }
-
-    entries.push(entry);
+    entries.push({ hash, seal: obj as unknown as Seal });
   }
 
   return entries;
+}
+
+/**
+ * Lists meta entries (decisions), optionally filtered by type.
+ * Each line shows: seal hash prefix, type, subtype, date, intent.
+ */
+export function listDecisions(
+  repoRoot: string,
+  options?: ListOptions,
+): DecisionMeta[] {
+  const hpDir = join(repoRoot, HANDPRINT_DIR);
+
+  if (!existsSync(hpDir)) {
+    return [];
+  }
+
+  let metas = listAllMeta(hpDir);
+
+  if (options?.type) {
+    metas = metas.filter((m) => m.type === options.type);
+  }
+
+  return metas;
 }

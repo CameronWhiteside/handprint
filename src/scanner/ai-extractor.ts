@@ -5,6 +5,7 @@ import { parseTranscriptLine, type TranscriptEntry } from "./claude-code.js";
 
 export interface ExtractedHandprint {
   type: "vision" | "choice" | "method";
+  subtype?: string;
   intent: string;
   risk: string;
   context: string;
@@ -36,7 +37,10 @@ function isNoise(entry: TranscriptEntry): boolean {
   return false;
 }
 
-function buildConversationWindow(entries: TranscriptEntry[], maxChars: number = 12000): string {
+function buildConversationWindow(
+  entries: TranscriptEntry[],
+  maxChars: number = 12000,
+): string {
   const clean = entries.filter((e) => !isNoise(e));
   const lines: string[] = [];
   let total = 0;
@@ -54,11 +58,19 @@ function buildConversationWindow(entries: TranscriptEntry[], maxChars: number = 
 
 const SYSTEM_PROMPT = `You are a handprint detector. You analyze conversations between a human and an AI coding assistant to identify moments of human judgment — decisions where the human steered the work rather than just accepting what the AI suggested.
 
-There are three types of handprints:
+There are three types of handprints, each with subtypes:
 
-1. **vision** — What did the human want to achieve? Goal-setting, direction, planning. "Switching the pipeline to streaming so latency drops below 100ms." "We're building a CLI tool for decision provenance."
-2. **choice** — What decisions did the human make? Overrides, rejections, constraints, trade-offs. "No, use edge JWT instead of the centralized gateway." "We're not adding a recommendations engine in v2." "Never use gendered language in tile suggestions."
-3. **method** — What tools and knowledge did the human apply? Tool selection, framework choices, integrations. "Using Cloudflare Workers with Hono for the API layer." "Wire up Drizzle ORM instead of raw SQL."
+1. **vision** — What did the human want to achieve? Goal-setting, direction, planning.
+   Subtypes: goal, direction, bet
+   "Switching the pipeline to streaming so latency drops below 100ms." "We're building a CLI tool for decision provenance."
+
+2. **choice** — What decisions did the human make? Overrides, rejections, constraints, trade-offs.
+   Subtypes: override, rejection, constraint, wager, direction
+   "No, use edge JWT instead of the centralized gateway." "We're not adding a recommendations engine in v2." "Never use gendered language in tile suggestions."
+
+3. **method** — What tools and knowledge did the human apply? Tool selection, framework choices, integrations.
+   Subtypes: tools, knowledge
+   "Using Cloudflare Workers with Hono for the API layer." "Wire up Drizzle ORM instead of raw SQL."
 
 IMPORTANT rules:
 - Only flag moments where a HUMAN made a real decision that shaped the work
@@ -72,6 +84,7 @@ IMPORTANT rules:
 
 For each handprint, extract:
 - type: one of vision, choice, method
+- subtype: the specific subtype within the type (see lists above)
 - intent: one sentence capturing what the human decided (in third person, like a log entry)
 - risk: what could go wrong if this decision is wrong (one sentence)
 - context: the project/feature area this applies to
@@ -104,7 +117,10 @@ function getCloudflareAuth(): { accountId: string; token: string } {
   }
   const config = readFileSync(configPath, "utf-8");
   const tokenMatch = config.match(/oauth_token\s*=\s*"([^"]+)"/);
-  if (!tokenMatch) throw new Error("no wrangler OAuth token found — run 'wrangler login' first");
+  if (!tokenMatch)
+    throw new Error(
+      "no wrangler OAuth token found — run 'wrangler login' first",
+    );
 
   const whoami = execSync("npx wrangler whoami 2>&1", { encoding: "utf-8" });
   const lines = whoami.split("\n");
@@ -113,7 +129,10 @@ function getCloudflareAuth(): { accountId: string; token: string } {
     const match = line.match(/([a-f0-9]{32})/);
     if (match) accountId = match[1];
   }
-  if (!accountId) throw new Error("no Cloudflare account found — run 'wrangler whoami' to check");
+  if (!accountId)
+    throw new Error(
+      "no Cloudflare account found — run 'wrangler whoami' to check",
+    );
 
   return { accountId, token: tokenMatch[1] };
 }
@@ -150,14 +169,18 @@ async function callWorkersAI(
   };
 
   if (!data.success || !data.result?.response) {
-    const errMsg = data.errors?.map((e) => e.message).join(", ") ?? "unknown error";
+    const errMsg =
+      data.errors?.map((e) => e.message).join(", ") ?? "unknown error";
     throw new Error(`Workers AI error: ${errMsg}`);
   }
 
   return data.result.response;
 }
 
-function chunkEntries(entries: TranscriptEntry[], maxCharsPerChunk: number = 10000): TranscriptEntry[][] {
+function chunkEntries(
+  entries: TranscriptEntry[],
+  maxCharsPerChunk: number = 10000,
+): TranscriptEntry[][] {
   const clean = entries.filter((e) => !isNoise(e));
   const chunks: TranscriptEntry[][] = [];
   let current: TranscriptEntry[] = [];
@@ -193,7 +216,9 @@ export async function extractHandprintsFromTranscript(
     const window = buildConversationWindow(chunks[i]);
     if (!window.trim()) continue;
 
-    console.error(`  chunk ${i + 1}/${chunks.length} (${chunks[i].length} messages)...`);
+    console.error(
+      `  chunk ${i + 1}/${chunks.length} (${chunks[i].length} messages)...`,
+    );
 
     const prompt = `Analyze this conversation and extract any handprints (human decision moments):\n\n${window}`;
 
@@ -227,10 +252,15 @@ export function loadTranscriptEntries(filePath: string): TranscriptEntry[] {
 export function discoverTranscripts(
   claudeDir?: string,
 ): Array<{ path: string; sessionId: string; project: string }> {
-  const baseDir = claudeDir ?? join(process.env.HOME ?? "~", ".claude", "projects");
+  const baseDir =
+    claudeDir ?? join(process.env.HOME ?? "~", ".claude", "projects");
   if (!existsSync(baseDir)) return [];
 
-  const results: Array<{ path: string; sessionId: string; project: string }> = [];
+  const results: Array<{
+    path: string;
+    sessionId: string;
+    project: string;
+  }> = [];
 
   for (const project of readdirSync(baseDir)) {
     const projectDir = join(baseDir, project);

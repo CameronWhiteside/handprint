@@ -1,9 +1,11 @@
 export { initStore, HANDPRINT_DIR } from "./commands/init.js";
-export { sealHandprint } from "./commands/seal.js";
-export { listHandprints } from "./commands/log.js";
-export { showHandprint } from "./commands/show.js";
-export { resolveHandprint } from "./commands/resolve.js";
+export { sealChunk } from "./commands/seal.js";
+export { listSeals, listDecisions } from "./commands/log.js";
+export { showSeal } from "./commands/show.js";
 export { exportHandprints } from "./commands/export.js";
 export { scan, scanGitHistory, scanClaudeTranscripts } from "./commands/scan.js";
+export { grab } from "./commands/grab.js";
+export { verifyChain } from "./commands/verify.js";
 export { HandprintType } from "./model/handprint.js";
-export { ResolutionStatus } from "./model/resolution.js";
+export type { Seal, SealInput } from "./model/seal.js";
+export type { DecisionMeta } from "./model/meta.js";
