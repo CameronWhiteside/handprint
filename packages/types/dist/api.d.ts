@@ -13,14 +13,49 @@ export declare const pushProfileInputSchema: z.ZodObject<{
     meta?: Record<string, unknown> | undefined;
 }>;
 export type PushProfileInput = z.infer<typeof pushProfileInputSchema>;
-export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
-    type: z.ZodLiteral<"vision">;
-    subtype: z.ZodOptional<z.ZodEnum<["goal", "direction", "principle"]>>;
+export declare const pushHandprintInputSchema: z.ZodObject<{
     signature: z.ZodString;
     madeAt: z.ZodString;
     intent: z.ZodString;
     risk: z.ZodString;
     context: z.ZodString;
+    marks: z.ZodArray<z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
+        type: z.ZodLiteral<"vision">;
+        subtype: z.ZodEnum<["goal", "direction", "principle"]>;
+        note: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        type: "vision";
+        subtype: "goal" | "direction" | "principle";
+        note: string;
+    }, {
+        type: "vision";
+        subtype: "goal" | "direction" | "principle";
+        note: string;
+    }>, z.ZodObject<{
+        type: z.ZodLiteral<"choice">;
+        subtype: z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>;
+        note: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        type: "choice";
+        subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+        note: string;
+    }, {
+        type: "choice";
+        subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+        note: string;
+    }>, z.ZodObject<{
+        type: z.ZodLiteral<"method">;
+        subtype: z.ZodEnum<["tool", "knowledge", "process"]>;
+        note: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        type: "method";
+        subtype: "tool" | "knowledge" | "process";
+        note: string;
+    }, {
+        type: "method";
+        subtype: "tool" | "knowledge" | "process";
+        note: string;
+    }>]>, "many">;
     project: z.ZodOptional<z.ZodString>;
     repo: z.ZodOptional<z.ZodString>;
     branch: z.ZodOptional<z.ZodString>;
@@ -53,13 +88,25 @@ export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [
         timestamp: string;
     }>, "many">>;
 }, "strip", z.ZodTypeAny, {
-    type: "vision";
     status: "open" | "resolved";
     signature: string;
     madeAt: string;
     intent: string;
     risk: string;
     context: string;
+    marks: ({
+        type: "vision";
+        subtype: "goal" | "direction" | "principle";
+        note: string;
+    } | {
+        type: "choice";
+        subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+        note: string;
+    } | {
+        type: "method";
+        subtype: "tool" | "knowledge" | "process";
+        note: string;
+    })[];
     anchors: {
         label: string;
         verified: boolean;
@@ -69,7 +116,6 @@ export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [
         body: string;
         timestamp: string;
     }[];
-    subtype?: "goal" | "direction" | "principle" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -78,14 +124,25 @@ export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [
     source?: string | undefined;
     outcome?: string | undefined;
 }, {
-    type: "vision";
     signature: string;
     madeAt: string;
     intent: string;
     risk: string;
     context: string;
+    marks: ({
+        type: "vision";
+        subtype: "goal" | "direction" | "principle";
+        note: string;
+    } | {
+        type: "choice";
+        subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+        note: string;
+    } | {
+        type: "method";
+        subtype: "tool" | "knowledge" | "process";
+        note: string;
+    })[];
     status?: "open" | "resolved" | undefined;
-    subtype?: "goal" | "direction" | "principle" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -102,185 +159,7 @@ export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [
         body: string;
         timestamp: string;
     }[] | undefined;
-}>, z.ZodObject<{
-    type: z.ZodLiteral<"choice">;
-    subtype: z.ZodOptional<z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>>;
-    signature: z.ZodString;
-    madeAt: z.ZodString;
-    intent: z.ZodString;
-    risk: z.ZodString;
-    context: z.ZodString;
-    project: z.ZodOptional<z.ZodString>;
-    repo: z.ZodOptional<z.ZodString>;
-    branch: z.ZodOptional<z.ZodString>;
-    confidence: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
-    horizon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    source: z.ZodOptional<z.ZodString>;
-    status: z.ZodDefault<z.ZodEnum<["open", "resolved"]>>;
-    outcome: z.ZodOptional<z.ZodString>;
-    anchors: z.ZodDefault<z.ZodArray<z.ZodObject<{
-        label: z.ZodString;
-        verified: z.ZodBoolean;
-    }, "strip", z.ZodTypeAny, {
-        label: string;
-        verified: boolean;
-    }, {
-        label: string;
-        verified: boolean;
-    }>, "many">>;
-    resolutions: z.ZodDefault<z.ZodArray<z.ZodObject<{
-        status: z.ZodEnum<["validated", "partial", "revised", "invalidated"]>;
-        body: z.ZodString;
-        timestamp: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }, {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }>, "many">>;
-}, "strip", z.ZodTypeAny, {
-    type: "choice";
-    status: "open" | "resolved";
-    signature: string;
-    madeAt: string;
-    intent: string;
-    risk: string;
-    context: string;
-    anchors: {
-        label: string;
-        verified: boolean;
-    }[];
-    resolutions: {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }[];
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
-    project?: string | undefined;
-    repo?: string | undefined;
-    branch?: string | undefined;
-    confidence?: number | null | undefined;
-    horizon?: string | null | undefined;
-    source?: string | undefined;
-    outcome?: string | undefined;
-}, {
-    type: "choice";
-    signature: string;
-    madeAt: string;
-    intent: string;
-    risk: string;
-    context: string;
-    status?: "open" | "resolved" | undefined;
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
-    project?: string | undefined;
-    repo?: string | undefined;
-    branch?: string | undefined;
-    confidence?: number | null | undefined;
-    horizon?: string | null | undefined;
-    anchors?: {
-        label: string;
-        verified: boolean;
-    }[] | undefined;
-    source?: string | undefined;
-    outcome?: string | undefined;
-    resolutions?: {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }[] | undefined;
-}>, z.ZodObject<{
-    type: z.ZodLiteral<"method">;
-    subtype: z.ZodOptional<z.ZodEnum<["tool", "knowledge", "process"]>>;
-    signature: z.ZodString;
-    madeAt: z.ZodString;
-    intent: z.ZodString;
-    risk: z.ZodString;
-    context: z.ZodString;
-    project: z.ZodOptional<z.ZodString>;
-    repo: z.ZodOptional<z.ZodString>;
-    branch: z.ZodOptional<z.ZodString>;
-    confidence: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
-    horizon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    source: z.ZodOptional<z.ZodString>;
-    status: z.ZodDefault<z.ZodEnum<["open", "resolved"]>>;
-    outcome: z.ZodOptional<z.ZodString>;
-    anchors: z.ZodDefault<z.ZodArray<z.ZodObject<{
-        label: z.ZodString;
-        verified: z.ZodBoolean;
-    }, "strip", z.ZodTypeAny, {
-        label: string;
-        verified: boolean;
-    }, {
-        label: string;
-        verified: boolean;
-    }>, "many">>;
-    resolutions: z.ZodDefault<z.ZodArray<z.ZodObject<{
-        status: z.ZodEnum<["validated", "partial", "revised", "invalidated"]>;
-        body: z.ZodString;
-        timestamp: z.ZodString;
-    }, "strip", z.ZodTypeAny, {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }, {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }>, "many">>;
-}, "strip", z.ZodTypeAny, {
-    type: "method";
-    status: "open" | "resolved";
-    signature: string;
-    madeAt: string;
-    intent: string;
-    risk: string;
-    context: string;
-    anchors: {
-        label: string;
-        verified: boolean;
-    }[];
-    resolutions: {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }[];
-    subtype?: "tool" | "knowledge" | "process" | undefined;
-    project?: string | undefined;
-    repo?: string | undefined;
-    branch?: string | undefined;
-    confidence?: number | null | undefined;
-    horizon?: string | null | undefined;
-    source?: string | undefined;
-    outcome?: string | undefined;
-}, {
-    type: "method";
-    signature: string;
-    madeAt: string;
-    intent: string;
-    risk: string;
-    context: string;
-    status?: "open" | "resolved" | undefined;
-    subtype?: "tool" | "knowledge" | "process" | undefined;
-    project?: string | undefined;
-    repo?: string | undefined;
-    branch?: string | undefined;
-    confidence?: number | null | undefined;
-    horizon?: string | null | undefined;
-    anchors?: {
-        label: string;
-        verified: boolean;
-    }[] | undefined;
-    source?: string | undefined;
-    outcome?: string | undefined;
-    resolutions?: {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }[] | undefined;
-}>]>;
+}>;
 export type PushHandprintInput = z.infer<typeof pushHandprintInputSchema>;
 export declare const handleParamSchema: z.ZodObject<{
     handle: z.ZodString;
