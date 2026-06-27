@@ -11,7 +11,7 @@ export const pushProfileInputSchema = z.object({
     meta: z.record(z.unknown()).optional(),
 });
 export const pushHandprintInputSchema = z.object({
-    seal: z.string().min(1),
+    signature: z.string().min(1),
     type: handprintTypeSchema,
     subtype: z.string().optional(),
     madeAt: z.string(),

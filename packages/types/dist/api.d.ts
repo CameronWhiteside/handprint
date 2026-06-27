@@ -14,7 +14,7 @@ export declare const pushProfileInputSchema: z.ZodObject<{
 }>;
 export type PushProfileInput = z.infer<typeof pushProfileInputSchema>;
 export declare const pushHandprintInputSchema: z.ZodObject<{
-    seal: z.ZodString;
+    signature: z.ZodString;
     type: z.ZodEnum<["vision", "choice", "method"]>;
     subtype: z.ZodOptional<z.ZodString>;
     madeAt: z.ZodString;
@@ -55,7 +55,7 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     type: "vision" | "choice" | "method";
     status: "open" | "resolved";
-    seal: string;
+    signature: string;
     madeAt: string;
     intent: string;
     risk: string;
@@ -79,7 +79,7 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
     outcome?: string | undefined;
 }, {
     type: "vision" | "choice" | "method";
-    seal: string;
+    signature: string;
     madeAt: string;
     intent: string;
     risk: string;

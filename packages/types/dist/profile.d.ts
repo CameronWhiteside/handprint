@@ -113,7 +113,7 @@ export declare const socialProfileSchema: z.ZodObject<{
 }>;
 export type SocialProfile = z.infer<typeof socialProfileSchema>;
 export declare const timelineEntrySchema: z.ZodObject<{
-    seal: z.ZodString;
+    signature: z.ZodString;
     type: z.ZodEnum<["vision", "choice", "method"]>;
     subtype: z.ZodOptional<z.ZodString>;
     context: z.ZodString;
@@ -147,7 +147,7 @@ export declare const timelineEntrySchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     type: "vision" | "choice" | "method";
     status: string;
-    seal: string;
+    signature: string;
     intent: string;
     risk: string;
     context: string;
@@ -165,7 +165,7 @@ export declare const timelineEntrySchema: z.ZodObject<{
 }, {
     type: "vision" | "choice" | "method";
     status: string;
-    seal: string;
+    signature: string;
     intent: string;
     risk: string;
     context: string;
@@ -185,7 +185,7 @@ export type TimelineEntry = z.infer<typeof timelineEntrySchema>;
 export declare const timelineMonthSchema: z.ZodObject<{
     month: z.ZodString;
     entries: z.ZodArray<z.ZodObject<{
-        seal: z.ZodString;
+        signature: z.ZodString;
         type: z.ZodEnum<["vision", "choice", "method"]>;
         subtype: z.ZodOptional<z.ZodString>;
         context: z.ZodString;
@@ -219,7 +219,7 @@ export declare const timelineMonthSchema: z.ZodObject<{
     }, "strip", z.ZodTypeAny, {
         type: "vision" | "choice" | "method";
         status: string;
-        seal: string;
+        signature: string;
         intent: string;
         risk: string;
         context: string;
@@ -237,7 +237,7 @@ export declare const timelineMonthSchema: z.ZodObject<{
     }, {
         type: "vision" | "choice" | "method";
         status: string;
-        seal: string;
+        signature: string;
         intent: string;
         risk: string;
         context: string;
@@ -257,7 +257,7 @@ export declare const timelineMonthSchema: z.ZodObject<{
     entries: {
         type: "vision" | "choice" | "method";
         status: string;
-        seal: string;
+        signature: string;
         intent: string;
         risk: string;
         context: string;
@@ -278,7 +278,7 @@ export declare const timelineMonthSchema: z.ZodObject<{
     entries: {
         type: "vision" | "choice" | "method";
         status: string;
-        seal: string;
+        signature: string;
         intent: string;
         risk: string;
         context: string;
@@ -523,7 +523,7 @@ export declare const handprintProfileSchema: z.ZodObject<{
     timeline: z.ZodArray<z.ZodObject<{
         month: z.ZodString;
         entries: z.ZodArray<z.ZodObject<{
-            seal: z.ZodString;
+            signature: z.ZodString;
             type: z.ZodEnum<["vision", "choice", "method"]>;
             subtype: z.ZodOptional<z.ZodString>;
             context: z.ZodString;
@@ -557,7 +557,7 @@ export declare const handprintProfileSchema: z.ZodObject<{
         }, "strip", z.ZodTypeAny, {
             type: "vision" | "choice" | "method";
             status: string;
-            seal: string;
+            signature: string;
             intent: string;
             risk: string;
             context: string;
@@ -575,7 +575,7 @@ export declare const handprintProfileSchema: z.ZodObject<{
         }, {
             type: "vision" | "choice" | "method";
             status: string;
-            seal: string;
+            signature: string;
             intent: string;
             risk: string;
             context: string;
@@ -595,7 +595,7 @@ export declare const handprintProfileSchema: z.ZodObject<{
         entries: {
             type: "vision" | "choice" | "method";
             status: string;
-            seal: string;
+            signature: string;
             intent: string;
             risk: string;
             context: string;
@@ -616,7 +616,7 @@ export declare const handprintProfileSchema: z.ZodObject<{
         entries: {
             type: "vision" | "choice" | "method";
             status: string;
-            seal: string;
+            signature: string;
             intent: string;
             risk: string;
             context: string;
@@ -697,7 +697,7 @@ export declare const handprintProfileSchema: z.ZodObject<{
         entries: {
             type: "vision" | "choice" | "method";
             status: string;
-            seal: string;
+            signature: string;
             intent: string;
             risk: string;
             context: string;
@@ -795,7 +795,7 @@ export declare const handprintProfileSchema: z.ZodObject<{
         entries: {
             type: "vision" | "choice" | "method";
             status: string;
-            seal: string;
+            signature: string;
             intent: string;
             risk: string;
             context: string;

@@ -28,7 +28,7 @@ export const resolutionSchema = z.object({
 export type Resolution = z.infer<typeof resolutionSchema>;
 
 export const handprintSchema = z.object({
-  seal: z.string(),
+  signature: z.string(),
   madeAt: z.string(),
   type: handprintTypeSchema,
   subtype: z.string().optional(),

@@ -15,7 +15,7 @@ export const pushProfileInputSchema = z.object({
 export type PushProfileInput = z.infer<typeof pushProfileInputSchema>;
 
 export const pushHandprintInputSchema = z.object({
-  seal: z.string().min(1),
+  signature: z.string().min(1),
   type: handprintTypeSchema,
   subtype: z.string().optional(),
   madeAt: z.string(),

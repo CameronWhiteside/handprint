@@ -31,7 +31,7 @@ export declare const resolutionSchema: z.ZodObject<{
 }>;
 export type Resolution = z.infer<typeof resolutionSchema>;
 export declare const handprintSchema: z.ZodObject<{
-    seal: z.ZodString;
+    signature: z.ZodString;
     madeAt: z.ZodString;
     type: z.ZodEnum<["vision", "choice", "method"]>;
     subtype: z.ZodOptional<z.ZodString>;
@@ -72,7 +72,7 @@ export declare const handprintSchema: z.ZodObject<{
 }, "strip", z.ZodTypeAny, {
     type: "vision" | "choice" | "method";
     status: "open" | "resolved";
-    seal: string;
+    signature: string;
     madeAt: string;
     intent: string;
     risk: string;
@@ -97,7 +97,7 @@ export declare const handprintSchema: z.ZodObject<{
 }, {
     type: "vision" | "choice" | "method";
     status: "open" | "resolved";
-    seal: string;
+    signature: string;
     madeAt: string;
     intent: string;
     risk: string;

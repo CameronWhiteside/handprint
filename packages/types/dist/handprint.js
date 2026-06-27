@@ -17,7 +17,7 @@ export const resolutionSchema = z.object({
     timestamp: z.string(),
 });
 export const handprintSchema = z.object({
-    seal: z.string(),
+    signature: z.string(),
     madeAt: z.string(),
     type: handprintTypeSchema,
     subtype: z.string().optional(),

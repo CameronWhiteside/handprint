@@ -20,7 +20,7 @@ export const socialProfileSchema = z.object({
 export type SocialProfile = z.infer<typeof socialProfileSchema>;
 
 export const timelineEntrySchema = z.object({
-  seal: z.string(),
+  signature: z.string(),
   type: handprintTypeSchema,
   subtype: z.string().optional(),
   context: z.string(),
