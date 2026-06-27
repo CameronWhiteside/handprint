@@ -36,7 +36,7 @@ npm install -g handprint-sh
 handprint --version
 ```
 
-Published with npm provenance (SLSA Build L3, Sigstore). Users verify:
+Published with npm provenance attestation. Users verify:
 ```bash
 npm audit signatures
 ```
@@ -48,30 +48,28 @@ curl -fsSL handprint.sh/install | sh
 
 The installer:
 1. Detects OS and architecture
-2. Downloads the release tarball from GitHub Releases
-3. Downloads the SHA-256 manifest (Sigstore-signed)
-4. Verifies the tarball hash against the signed manifest
+2. Downloads the release tarball from GitHub Releases over HTTPS
+3. Downloads the SHA-256 checksums file
+4. Verifies the tarball hash against the checksums
 5. Extracts to `~/.handprint/bin/`
 6. Adds to PATH (or prints instructions)
 
-### Release Signing
+**Security note:** The curl installer relies on HTTPS transport security for integrity, same as rustup, deno, and nvm. The npm install path with provenance attestation is the cryptographically verified path. The curl path is a convenience channel.
 
-Every release is signed two ways:
+### Release Integrity
 
-1. **npm provenance** — automatic via GitHub Actions with `--provenance` flag. Generates SLSA Build Level 3 attestation signed by Sigstore. Verifiable: `npm audit signatures`.
+**npm:** Published from GitHub Actions with `--provenance`. Generates a provenance attestation linking the package to its source repo, CI workflow, and commit. Verifiable: `npm audit signatures`.
 
-2. **GitHub Release checksums** — SHA-256 manifest (`checksums.txt`) signed by the project's Sigstore identity. The curl installer verifies against this.
-
-Both use Sigstore (keyless signing via OIDC) — no GPG keys to manage or rotate.
+**GitHub Releases:** Each release includes a SHA-256 checksums file alongside the tarballs. Integrity relies on GitHub's HTTPS and access controls — no additional signing layer. This is the industry norm for curl-installed tools.
 
 ## Cryptographic Architecture
 
 ### Design Principles
 
 1. **One seed, everything derived.** All key material comes from a single 32-byte random seed.
-2. **Post-quantum encryption today.** Payload encryption key is derived from the seed via HKDF, not from the Ed25519 keypair. Quantum-safe by construction.
-3. **Signing is PQ-migratable.** Ed25519 now (`v: 1`). Hybrid Ed25519 + ML-DSA when libsodium ships it (`v: 2`).
-4. **libsodium everywhere.** One audited library, no custom crypto. Constant-time operations, secure memory wiping.
+2. **No asymmetric key exchange in the encryption path.** The encryption key is derived from the seed directly (BLAKE2b), not from the Ed25519 keypair. This means the encryption key cannot be recovered from the public key, even by an attacker with a quantum computer — the seed is hidden behind a one-way hash function.
+3. **Signing is migratable.** Ed25519 now (`v: 1`). The `v` field enables future migration to hybrid or post-quantum schemes when they mature.
+4. **libsodium everywhere.** One audited library, no custom crypto. Constant-time operations by construction.
 5. **Compact keys.** 32-byte keys, base64url encoding. No PEM, no ASN.1.
 
 ### Key Hierarchy
@@ -85,18 +83,17 @@ seed (32 bytes, random, stored at ~/.handprint/keys/seed)
 │   └── Fingerprint: base64url(sha256(pk))[0:16]
 │
 └── Encryption key
-    └── HKDF-SHA256(ikm=seed, salt="handprint", info="payload-encryption-v1") → 32 bytes
+    └── crypto_generichash(32, "payload-encryption-v1", key=seed) → 32 bytes
+        (BLAKE2b keyed hash — libsodium native, no HKDF needed)
 ```
 
-### Why This Is Quantum-Safe for Encryption
+### Why Encryption Key Cannot Be Recovered from Public Key
 
-```
-Quantum computer + public key → Ed25519 private scalar (Shor's algorithm)
-Quantum computer + public key → seed? NO. SHA-512 is one-way, quantum-resistant.
-Quantum computer + public key → encryption key? NO. Derived from seed, not from scalar.
-```
+Ed25519 key generation: `seed → SHA-512(seed) → clamp → scalar multiply → public key`.
 
-The encryption key is hidden behind two one-way functions (SHA-512 inside Ed25519 key derivation, then HKDF). Even with a quantum computer, the only path to the encryption key is through the seed — and the seed cannot be recovered from the public key.
+A quantum computer running Shor's algorithm could recover the Ed25519 private scalar from the public key. But it cannot recover the original seed — SHA-512 is a one-way function, unaffected by Shor's (which targets discrete logarithm/factoring problems, not hash preimages).
+
+The encryption key is derived from the seed via BLAKE2b, a different one-way function. No path from public key to encryption key exists, quantum or classical.
 
 ### Signature Scheme (Versioned)
 
@@ -127,7 +124,7 @@ Migration: `handprint keys migrate --to v2` re-derives ML-DSA keypair from seed,
 **Algorithm:** XSalsa20-Poly1305 via `crypto_secretbox` (libsodium).
 
 ```
-1. Derive key: HKDF-SHA256(seed, "handprint", "payload-encryption-v1") → 32 bytes
+1. Derive key: crypto_generichash(32, "payload-encryption-v1", key=seed) → 32 bytes
 2. Generate nonce: 24 random bytes (XSalsa20 nonce space is large enough for random)
 3. Encrypt: crypto_secretbox_easy(sanitized_plaintext, nonce, derived_key)
 4. Store: base64url(nonce || ciphertext)
@@ -152,10 +149,10 @@ Properties:
 **Permissions:**
 - `~/.handprint/keys/` — directory mode `0700`
 - `~/.handprint/keys/seed` — file mode `0600`
-- CLI warns on init and every run if permissions are looser than expected
+- CLI warns on `init` and on first detection of loose permissions (not every run — that's noise)
 
-**Secure memory:**
-- `sodium.memzero()` on all key buffers after use
+**Buffer hygiene:**
+- `sodium.memzero()` on key buffers after use (best-effort in a GC'd runtime — V8 may have copies elsewhere in the heap, but wiping the primary buffer is still worth doing)
 - Never log, print, or serialize the seed or derived keys
 - Never include key material in error messages
 
@@ -172,7 +169,7 @@ const seed = sodium.randombytes_buf(32);
 // Derive Ed25519 keypair
 const { publicKey, privateKey } = sodium.crypto_sign_seed_keypair(seed);
 
-// Derive encryption key (quantum-safe)
+// Derive encryption key (from seed, not from asymmetric key)
 const encKey = sodium.crypto_generichash(32,
   sodium.from_string("payload-encryption-v1"),
   seed
@@ -225,8 +222,9 @@ handprint keys rotate
 # 2. Register new public key with hub
 # 3. Mark old public key as retired (with timestamp)
 # 4. Old handprints remain verifiable (old pubkey still stored, marked retired)
-# 5. Optionally re-encrypt local payloads with new encryption key
 ```
+
+**Payload implications:** After rotation, payloads encrypted with the old seed's derived key become unreadable unless the user exported/backed up the old seed. This is acceptable — marks (the structured provenance) are the permanent record and are stored unencrypted on the hub. Payloads are archival raw conversation text. The CLI should warn clearly before completing rotation.
 
 ### Key Revocation
 
@@ -236,6 +234,8 @@ handprint keys revoke <fingerprint>
 # Handprints signed with revoked keys show a warning on verification
 # Does NOT delete old handprints — provenance is permanent
 ```
+
+**Limitation:** Revocation only works when verifiers check the hub. For a local-first protocol, revocation is best-effort — it signals compromise, it doesn't prevent a determined attacker from presenting old signatures to offline verifiers.
 
 ## Privacy Guarantees
 
@@ -268,9 +268,8 @@ Before encryption, user input passes through aggressive sanitization:
 2. API keys / secrets (ALL_CAPS patterns) → `[REDACTED_KEY]`
 3. URL auth tokens (query params) → `[REDACTED_TOKEN]`
 4. High-entropy strings (8+ chars, mixed alphanumeric) → `[REDACTED_TOKEN]`
-5. File paths with usernames → `[REDACTED_PATH]`
 
-False positives are acceptable — over-redaction is safer than under-redaction.
+False positives are acceptable — over-redaction is safer than under-redaction. Sanitization is defense-in-depth behind encryption, not a primary security boundary.
 
 ### Per-Project Visibility
 
@@ -348,8 +347,8 @@ echo "Add to PATH: export PATH=\"\$HOME/.handprint/bin:\$PATH\""
 GitHub Actions workflow publishes with:
 - Pinned Node.js version
 - Lockfile-only installs (`npm ci`)
-- `--provenance` flag (SLSA attestation)
-- Checksum generation + Sigstore signing in the same workflow
+- `--provenance` flag (provenance attestation)
+- Checksum generation in the same workflow
 
 ## CLI Commands (Updated)
 
@@ -380,6 +379,16 @@ handprint config show|get|set    # Manage config
 | `zod` | Schema validation | ~60KB |
 
 Total: ~340KB. No native compilation. Works on any platform with Node.js 20+.
+
+## Hub-Side Enforcement
+
+The hub API must enforce:
+
+1. **Chain continuity on push.** When a user pushes a handprint with `parent: "abc123"`, the hub verifies that `abc123` matches the last pushed handprint for that user. Reject out-of-order or gap pushes. This prevents an attacker who compromises a signing key from inserting handprints into the middle of someone's chain.
+
+2. **Key registration rate limit.** `handprint keys add` should be rate-limited on the hub (e.g., 5 keys per hour per user). Prevents key-stuffing attacks.
+
+3. **Signature verification on push.** The hub re-verifies the Ed25519 signature on every pushed handprint against the user's registered public keys. Reject if no registered key matches.
 
 ## What This Design Does NOT Cover
 
