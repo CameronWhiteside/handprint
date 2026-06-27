@@ -23,6 +23,8 @@ artarr      ::= "[" ws ( artifact ( ws "," ws artifact )* )? ws "]"
 artifact    ::= "{" ws
                   "\\"type\\"" ws ":" ws "\\"" arttype "\\"" ws "," ws
                   "\\"uri\\"" ws ":" ws string
+                  ( ws "," ws "\\"hash\\"" ws ":" ws string )?
+                  ( ws "," ws "\\"parent\\"" ws ":" ws string )?
                 ws "}"
 arttype     ::= "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom"
 string      ::= "\\"" ( [^"\\\\] | "\\\\" . )* "\\""

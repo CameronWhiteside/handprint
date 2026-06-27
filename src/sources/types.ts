@@ -30,7 +30,7 @@ export interface SourceCapabilities {
 }
 
 export interface SourceDescriptor {
-  id: string;
+  id: 'claude-code' | 'opencode' | 'codex' | 'cursor';
   displayName: string;
   sourceAgent: string;
   capabilities: SourceCapabilities;

@@ -34,7 +34,7 @@ export function detectAgentCli(): AgentCliSpec | undefined {
 
 const defaultRunner: Runner = (bin, args) =>
   new Promise((resolve, reject) => {
-    execFile(bin, args, { maxBuffer: 16 * 1024 * 1024 }, (err, stdout) => {
+    execFile(bin, args, { maxBuffer: 16 * 1024 * 1024, timeout: 120_000 }, (err, stdout) => {
       if (err) reject(err);
       else resolve(stdout);
     });
@@ -53,11 +53,10 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
     if (opts.cli) return AGENT_CLIS.find((c) => c.id === opts.cli);
     return detect();
   };
-  const spec = resolveSpec();
 
   return {
     id: 'host-agent',
-    label: () => `host:${spec?.id ?? 'none'}`,
+    label: () => `host:${resolveSpec()?.id ?? 'none'}`,
     async isAvailable(): Promise<boolean> {
       return resolveSpec() !== undefined;
     },

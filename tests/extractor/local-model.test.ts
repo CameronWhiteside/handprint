@@ -27,4 +27,14 @@ describe('local-model provider', () => {
     const p = createLocalProvider({ modelId: DEFAULT_MODEL_ID, homeDir: home });
     expect(await p.isAvailable()).toBe(false);
   });
+
+  it('isAvailable false when not downloaded and onDownload returns false (consent refused)', async () => {
+    const home = mkdtempSync(join(tmpdir(), 'hp-lm3-'));
+    const p = createLocalProvider({
+      modelId: DEFAULT_MODEL_ID,
+      homeDir: home,
+      onDownload: async () => false,
+    });
+    expect(await p.isAvailable()).toBe(false);
+  });
 });

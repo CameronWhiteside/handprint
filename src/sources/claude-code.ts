@@ -1,5 +1,4 @@
 // src/sources/claude-code.ts
-import { readFileSync, existsSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import { homedir } from 'node:os';
 import type {
@@ -9,6 +8,7 @@ import type {
   TranscriptEntry,
   LocateOpts,
 } from './types.js';
+import { listJsonlFiles, readJsonlLines } from './jsonl-glob.js';
 
 interface ContentItem {
   type: string;
@@ -77,38 +77,17 @@ export const claudeCodeAdapter: SourceAdapter = {
   locate(opts?: LocateOpts): SessionRef[] {
     const home = opts?.homeDir ?? homedir();
     const base = projectsDir(home);
-    if (!existsSync(base)) return [];
-    const refs: SessionRef[] = [];
-    for (const project of readdirSync(base)) {
-      const projectDir = join(base, project);
-      let files: string[];
-      try {
-        files = readdirSync(projectDir).filter((f) => f.endsWith('.jsonl'));
-      } catch {
-        continue;
-      }
-      for (const file of files) {
-        const path = join(projectDir, file);
-        let mtimeMs = 0;
-        try {
-          mtimeMs = statSync(path).mtimeMs;
-        } catch {
-          /* ignore */
-        }
-        refs.push({
-          sourceId: 'claude-code',
-          sessionId: file.replace('.jsonl', ''),
-          project: project.replace(/-/g, '/').replace(/^\/Users\//, '~/'),
-          locator: path,
-          mtimeMs,
-        });
-      }
-    }
-    return refs;
+    return listJsonlFiles(base).map((f) => ({
+      sourceId: 'claude-code' as const,
+      sessionId: f.name.replace('.jsonl', ''),
+      project: f.dir.replace(/-/g, '/').replace(/^\/Users\//, '~/'),
+      locator: f.path,
+      mtimeMs: f.mtimeMs,
+    }));
   },
 
   parse(ref: SessionRef): NormalizedSession {
-    const lines = readFileSync(ref.locator, 'utf-8').split('\n');
+    const lines = readJsonlLines(ref.locator);
     const entries = lines
       .map((l) => parseClaudeLine(l, ref))
       .filter((e): e is TranscriptEntry => e !== null);

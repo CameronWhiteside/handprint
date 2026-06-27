@@ -1,7 +1,7 @@
 // src/commands/grab.ts
 import { discoverSessions, adapterById } from '../sources/index.js';
-import type { TranscriptEntry } from '../sources/types.js';
 import { resolveProvider, extractFromEntries } from '../extractor/index.js';
+import { buildConversationWindow } from '../extractor/window.js';
 import type { ExtractorProvider } from '../extractor/types.js';
 import { buildHandprint } from '../builder/handprint.js';
 import { findProjectRoot } from '../dirs/project.js';
@@ -27,16 +27,6 @@ export interface GrabOptions {
   extractor?: 'local' | 'host';
   provider?: ExtractorProvider; // injectable for tests
   onDownload?: (entry: ModelEntry) => Promise<boolean>;
-}
-
-function buildChunkPlaintext(entries: TranscriptEntry[]): string {
-  return entries
-    .map((e) => {
-      const role = e.role === 'user' ? 'user' : 'assistant';
-      const time = e.timestamp.slice(11, 16);
-      return `[${role} ${time}] ${e.text.slice(0, 1000)}`;
-    })
-    .join('\n');
 }
 
 export async function grab(cwd: string, options: GrabOptions = {}): Promise<GrabResult> {
@@ -100,7 +90,7 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
           extractor: provider.label(),
           session: ref.sessionId,
         },
-        plaintext: buildChunkPlaintext(entries),
+        plaintext: hp.sourcePlaintext ?? buildConversationWindow(entries),
       });
 
       result.details.push({

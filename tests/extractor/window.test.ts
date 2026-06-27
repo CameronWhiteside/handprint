@@ -22,4 +22,14 @@ describe('window builder', () => {
     const chunks = chunkEntries(many, 200);
     expect(chunks.length).toBeGreaterThan(1);
   });
+
+  it('truncates output when combined entry length exceeds maxChars', () => {
+    // Each entry produces a long line; with maxChars=50 only the first fits.
+    const entries = Array.from({ length: 10 }, (_, i) =>
+      mk('user', `this is a moderately long decision entry number ${i} about architecture`)
+    );
+    const truncated = buildConversationWindow(entries, 50);
+    const full = buildConversationWindow(entries, 999999);
+    expect(truncated.length).toBeLessThan(full.length);
+  });
 });

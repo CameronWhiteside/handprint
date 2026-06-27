@@ -1,6 +1,16 @@
 // src/extractor/window.ts
 import type { TranscriptEntry } from '../sources/types.js';
 
+export function buildChunkPlaintext(entries: TranscriptEntry[]): string {
+  return entries
+    .map((e) => {
+      const role = e.role === 'user' ? 'user' : 'assistant';
+      const time = e.timestamp.slice(11, 16);
+      return `[${role} ${time}] ${e.text.slice(0, 1000)}`;
+    })
+    .join('\n');
+}
+
 export function isNoise(entry: TranscriptEntry): boolean {
   const t = entry.text;
   if (t.startsWith('Base directory for this skill')) return true;

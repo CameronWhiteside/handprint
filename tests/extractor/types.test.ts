@@ -20,7 +20,20 @@ describe('parseExtractionJson', () => {
     expect(parseExtractionJson('sorry, nothing here')).toEqual([]);
   });
 
-  it('exposes a non-empty system prompt', () => {
-    expect(SYSTEM_PROMPT).toContain('handprint');
+  it('exposes a system prompt mentioning all three mark types and demanding JSON', () => {
+    expect(SYSTEM_PROMPT).toMatch(/vision/);
+    expect(SYSTEM_PROMPT).toMatch(/choice/);
+    expect(SYSTEM_PROMPT).toMatch(/method/);
+    expect(SYSTEM_PROMPT).toContain('JSON array');
+  });
+
+  it('balanced scanner picks the first complete array ignoring trailing text', () => {
+    // Old greedy regex would grab everything from first '[' to last ']',
+    // producing invalid JSON that includes "trailing [docs]".
+    // The balanced scanner stops at the first closed bracket pair.
+    const text = 'prefix [tag] {note} [{"marks":[{"type":"choice","subtype":"override","note":"chose X"}],"artifacts":[],"timestamp":"t"}] trailing [docs]';
+    const out = parseExtractionJson(text);
+    expect(out).toHaveLength(1);
+    expect(out[0].marks[0].note).toBe('chose X');
   });
 });

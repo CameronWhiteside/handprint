@@ -64,19 +64,20 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
       if (!ready) throw new Error('local model not available — run "handprint grab" to download it');
 
       // Lazy import keeps the native module off the hot path for non-local runs.
-      const { getLlama, LlamaChatSession, LlamaGrammar } = await import('node-llama-cpp');
+      const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
       const llama = await getLlama();
       const model = await llama.loadModel({ modelPath: modelPath(entry, opts.homeDir) });
       const context = await model.createContext();
-      const grammar = new LlamaGrammar(llama, { grammar: EXTRACTION_GBNF });
-      const session = new LlamaChatSession({
-        contextSequence: context.getSequence(),
-        systemPrompt: system,
-      });
+      const grammar = await llama.createGrammar({ grammar: EXTRACTION_GBNF });
+      const session = new LlamaChatSession({ contextSequence: context.getSequence(), systemPrompt: system });
       const prompt = `Analyze this conversation and extract any handprints (human decision moments):\n\n${window}`;
-      const answer = await session.prompt(prompt, { grammar, maxTokens: 4096 });
-      await context.dispose();
-      await model.dispose();
+      let answer: string;
+      try {
+        answer = await session.prompt(prompt, { grammar, maxTokens: 4096 });
+      } finally {
+        await context.dispose();
+        await model.dispose();
+      }
       return parseExtractionJson(answer);
     },
   };

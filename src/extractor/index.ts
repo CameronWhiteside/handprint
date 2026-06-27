@@ -3,7 +3,7 @@ import type { ExtractionConfig } from '@handprint/types';
 import type { TranscriptEntry } from '../sources/types.js';
 import type { ExtractorProvider, RawExtraction } from './types.js';
 import { SYSTEM_PROMPT } from './types.js';
-import { chunkEntries, buildConversationWindow } from './window.js';
+import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './window.js';
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
 import { DEFAULT_MODEL_ID, type ModelEntry } from './models.js';
@@ -37,16 +37,28 @@ export async function extractFromEntries(
 ): Promise<RawExtraction[]> {
   const chunks = chunkEntries(entries);
   const all: RawExtraction[] = [];
+  let attempted = 0;
+  let errored = 0;
+  let lastMsg = '';
   for (let i = 0; i < chunks.length; i++) {
     const window = buildConversationWindow(chunks[i]);
     if (!window.trim()) continue;
+    attempted++;
     console.error(`  chunk ${i + 1}/${chunks.length} (${chunks[i].length} messages)...`);
     try {
       const out = await provider.extract(window, SYSTEM_PROMPT);
+      const pt = buildChunkPlaintext(chunks[i]);
+      for (const e of out) e.sourcePlaintext = pt;
       all.push(...out);
     } catch (err) {
-      console.error(`  chunk ${i + 1} error: ${(err as Error).message}`);
+      errored++;
+      const msg = err instanceof Error ? err.message : String(err);
+      lastMsg = msg;
+      console.error(`  chunk ${i + 1} error: ${msg}`);
     }
+  }
+  if (attempted > 0 && errored === attempted) {
+    throw new Error(`extraction failed for all ${attempted} chunks (last error: ${lastMsg})`);
   }
   return all;
 }

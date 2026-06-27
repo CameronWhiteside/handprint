@@ -15,14 +15,22 @@ describe('host-agent provider', () => {
   });
 
   it('extracts by running the injected runner and parsing JSON from stdout', async () => {
-    const fakeRunner = async () =>
-      '```json\n[{"marks":[{"type":"method","subtype":"tool","note":"chose drizzle"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]\n```';
+    let capturedBin = '';
+    let capturedArgs: string[] = [];
+    const fakeRunner = async (bin: string, args: string[]) => {
+      capturedBin = bin;
+      capturedArgs = args;
+      return '```json\n[{"marks":[{"type":"method","subtype":"tool","note":"chose drizzle"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]\n```';
+    };
     const p = createHostProvider({
-      detect: () => ({ id: 'opencode', bin: 'opencode', buildArgs: () => ['run'] }),
+      detect: () => ({ id: 'opencode', bin: 'opencode', buildArgs: (system, prompt) => ['run', `${system}\n\n${prompt}`] }),
       run: fakeRunner,
     });
     const out = await p.extract('window text', 'system text');
     expect(out).toHaveLength(1);
     expect(out[0].marks[0].note).toBe('chose drizzle');
+    expect(capturedBin).toBe('opencode');
+    expect(capturedArgs.some((a) => a.includes('system text'))).toBe(true);
+    expect(capturedArgs.some((a) => a.includes('window text'))).toBe(true);
   });
 });
