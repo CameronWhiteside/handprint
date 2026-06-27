@@ -1,11 +1,22 @@
-export { initStore, HANDPRINT_DIR } from "./commands/init.js";
-export { sealChunk } from "./commands/seal.js";
-export { listSeals, listDecisions } from "./commands/log.js";
-export { showSeal } from "./commands/show.js";
-export { exportHandprints } from "./commands/export.js";
-export { scan, scanGitHistory, scanClaudeTranscripts } from "./commands/scan.js";
-export { grab } from "./commands/grab.js";
-export { verifyChain } from "./commands/verify.js";
-export { HandprintType } from "./model/handprint.js";
-export type { Seal, SealInput } from "./model/seal.js";
-export type { DecisionMeta } from "./model/meta.js";
+export { init } from './commands/init.js';
+export { grab } from './commands/grab.js';
+export { push } from './commands/push.js';
+export { verifyChain } from './commands/verify.js';
+export { listHandprints } from './commands/log.js';
+export { showHandprint } from './commands/show.js';
+export { status } from './commands/status.js';
+export { login } from './commands/login.js';
+export { keysAdd, keysList, keysRotate, keysExport } from './commands/keys.js';
+export { buildHandprint } from './builder/handprint.js';
+export {
+  globalDir,
+  isGlobalInitialized,
+  loadGlobalConfig,
+  loadSeed,
+} from './dirs/global.js';
+export {
+  projectDir,
+  isProjectInitialized,
+  findProjectRoot,
+  loadProjectConfig,
+} from './dirs/project.js';
