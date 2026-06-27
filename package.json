@@ -7,6 +7,7 @@
     "handprint": "./bin/handprint.ts"
   },
   "scripts": {
+    "postinstall": "node scripts/fix-libsodium-esm.js",
     "test": "vitest run",
     "test:watch": "vitest",
     "handprint": "tsx bin/handprint.ts"
