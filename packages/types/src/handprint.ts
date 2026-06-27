@@ -19,7 +19,7 @@ export const choiceSubtypeSchema = z.enum([
 ]);
 export type ChoiceSubtype = z.infer<typeof choiceSubtypeSchema>;
 
-export const methodSubtypeSchema = z.enum(['tool', 'knowledge', 'process', 'delegation']);
+export const methodSubtypeSchema = z.enum(['tool', 'knowledge', 'process']);
 export type MethodSubtype = z.infer<typeof methodSubtypeSchema>;
 
 export const subtypesByType = {

@@ -10,7 +10,7 @@ export const choiceSubtypeSchema = z.enum([
     'constraint',
     'inquiry',
 ]);
-export const methodSubtypeSchema = z.enum(['tool', 'knowledge', 'process', 'delegation']);
+export const methodSubtypeSchema = z.enum(['tool', 'knowledge', 'process']);
 export const subtypesByType = {
     vision: visionSubtypeSchema,
     choice: choiceSubtypeSchema,
