@@ -7,19 +7,20 @@ export type HandprintType = z.infer<typeof handprintTypeSchema>;
 
 // ── Subtypes (discriminated by type) ─────────────────────────
 
-export const visionSubtypeSchema = z.enum(['goal', 'direction', 'bet']);
+export const visionSubtypeSchema = z.enum(['goal', 'direction', 'principle']);
 export type VisionSubtype = z.infer<typeof visionSubtypeSchema>;
 
 export const choiceSubtypeSchema = z.enum([
+  'approval',
   'override',
   'rejection',
   'constraint',
-  'wager',
-  'direction',
+  'tradeoff',
+  'inquiry',
 ]);
 export type ChoiceSubtype = z.infer<typeof choiceSubtypeSchema>;
 
-export const methodSubtypeSchema = z.enum(['tool', 'knowledge']);
+export const methodSubtypeSchema = z.enum(['tool', 'knowledge', 'process', 'delegation']);
 export type MethodSubtype = z.infer<typeof methodSubtypeSchema>;
 
 export const subtypesByType = {
@@ -67,7 +68,7 @@ export const resolutionSchema = z.object({
 });
 export type Resolution = z.infer<typeof resolutionSchema>;
 
-// ── Handprint (flat schema with runtime subtype validation) ──
+// ── Handprint (discriminated union by type) ──────────────────
 
 const handprintBase = {
   signature: z.string(),

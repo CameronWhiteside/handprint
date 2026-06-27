@@ -2,15 +2,16 @@ import { z } from 'zod';
 // ── Types ────────────────────────────────────────────────────
 export const handprintTypeSchema = z.enum(['vision', 'choice', 'method']);
 // ── Subtypes (discriminated by type) ─────────────────────────
-export const visionSubtypeSchema = z.enum(['goal', 'direction', 'bet']);
+export const visionSubtypeSchema = z.enum(['goal', 'direction', 'principle']);
 export const choiceSubtypeSchema = z.enum([
+    'approval',
     'override',
     'rejection',
     'constraint',
-    'wager',
-    'direction',
+    'tradeoff',
+    'inquiry',
 ]);
-export const methodSubtypeSchema = z.enum(['tool', 'knowledge']);
+export const methodSubtypeSchema = z.enum(['tool', 'knowledge', 'process', 'delegation']);
 export const subtypesByType = {
     vision: visionSubtypeSchema,
     choice: choiceSubtypeSchema,
@@ -42,7 +43,7 @@ export const resolutionSchema = z.object({
     body: z.string(),
     timestamp: z.string(),
 });
-// ── Handprint (flat schema with runtime subtype validation) ──
+// ── Handprint (discriminated union by type) ──────────────────
 const handprintBase = {
     signature: z.string(),
     madeAt: z.string(),
