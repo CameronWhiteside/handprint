@@ -1,117 +1,114 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
-import { mkdtempSync, rmSync } from "node:fs";
-import { join } from "node:path";
-import { tmpdir } from "node:os";
-import { initStore, HANDPRINT_DIR } from "../../src/commands/init.js";
-import { sealChunk } from "../../src/commands/seal.js";
-import { listSeals, listDecisions } from "../../src/commands/log.js";
-import { writeMeta } from "../../src/store/meta.js";
-import type { DecisionMeta } from "../../src/model/meta.js";
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { mkdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+import { tmpdir } from 'node:os';
 
-describe("listSeals", () => {
-  let repoRoot: string;
+const TEST_HOME = join(tmpdir(), `hp-test-log-${Date.now()}`);
+const TEST_PROJECT = join(tmpdir(), `hp-test-log-proj-${Date.now()}`);
 
-  beforeEach(() => {
-    repoRoot = mkdtempSync(join(tmpdir(), "handprint-log-"));
-    initStore(repoRoot);
+describe('listHandprints', () => {
+  beforeEach(async () => {
+    mkdirSync(TEST_HOME, { recursive: true });
+    mkdirSync(TEST_PROJECT, { recursive: true });
+    process.env.HANDPRINT_HOME = TEST_HOME;
+
+    const { initGlobal } = await import('../../src/dirs/global.js');
+    const { initProject } = await import('../../src/dirs/project.js');
+    await initGlobal({ handle: 'test', name: 'Test', email: 't@t.com' });
+    initProject(TEST_PROJECT);
   });
 
   afterEach(() => {
-    if (repoRoot) {
-      rmSync(repoRoot, { recursive: true, force: true });
-    }
+    rmSync(TEST_HOME, { recursive: true, force: true });
+    rmSync(TEST_PROJECT, { recursive: true, force: true });
+    delete process.env.HANDPRINT_HOME;
   });
 
-  const minimalInput = {
-    ts: "2026-06-26T10:00:00Z",
-    session: "session-log",
-    project: "test-project",
-    author: "Test User",
-    plaintext: "Ship the MVP by Friday",
-  };
-
-  it("returns empty array when no seals exist", () => {
-    const entries = listSeals(repoRoot);
+  it('returns empty array when no handprints exist', async () => {
+    const { listHandprints } = await import('../../src/commands/log.js');
+    const entries = listHandprints(TEST_PROJECT);
     expect(entries).toEqual([]);
   });
 
-  it("returns all sealed entries in order", () => {
-    const hash1 = sealChunk(repoRoot, minimalInput);
-    const hash2 = sealChunk(repoRoot, {
-      ...minimalInput,
-      plaintext: "Second conversation",
+  it('returns all handprint entries in order', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const { listHandprints } = await import('../../src/commands/log.js');
+
+    const { hash: hash1 } = await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: [{ type: 'choice', subtype: 'override', note: 'first' }],
+      source: { agent: 'test' },
+      plaintext: 'first',
     });
 
-    const entries = listSeals(repoRoot);
+    const { hash: hash2 } = await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: [{ type: 'vision', subtype: 'goal', note: 'second' }],
+      source: { agent: 'test' },
+      plaintext: 'second',
+    });
+
+    const entries = listHandprints(TEST_PROJECT);
     expect(entries).toHaveLength(2);
     expect(entries[0].hash).toBe(hash1);
     expect(entries[1].hash).toBe(hash2);
   });
 
-  it("each entry includes its hash and seal data", () => {
-    const hash = sealChunk(repoRoot, minimalInput);
-    const entries = listSeals(repoRoot);
+  it('each entry includes hash and handprint data', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const { listHandprints } = await import('../../src/commands/log.js');
 
+    const { hash } = await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: [{ type: 'choice', subtype: 'override', note: 'test' }],
+      source: { agent: 'test-agent' },
+      plaintext: 'test plaintext',
+    });
+
+    const entries = listHandprints(TEST_PROJECT);
     expect(entries).toHaveLength(1);
     expect(entries[0].hash).toBe(hash);
-    expect(entries[0].seal.session).toBe("session-log");
-    expect(entries[0].seal.project).toBe("test-project");
-  });
-});
-
-describe("listDecisions", () => {
-  let repoRoot: string;
-
-  beforeEach(() => {
-    repoRoot = mkdtempSync(join(tmpdir(), "handprint-log-"));
-    initStore(repoRoot);
+    expect(entries[0].handprint.source.agent).toBe('test-agent');
+    expect(entries[0].handprint.marks[0].type).toBe('choice');
   });
 
-  afterEach(() => {
-    if (repoRoot) {
-      rmSync(repoRoot, { recursive: true, force: true });
-    }
-  });
+  it('filters by mark type', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const { listHandprints } = await import('../../src/commands/log.js');
 
-  function makeMeta(overrides?: Partial<DecisionMeta>): DecisionMeta {
-    return {
-      seal: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-      type: "vision",
-      intent: "Ship the MVP",
-      risk: "May miss edge cases",
-      context: "sprint-planning",
-      confidence: 0.9,
-      horizon: null,
-      anchors: [],
-      source: "claude-code",
-      status: "open",
-      resolutions: [],
-      ...overrides,
-    };
-  }
+    await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: [{ type: 'vision', subtype: 'goal', note: 'vision one' }],
+      source: { agent: 'test' },
+      plaintext: 'vision',
+    });
 
-  it("returns empty when no meta exists", () => {
-    const metas = listDecisions(repoRoot);
-    expect(metas).toEqual([]);
-  });
+    await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: [{ type: 'choice', subtype: 'override', note: 'choice one' }],
+      source: { agent: 'test' },
+      plaintext: 'choice',
+    });
 
-  it("returns all meta entries", () => {
-    const hpDir = join(repoRoot, HANDPRINT_DIR);
-    writeMeta(hpDir, makeMeta({ intent: "first" }));
-    writeMeta(hpDir, makeMeta({ intent: "second" }));
-
-    const metas = listDecisions(repoRoot);
-    expect(metas).toHaveLength(2);
-  });
-
-  it("filters by type", () => {
-    const hpDir = join(repoRoot, HANDPRINT_DIR);
-    writeMeta(hpDir, makeMeta({ type: "vision", intent: "vision one" }));
-    writeMeta(hpDir, makeMeta({ type: "choice", intent: "choice one" }));
-    writeMeta(hpDir, makeMeta({ type: "method", intent: "method one" }));
-
-    const choices = listDecisions(repoRoot, { type: "choice" });
+    const choices = listHandprints(TEST_PROJECT, { type: 'choice' });
     expect(choices).toHaveLength(1);
-    expect(choices[0].intent).toBe("choice one");
+    expect(choices[0].handprint.marks[0].type).toBe('choice');
+  });
+
+  it('respects limit option', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const { listHandprints } = await import('../../src/commands/log.js');
+
+    for (let i = 0; i < 3; i++) {
+      await buildHandprint({
+        projectRoot: TEST_PROJECT,
+        marks: [{ type: 'choice', subtype: 'override', note: `entry ${i}` }],
+        source: { agent: 'test' },
+        plaintext: `entry ${i}`,
+      });
+    }
+
+    const limited = listHandprints(TEST_PROJECT, { limit: 2 });
+    expect(limited).toHaveLength(2);
   });
 });

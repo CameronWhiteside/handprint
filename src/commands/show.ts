@@ -1,31 +1,23 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join } from "node:path";
-import { readObject } from "../store/objects.js";
-import { metaForSeal } from "../store/meta.js";
-import { decrypt } from "../crypto/keys.js";
-import { HANDPRINT_DIR } from "./init.js";
-import type { Seal } from "../model/seal.js";
-import type { DecisionMeta } from "../model/meta.js";
+import { existsSync, readdirSync } from 'node:fs';
+import { join } from 'node:path';
+import { readObject } from '../store/objects.js';
+import { projectDir } from '../dirs/project.js';
+import { loadSeed } from '../dirs/global.js';
+import { deriveEncryptionKey, decrypt } from '../crypto/sodium.js';
+import type { HandprintObject } from '@handprint/types';
 
-export interface SealDetail {
+export interface HandprintDetail {
   hash: string;
-  seal: Seal;
-  meta: DecisionMeta[];
+  handprint: HandprintObject;
   decryptedPayload?: string;
 }
 
-/**
- * Looks up a seal by full hash or short prefix (min 7 chars).
- * Returns the seal with its hash and associated meta entries.
- * If decryptPayload is true, loads the encryption key and decrypts.
- */
-export function showSeal(
-  repoRoot: string,
+export async function showHandprint(
+  projectRoot: string,
   ref: string,
-  options?: { decryptPayload?: boolean },
-): SealDetail | null {
-  const hpDir = join(repoRoot, HANDPRINT_DIR);
-
+  options?: { decrypt?: boolean },
+): Promise<HandprintDetail | null> {
+  const hpDir = projectDir(projectRoot);
   let fullHash: string | null = null;
 
   if (ref.length === 64) {
@@ -39,23 +31,16 @@ export function showSeal(
   const obj = readObject(hpDir, fullHash);
   if (!obj) return null;
 
-  const seal = obj as unknown as Seal;
-  const meta = metaForSeal(hpDir, fullHash);
+  const hp = obj as unknown as HandprintObject;
+  const result: HandprintDetail = { hash: fullHash, handprint: hp };
 
-  const result: SealDetail = { hash: fullHash, seal, meta };
-
-  if (options?.decryptPayload && seal.payload) {
+  if (options?.decrypt && hp.payload) {
     try {
-      const encKey = Buffer.from(
-        readFileSync(
-          join(hpDir, "keys", "encryption.key"),
-          "utf-8",
-        ).trim(),
-        "hex",
-      );
-      result.decryptedPayload = decrypt(seal.payload, encKey);
+      const seed = loadSeed();
+      const encKey = await deriveEncryptionKey(seed);
+      result.decryptedPayload = await decrypt(hp.payload, encKey);
     } catch {
-      // decryption failed — leave undefined
+      // decryption failed
     }
   }
 
@@ -65,7 +50,7 @@ export function showSeal(
 function resolvePrefix(hpDir: string, prefix: string): string | null {
   const dirPrefix = prefix.slice(0, 2);
   const filePrefix = prefix.slice(2);
-  const bucketDir = join(hpDir, "objects", dirPrefix);
+  const bucketDir = join(hpDir, 'objects', dirPrefix);
 
   if (!existsSync(bucketDir)) return null;
 
@@ -73,6 +58,5 @@ function resolvePrefix(hpDir: string, prefix: string): string | null {
   const matches = files.filter((f) => f.startsWith(filePrefix));
 
   if (matches.length !== 1) return null;
-
   return dirPrefix + matches[0];
 }
