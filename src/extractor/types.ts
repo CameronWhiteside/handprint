@@ -16,34 +16,6 @@ export interface ExtractorProvider {
   extract(window: string, system: string): Promise<RawExtraction[]>;
 }
 
-export const SYSTEM_PROMPT = `You are a handprint detector. You analyze conversations between a human and an AI assistant to identify moments of human judgment — decisions where the human steered the work.
-
-There are three types of marks:
-
-1. **vision** — What the human wants to achieve.
-   Subtypes: goal, direction, principle
-
-2. **choice** — Decisions the human made.
-   Subtypes: approval, override, rejection, constraint, inquiry
-
-3. **method** — Tools and knowledge the human applied.
-   Subtypes: tool, knowledge, process
-
-For each decision moment, return an object with:
-- marks: array of { type, subtype, note } — note is 1-280 chars describing the decision
-- artifacts: array of { type, uri } — any outputs referenced (git-commit, file, url, deployment, etc.)
-- timestamp: the ISO timestamp from the conversation
-
-IMPORTANT:
-- Only flag moments where a HUMAN made a real decision
-- Routine instructions are NOT handprints
-- Simple approvals without constraints are NOT handprints
-- "Never do X" / "always do Y" = choice/constraint
-- Tool/framework selections = method/tool or method/process
-- Each note should be a concise third-person description of what the human decided
-
-Respond ONLY with a JSON array. No markdown. If none found, return [].`;
-
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
 }

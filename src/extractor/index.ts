@@ -2,13 +2,14 @@
 import type { ExtractionConfig } from '@handprint/types';
 import type { TranscriptEntry } from '../sources/types.js';
 import type { ExtractorProvider, RawExtraction } from './types.js';
-import { SYSTEM_PROMPT } from './types.js';
+import { SYSTEM_PROMPT } from './prompt.js';
 import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './window.js';
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
 import { DEFAULT_MODEL_ID, type ModelEntry } from './models.js';
 
 export * from './types.js';
+export { SYSTEM_PROMPT, buildUserPrompt, TRANSCRIPT_OPEN, TRANSCRIPT_CLOSE } from './prompt.js';
 export { MODELS, DEFAULT_MODEL_ID, modelById, isModelDownloaded } from './models.js';
 export { detectAgentCli } from './host-agent.js';
 

@@ -2,6 +2,7 @@
 import { execFile, execFileSync } from 'node:child_process';
 import type { ExtractorProvider, RawExtraction } from './types.js';
 import { parseExtractionJson } from './types.js';
+import { buildUserPrompt } from './prompt.js';
 
 export interface AgentCliSpec {
   id: 'claude' | 'opencode' | 'codex';
@@ -63,7 +64,7 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
     async extract(window: string, system: string): Promise<RawExtraction[]> {
       const s = resolveSpec();
       if (!s) throw new Error('no agent CLI found on PATH (claude / opencode / codex)');
-      const prompt = `Analyze this conversation and extract any handprints (human decision moments):\n\n${window}`;
+      const prompt = buildUserPrompt(window);
       const stdout = await run(s.bin, s.buildArgs(system, prompt), prompt);
       return parseExtractionJson(stdout);
     },

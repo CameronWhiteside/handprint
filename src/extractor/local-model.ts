@@ -5,6 +5,7 @@ import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
 import type { ExtractorProvider, RawExtraction } from './types.js';
 import { parseExtractionJson } from './types.js';
+import { buildUserPrompt } from './prompt.js';
 import { EXTRACTION_GBNF } from './grammar.js';
 import {
   type ModelEntry,
@@ -63,14 +64,23 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
       const ready = await ensureModel(entry, opts.homeDir, opts.onDownload);
       if (!ready) throw new Error('local model not available — run "handprint grab" to download it');
 
-      // Lazy import keeps the native module off the hot path for non-local runs.
-      const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
+      // node-llama-cpp is an optional dependency (large native binaries). Lazy
+      // import keeps it off the hot path and lets us give a clear hint if a
+      // local-model user never installed it.
+      const llamaModule = await import('node-llama-cpp').catch(() => {
+        throw new Error(
+          'the local model needs node-llama-cpp, which is not installed.\n' +
+            'install it once with:  npm i -g node-llama-cpp\n' +
+            'or switch to a host agent:  handprint config set extraction.provider host',
+        );
+      });
+      const { getLlama, LlamaChatSession } = llamaModule;
       const llama = await getLlama();
       const model = await llama.loadModel({ modelPath: modelPath(entry, opts.homeDir) });
       const context = await model.createContext();
       const grammar = await llama.createGrammar({ grammar: EXTRACTION_GBNF });
       const session = new LlamaChatSession({ contextSequence: context.getSequence(), systemPrompt: system });
-      const prompt = `Analyze this conversation and extract any handprints (human decision moments):\n\n${window}`;
+      const prompt = buildUserPrompt(window);
       let answer: string;
       try {
         answer = await session.prompt(prompt, { grammar, maxTokens: 4096 });

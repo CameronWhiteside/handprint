@@ -59,7 +59,7 @@ handprint status
 
 handprint has two extraction modes, both of which work without signing up for anything:
 
-- **`local`** — downloads a small open-weight model (1–2 GB) and runs it on your hardware. No data leaves the machine. No API key. No quota.
+- **`local`** — runs a small open-weight model (1–2 GB) on your hardware. No data leaves the machine. No API key. No quota. Uses the optional [`node-llama-cpp`](https://github.com/withcatai/node-llama-cpp) dependency; if it isn't present, handprint tells you the one-line command to add it.
 - **`host`** — routes extraction through whichever AI tool is already installed (Claude Code, opencode, codex). Uses the quota you already have with that tool; no extra authentication required.
 
 Configure your preferred mode:
@@ -71,6 +71,19 @@ handprint config set extraction.provider host    # uses your existing tool quota
 ```
 
 See [AGENTS.md](./AGENTS.md) for a full non-interactive setup guide.
+
+## Security & privacy
+
+- **Local by default.** Transcripts are read and analyzed on your machine. In `local` mode nothing ever leaves the host; in `host` mode the conversation is sent only to the AI tool you already use and have authenticated.
+- **Secrets are scrubbed before storage.** An aggressive sanitizer redacts emails, API keys, tokens, and credential-like strings from a handprint's payload before it is written. False positives are preferred over leaks.
+- **Records are signed and encrypted.** Each handprint is appended to a tamper-evident chain, signed with your local Ed25519 key, with its payload encrypted at rest.
+- **The extractor treats transcripts as untrusted input.** Conversation text is fenced as untrusted data and the model is instructed to never follow instructions embedded in it — a defense against prompt injection from pasted or third-party content. Output is validated against a strict Zod schema; anything off-schema is discarded.
+
+Found a vulnerability? Please open a [security advisory](https://github.com/CameronWhiteside/handprint/security/advisories/new) rather than a public issue.
+
+## Contributing
+
+Contributions are welcome — especially new **source adapters** so handprint can capture decisions wherever your chats happen. See [docs/CONTRIBUTING.md](./docs/CONTRIBUTING.md) for the dev setup, the adapter interface with a worked example, and the source roadmap.
 
 ## License
 

@@ -1,8 +1,30 @@
 {
   "name": "handprint-sh",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "type": "module",
-  "description": "Human decision provenance for the age of AI",
+  "description": "Capture human decision provenance from your AI coding transcripts — runs entirely on your machine, no account required.",
+  "keywords": [
+    "ai",
+    "provenance",
+    "decisions",
+    "transcripts",
+    "claude-code",
+    "opencode",
+    "cli",
+    "handprint",
+    "local-llm",
+    "attribution"
+  ],
+  "homepage": "https://github.com/CameronWhiteside/handprint#readme",
+  "bugs": {
+    "url": "https://github.com/CameronWhiteside/handprint/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CameronWhiteside/handprint.git"
+  },
+  "license": "MIT",
+  "author": "Cameron Whiteside",
   "workspaces": [
     "packages/*"
   ],
@@ -12,8 +34,12 @@
   "files": [
     "dist/bin/",
     "README.md",
+    "AGENTS.md",
     "LICENSE"
   ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "build": "tsup",
     "prepublishOnly": "npm run build",
@@ -25,7 +51,9 @@
     "@noble/ciphers": "^2.2.0",
     "@noble/ed25519": "^3.1.0",
     "@noble/hashes": "^2.2.0",
-    "commander": "^14.0.3",
+    "commander": "^14.0.3"
+  },
+  "optionalDependencies": {
     "node-llama-cpp": "^3.0.0"
   },
   "devDependencies": {

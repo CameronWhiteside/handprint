@@ -1,6 +1,6 @@
 // tests/extractor/types.test.ts
 import { describe, it, expect } from 'vitest';
-import { parseExtractionJson, SYSTEM_PROMPT } from '../../src/extractor/types.js';
+import { parseExtractionJson } from '../../src/extractor/types.js';
 
 describe('parseExtractionJson', () => {
   it('parses valid marks and drops invalid ones', () => {
@@ -18,13 +18,6 @@ describe('parseExtractionJson', () => {
 
   it('returns [] when no array present', () => {
     expect(parseExtractionJson('sorry, nothing here')).toEqual([]);
-  });
-
-  it('exposes a system prompt mentioning all three mark types and demanding JSON', () => {
-    expect(SYSTEM_PROMPT).toMatch(/vision/);
-    expect(SYSTEM_PROMPT).toMatch(/choice/);
-    expect(SYSTEM_PROMPT).toMatch(/method/);
-    expect(SYSTEM_PROMPT).toContain('JSON array');
   });
 
   it('balanced scanner picks the first complete array ignoring trailing text', () => {

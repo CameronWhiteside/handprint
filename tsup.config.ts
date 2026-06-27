@@ -10,5 +10,8 @@ export default defineConfig({
   clean: true,
   shims: false,
   dts: false,
+  // Optional native dependency — must not be bundled; it is resolved at runtime
+  // only when the local-model provider is used (and installed).
+  external: ['node-llama-cpp'],
   banner: { js: '#!/usr/bin/env node' },
 });

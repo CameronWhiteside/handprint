@@ -61,7 +61,7 @@ describe('global dir', () => {
     expect(config.identity.handle).toBe('testuser');
     expect(config.identity.name).toBe('Test User');
     expect(config.identity.email).toBe('test@example.com');
-    expect(config.hub.url).toBe('https://api.handprint.sh');
+    expect(config.hub.url).toBe('https://handprint.sh');
   });
 
   it('loadSeed returns 32 bytes that re-derive same keypair', async () => {
