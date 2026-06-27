@@ -25,7 +25,7 @@ export function isGlobalInitialized(): boolean {
 
 export async function initGlobal(
   identity: { handle: string; name: string; email: string },
-  hubUrl: string = 'https://api.handprint.sh',
+  hubUrl: string = 'https://handprint.sh',
 ): Promise<string> {
   const dir = globalDir();
 

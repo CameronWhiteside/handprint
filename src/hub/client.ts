@@ -36,22 +36,22 @@ export function createHubClient(hubUrl: string, token?: string): HubClient {
 
   return {
     async pushHandprint(handprint: PushHandprintInput) {
-      await request('/v1/push/handprint', 'POST', handprint);
+      await request('/api/v1/push/handprint', 'POST', handprint);
       return { ok: true };
     },
 
     async registerKey(input: RegisterKeyInput) {
-      await request('/v1/keys', 'POST', input);
+      await request('/api/v1/keys', 'POST', input);
       return { ok: true };
     },
 
     async deviceCodeStart() {
-      return request('/v1/auth/device', 'POST', {});
+      return request('/api/auth/device', 'POST', {});
     },
 
     async deviceCodePoll(deviceCode: string) {
       try {
-        const data = await request('/v1/auth/token', 'POST', { device_code: deviceCode });
+        const data = await request('/api/auth/device/token', 'POST', { device_code: deviceCode });
         if (data.accessToken) return { accessToken: data.accessToken };
         return null;
       } catch {
