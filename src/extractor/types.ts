@@ -42,7 +42,24 @@ function* scanJsonArrays(text: string): Generator<string> {
   }
 }
 
-export function parseExtractionJson(text: string): RawExtraction[] {
+// Guard: accept only strings that are valid ISO-8601 datetimes (YYYY-MM-DDTHH:...).
+// Rejects arbitrary attacker-controlled strings stored as timestamps.
+function isValidIsoTimestamp(v: unknown): v is string {
+  return (
+    typeof v === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T/.test(v) &&
+    !Number.isNaN(Date.parse(v))
+  );
+}
+
+export function parseExtractionJson(text: string, opts?: { requireLeadingArray?: boolean }): RawExtraction[] {
+  // Item 3: reject leading prose, if the caller requires the text to start
+  // directly with a JSON array, bail out early instead of scanning for an
+  // embedded array (prevents JSON front-running in host-agent output).
+  if (opts?.requireLeadingArray && !text.trimStart().startsWith('[')) {
+    return [];
+  }
+
   for (const slice of scanJsonArrays(text)) {
     let raw: unknown;
     try {
@@ -66,8 +83,10 @@ export function parseExtractionJson(text: string): RawExtraction[] {
         if (parsed.success) artifacts.push(parsed.data);
       }
       if (marks.length === 0) continue;
+      // Item 4: validate timestamp as ISO-8601; fall back to now() to avoid
+      // storing arbitrary attacker-controlled strings.
       const ts = item['timestamp'];
-      out.push({ marks, artifacts, timestamp: typeof ts === 'string' ? ts : new Date().toISOString() });
+      out.push({ marks, artifacts, timestamp: isValidIsoTimestamp(ts) ? ts : new Date().toISOString() });
     }
     // Return results from the first array that parses (even if out is empty after filtering).
     return out;

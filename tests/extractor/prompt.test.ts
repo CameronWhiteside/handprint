@@ -20,7 +20,7 @@ describe('SYSTEM_PROMPT', () => {
     expect(SYSTEM_PROMPT).toMatch(/method/);
   });
 
-  it('is grounded in the type schema — enums interpolated from @handprint/types', () => {
+  it('is grounded in the type schema, enums interpolated from @handprint/types', () => {
     // If the types package adds/renames a subtype, the prompt must reflect it.
     for (const sub of CHOICE_SUBTYPES) expect(SYSTEM_PROMPT).toContain(`"${sub}"`);
     for (const art of ARTIFACT_TYPES) expect(SYSTEM_PROMPT).toContain(`"${art}"`);

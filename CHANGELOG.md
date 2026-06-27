@@ -2,7 +2,7 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.3.0] — 2026-06-27
+## [0.3.0] - 2026-06-27
 
 ### Added
 - **Multi-source transcript discovery.** Pluggable source adapters: `claude-code` and `opencode` are fully supported; `codex` and `cursor` are scaffolded. `handprint sources` lists adapters, their locations, capabilities, and session counts.
@@ -12,7 +12,7 @@ All notable changes to handprint are documented here. This project adheres to [S
 - `docs/CONTRIBUTING.md`: dev setup, the source-adapter interface with a worked example, and the source roadmap.
 
 ### Changed
-- **Hardened extraction prompt.** Defines what a handprint is, grounds every enum in the `@handprint/types` Zod schema (so the prompt cannot drift from validation), and adds explicit prompt-injection defenses — transcripts are fenced as untrusted data and forged delimiters are stripped.
+- **Hardened extraction prompt.** Defines what a handprint is, grounds every enum in the `@handprint/types` Zod schema (so the prompt cannot drift from validation), and adds explicit prompt-injection defenses. Transcripts are fenced as untrusted data and forged delimiters are stripped.
 - `node-llama-cpp` is now an `optionalDependency`; if it is absent when the local model is used, handprint prints the one-line command to add it.
 - Package metadata completed for npm publishing (license, repository, keywords, engines).
 

@@ -21,9 +21,11 @@ describe("sanitize", () => {
   });
 
   describe("API key patterns", () => {
-    it("redacts ALL_CAPS key identifiers", () => {
+    it("redacts ALL_CAPS key identifiers (name and value)", () => {
+      // The value-aware pass now redacts the value too, then the KEY_CASE pass
+      // redacts the name.
       expect(sanitize("set CLOUDFLARE_API_TOKEN=xyz")).toBe(
-        "set [REDACTED_KEY]=xyz",
+        "set [REDACTED_KEY]=[REDACTED_VALUE]",
       );
     });
 
@@ -119,6 +121,72 @@ describe("sanitize", () => {
 
     it("leaves short identifiers alone", () => {
       expect(sanitize("v2 is ready")).toBe("v2 is ready");
+    });
+  });
+});
+
+describe("sanitize, item 6 additions", () => {
+  describe("PEM key blocks", () => {
+    it("redacts a PEM private key block", () => {
+      const pem = "-----BEGIN RSA PRIVATE KEY-----\nMIIEowIBAAKCAQEA1234567890abcdef\n-----END RSA PRIVATE KEY-----";
+      const result = sanitize(`context ${pem} end`);
+      expect(result).toContain("[REDACTED_PEM]");
+      expect(result).not.toContain("MIIEowIBAAKCAQEA");
+    });
+
+    it("redacts a PEM certificate block", () => {
+      const pem = "-----BEGIN CERTIFICATE-----\nABCDEFGHIJKLMNOP\n-----END CERTIFICATE-----";
+      const result = sanitize(pem);
+      expect(result).toContain("[REDACTED_PEM]");
+      expect(result).not.toContain("ABCDEFGHIJKLMNOP");
+    });
+  });
+
+  describe("known token prefixes", () => {
+    it("redacts a Slack bot token (xoxb-)", () => {
+      const result = sanitize("token is xoxb-123-456-abc");
+      expect(result).toContain("[REDACTED_TOKEN]");
+      expect(result).not.toContain("xoxb-123");
+    });
+
+    it("redacts a Stripe live secret key (sk_live_)", () => {
+      const result = sanitize("use sk_live_abc123xyz for payments");
+      expect(result).toContain("[REDACTED_TOKEN]");
+      expect(result).not.toContain("sk_live_");
+    });
+
+    it("redacts a Stripe test publishable key (pk_test_)", () => {
+      const result = sanitize("pk_test_AbCdEfGhIj is the public key");
+      expect(result).toContain("[REDACTED_TOKEN]");
+      expect(result).not.toContain("pk_test_");
+    });
+
+    it("redacts a GitHub PAT (ghp_) when used standalone", () => {
+      // Test the standalone token, when embedded in KEY=value context, the
+      // value-aware pass catches the value first and emits [REDACTED_VALUE].
+      const result = sanitize("auth with ghp_AbCdEfGhIjKlMnOpQrStUvWxYz123456 token");
+      expect(result).toContain("[REDACTED_TOKEN]");
+      expect(result).not.toContain("ghp_");
+    });
+  });
+
+  describe("value-aware key=value assignment", () => {
+    it("redacts the value in API_KEY=<value>", () => {
+      const result = sanitize("API_KEY=sk_live_abc123");
+      expect(result).toContain("[REDACTED_VALUE]");
+      expect(result).not.toContain("sk_live_abc123");
+    });
+
+    it("redacts value in DATABASE_PASSWORD=hunter2", () => {
+      const result = sanitize("DATABASE_PASSWORD=hunter2");
+      expect(result).toContain("[REDACTED_VALUE]");
+      expect(result).not.toContain("hunter2");
+    });
+
+    it("redacts value in colon-separated form STRIPE_SECRET: abc123", () => {
+      const result = sanitize("STRIPE_SECRET: abc123xyz");
+      expect(result).toContain("[REDACTED_VALUE]");
+      expect(result).not.toContain("abc123xyz");
     });
   });
 });

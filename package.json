@@ -2,7 +2,7 @@
   "name": "handprint-sh",
   "version": "0.3.0",
   "type": "module",
-  "description": "Capture human decision provenance from your AI coding transcripts — runs entirely on your machine, no account required.",
+  "description": "Capture human decision provenance from your AI coding transcripts. Runs entirely on your machine, no account required.",
   "keywords": [
     "ai",
     "provenance",
@@ -23,7 +23,7 @@
     "type": "git",
     "url": "git+https://github.com/CameronWhiteside/handprint.git"
   },
-  "license": "MIT",
+  "license": "Apache-2.0",
   "author": "Cameron Whiteside",
   "workspaces": [
     "packages/*"
@@ -35,7 +35,9 @@
     "dist/bin/",
     "README.md",
     "AGENTS.md",
-    "LICENSE"
+    "LICENSE",
+    "NOTICE",
+    "COVENANT.md"
   ],
   "engines": {
     "node": ">=20"
@@ -53,11 +55,9 @@
     "@noble/hashes": "^2.2.0",
     "commander": "^14.0.3"
   },
-  "optionalDependencies": {
-    "node-llama-cpp": "^3.0.0"
-  },
   "devDependencies": {
     "@types/node": "^25.9.2",
+    "node-llama-cpp": "^3.0.0",
     "tsup": "^8.5.1",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",

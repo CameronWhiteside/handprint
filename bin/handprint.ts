@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { createRequire } from 'node:module';
 import { createInterface } from 'node:readline/promises';
 import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';
@@ -19,12 +20,24 @@ import {
 } from '../src/commands/config.js';
 import type { Visibility } from '@handprint/types';
 
+// Item 7: read real version from package.json so dist/bin/handprint.js always
+// reports the version declared in the tarball (../../package.json from dist/bin/).
+const _require = createRequire(import.meta.url);
+
+function isVersionedPackage(v: unknown): v is { version: string } {
+  if (typeof v !== 'object' || v === null || !('version' in v)) return false;
+  return typeof v.version === 'string';
+}
+
+const _pkg: unknown = _require('../../package.json');
+const version = isVersionedPackage(_pkg) ? _pkg.version : '0.0.0';
+
 const program = new Command();
 
 program
   .name('handprint')
   .description('Human decision provenance for the age of AI')
-  .version('0.2.0');
+  .version(version);
 
 program
   .command('init')
@@ -122,7 +135,7 @@ program
     try {
       const result = await push(process.cwd());
       if (result.visibility === 'private') {
-        console.log('project is private — nothing pushed');
+        console.log('project is private, nothing pushed');
         return;
       }
       console.log(`pushed ${result.pushed} handprints (${result.skipped} skipped)`);
@@ -184,11 +197,11 @@ program
       console.log(`chain: ${result.chainLength} handprint${result.chainLength === 1 ? '' : 's'}`);
       console.log(`head: ${result.head!.slice(0, 12)}`);
       if (result.valid) {
-        console.log('status: valid — all hashes verified, signatures valid, chain intact');
+        console.log('status: valid, all hashes verified, signatures valid, chain intact');
       } else {
         console.log('status: INVALID');
         for (const { hash, error } of result.errors) {
-          console.log(`  ${hash.slice(0, 12)} — ${error}`);
+          console.log(`  ${hash.slice(0, 12)}, ${error}`);
         }
         process.exit(1);
       }

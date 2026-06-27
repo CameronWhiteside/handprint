@@ -12,11 +12,49 @@ export interface AgentCliSpec {
 
 export type Runner = (bin: string, args: string[], input: string) => Promise<string>;
 
+/**
+ * Seam for detecting whether the claude CLI supports the --append-system-prompt
+ * flag. Injectable via HostProviderOpts so tests can stub it without spawning
+ * the real CLI.
+ */
+export type FlagDetector = () => boolean;
+
+/**
+ * Probes `claude --help` for the --append-system-prompt flag.
+ * Returns false on any error (missing binary, old version, etc.).
+ */
+export function claudeSupportsSystemFlag(): boolean {
+  try {
+    const help = execFileSync('claude', ['--help'], { encoding: 'utf8', timeout: 5000 });
+    return help.includes('--append-system-prompt');
+  } catch {
+    return false;
+  }
+}
+
 // Each CLI takes a single prompt and prints the model's text to stdout.
+// For claude the actual arg shape is resolved at extract-time based on flag
+// detection; buildArgs here is kept as the degraded fallback only.
 export const AGENT_CLIS: AgentCliSpec[] = [
-  { id: 'claude', bin: 'claude', buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`] },
-  { id: 'opencode', bin: 'opencode', buildArgs: (system, prompt) => ['run', `${system}\n\n${prompt}`] },
-  { id: 'codex', bin: 'codex', buildArgs: (system, prompt) => ['exec', `${system}\n\n${prompt}`] },
+  {
+    id: 'claude',
+    bin: 'claude',
+    // Degraded mode: no stable system-prompt flag confirmed, concatenated form.
+    // The real buildArgs for claude is chosen dynamically in extract().
+    buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`],
+  },
+  {
+    id: 'opencode',
+    bin: 'opencode',
+    // Documented degraded mode: opencode has no stable system-prompt flag.
+    buildArgs: (system, prompt) => ['run', `${system}\n\n${prompt}`],
+  },
+  {
+    id: 'codex',
+    bin: 'codex',
+    // Documented degraded mode: codex has no stable system-prompt flag.
+    buildArgs: (system, prompt) => ['exec', `${system}\n\n${prompt}`],
+  },
 ];
 
 function onPath(bin: string): boolean {
@@ -45,6 +83,19 @@ export interface HostProviderOpts {
   cli?: 'claude' | 'opencode' | 'codex';
   run?: Runner;
   detect?: () => AgentCliSpec | undefined;
+  /** Injectable seam for claude flag detection, defaults to claudeSupportsSystemFlag(). */
+  claudeFlagDetector?: FlagDetector;
+}
+
+/** Build claude CLI args, separating system prompt at the correct authority level. */
+function buildClaudeArgs(supportsFlag: boolean, system: string, prompt: string): string[] {
+  if (supportsFlag) {
+    // Item 1 fix: deliver SECURITY system rules at the dedicated flag authority,
+    // not concatenated into the user message.
+    return ['-p', prompt, '--append-system-prompt', system];
+  }
+  // Degraded fallback: flag unsupported (old claude version or missing binary).
+  return ['-p', `${system}\n\n${prompt}`];
 }
 
 export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvider {
@@ -65,8 +116,21 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
       const s = resolveSpec();
       if (!s) throw new Error('no agent CLI found on PATH (claude / opencode / codex)');
       const prompt = buildUserPrompt(window);
-      const stdout = await run(s.bin, s.buildArgs(system, prompt), prompt);
-      return parseExtractionJson(stdout);
+
+      let args: string[];
+      if (s.id === 'claude') {
+        // Item 1: use the injectable flag-detection seam so this path is
+        // testable without the real claude binary.
+        const detector = opts.claudeFlagDetector ?? claudeSupportsSystemFlag;
+        args = buildClaudeArgs(detector(), system, prompt);
+      } else {
+        args = s.buildArgs(system, prompt);
+      }
+
+      const stdout = await run(s.bin, args, prompt);
+      // Item 3: require output to start with '[', rejects leading prose /
+      // JSON front-running attacks in host-agent output.
+      return parseExtractionJson(stdout, { requireLeadingArray: true });
     },
   };
 }

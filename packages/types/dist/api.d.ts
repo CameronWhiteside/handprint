@@ -55,7 +55,7 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
     }>]>, "many">;
     artifacts: z.ZodDefault<z.ZodArray<z.ZodObject<{
         type: z.ZodEnum<["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"]>;
-        uri: z.ZodString;
+        uri: z.ZodEffects<z.ZodString, string, string>;
         hash: z.ZodOptional<z.ZodString>;
         parent: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {

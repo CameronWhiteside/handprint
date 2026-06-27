@@ -65,9 +65,29 @@ export const markSchema = z.discriminatedUnion('type', [
     methodMarkSchema,
 ]);
 // ── Artifacts ────────────────────────────────────────────────
+const ALLOWED_URI_PROTOCOLS = ['http:', 'https:', 'git:', 'ssh:', 'file:'];
+/**
+ * Item 5: Guard against dangerous URI schemes (javascript:, data:, vbscript:).
+ * If the value parses as a URL, its protocol must be in the allowlist.
+ * If it does not parse as a URL (e.g. a relative path or git ref), it is accepted.
+ */
+function isAllowedUri(v) {
+    try {
+        const url = new URL(v);
+        for (const allowed of ALLOWED_URI_PROTOCOLS) {
+            if (url.protocol === allowed)
+                return true;
+        }
+        return false;
+    }
+    catch {
+        // Not a URL (no scheme), treat as a path or ref and accept.
+        return true;
+    }
+}
 export const artifactSchema = z.object({
     type: artifactTypeSchema,
-    uri: z.string().min(1),
+    uri: z.string().min(1).refine(isAllowedUri, { message: 'unsupported artifact URI scheme' }),
     hash: z.string().optional(),
     parent: z.string().optional(),
 });

@@ -18,7 +18,7 @@ Decision provenance. Run \`handprint grab\` after significant decisions.
 - Docs: handprint.sh/docs
 `;
 
-const GITIGNORE = `# Handprint — track config and AGENTS.md, ignore local state
+const GITIGNORE = `# Handprint, track config and AGENTS.md, ignore local state
 *
 !.gitignore
 !config.json

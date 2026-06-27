@@ -134,6 +134,47 @@ describe('artifactSchema', () => {
     });
     expect(result.success).toBe(true);
   });
+
+  // Item 5: URI scheme guard
+  it('rejects javascript: URI scheme', () => {
+    const result = artifactSchema.safeParse({ type: 'url', uri: 'javascript:alert(1)' });
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects data: URI scheme', () => {
+    const result = artifactSchema.safeParse({ type: 'url', uri: 'data:text/html,<h1>xss</h1>' });
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts https: URI scheme', () => {
+    const result = artifactSchema.safeParse({ type: 'url', uri: 'https://example.com/repo' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts http: URI scheme', () => {
+    const result = artifactSchema.safeParse({ type: 'url', uri: 'http://internal.host/path' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts git: URI scheme', () => {
+    const result = artifactSchema.safeParse({ type: 'git-repo', uri: 'git://github.com/owner/repo' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts ssh: URI scheme', () => {
+    const result = artifactSchema.safeParse({ type: 'git-repo', uri: 'ssh://git@github.com/owner/repo.git' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts scheme-less relative path (no URL scheme)', () => {
+    const result = artifactSchema.safeParse({ type: 'file', uri: 'src/index.ts' });
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts scheme-less git ref', () => {
+    const result = artifactSchema.safeParse({ type: 'git-commit', uri: 'abc1234def5678' });
+    expect(result.success).toBe(true);
+  });
 });
 
 // ── Source schema ───────────────────────────────────────────────

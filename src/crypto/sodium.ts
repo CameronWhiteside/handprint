@@ -10,7 +10,7 @@ ed25519.hashes.sha512 = sha512;
 const ENCRYPTION_CONTEXT = 'payload-encryption-v1';
 const NONCE_BYTES = 24;
 
-/** No-op — noble is synchronous and needs no init. Kept for caller compat. */
+/** No-op, noble is synchronous and needs no init. Kept for caller compat. */
 export async function ensureSodium(): Promise<void> {}
 
 export async function generateSeed(): Promise<Uint8Array> {

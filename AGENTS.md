@@ -1,4 +1,4 @@
-# AGENTS.md — handprint install guide for automated agents
+# AGENTS.md: handprint install guide for automated agents
 
 This file tells an AI agent how to install and configure handprint for transcript extraction **without any interactive prompts**.
 
@@ -21,12 +21,12 @@ handprint init --global
 
 handprint supports two extraction providers. Set one before running `grab`:
 
-### Option A — `local` (private, free, no quota)
+### Option A: `local` (private, free, no quota)
 
 Runs a small language model entirely on the machine. No data ever leaves the host. No API key. No usage quota.
 
 ```sh
-handprint config set extraction.provider local
+handprint config set extraction.provider local --global
 ```
 
 Then choose a model. Pick the **smallest model the machine can run**:
@@ -40,17 +40,23 @@ Then choose a model. Pick the **smallest model the machine can run**:
 Default is `qwen2.5-3b-instruct-q4`. To override:
 
 ```sh
-handprint config set extraction.model qwen2.5-1.5b-instruct-q4
+handprint config set extraction.model qwen2.5-1.5b-instruct-q4 --global
 ```
 
-The model file is downloaded automatically on first `grab` if it is not already present at `~/.handprint/models/`.
-
-### Option B — `host` (uses the user's existing Claude / opencode / codex quota)
-
-Routes extraction through the agent that is already running on the machine (whichever tool generated the transcripts). Uses the user's existing quota — no additional API key required as long as the host tool is authenticated.
+The local model uses the optional `node-llama-cpp` package, which is **not** installed by the default `npm i -g handprint-sh`. Install it once to enable local extraction:
 
 ```sh
-handprint config set extraction.provider host
+npm i -g node-llama-cpp
+```
+
+If it is missing when `grab` runs in local mode, handprint prints this exact command. The model file itself is downloaded automatically on first `grab` if not already present at `~/.handprint/models/`.
+
+### Option B: `host` (uses the user's existing Claude / opencode / codex quota)
+
+Routes extraction through the agent that is already running on the machine (whichever tool generated the transcripts). Uses the user's existing quota, with no additional API key required as long as the host tool is authenticated.
+
+```sh
+handprint config set extraction.provider host --global
 ```
 
 ---
@@ -60,10 +66,10 @@ handprint config set extraction.provider host
 By default `grab` reads all implemented sources. To limit discovery to specific tools:
 
 ```sh
-handprint config set extraction.sources '["claude-code","opencode"]'
+handprint config set extraction.sources '["claude-code","opencode"]' --global
 ```
 
-Supported values: `claude-code`, `opencode`. (Additional sources `codex` and `cursor` are stubs — not yet functional.)
+Supported values: `claude-code`, `opencode`. (Additional sources `codex` and `cursor` are stubs, not yet functional.)
 
 ---
 
@@ -87,15 +93,23 @@ handprint grab --source claude-code
 
 ---
 
-## 5. Summary — fully non-interactive setup
+## 5. Summary: fully non-interactive setup
 
 ```sh
 npm i -g handprint-sh
 handprint init --global
-handprint config set extraction.provider local
-handprint config set extraction.model qwen2.5-3b-instruct-q4
-handprint config set extraction.sources '["claude-code","opencode"]'
+handprint config set extraction.provider local --global
+handprint config set extraction.model qwen2.5-3b-instruct-q4 --global
+handprint config set extraction.sources '["claude-code","opencode"]' --global
 handprint grab
 ```
 
 No account. No cloud. No prompts.
+
+> `config set` writes machine-wide config with `--global`. Omit `--global` to write project-scoped config, which requires a project to be initialized first (`handprint init`).
+
+---
+
+## 6. Acceptable use
+
+`grab` and local extraction run entirely offline and require no account. Publishing to the hub (`handprint push`) is opt-in and requires `handprint login`; hub access is rate-limited and governed by the [Human Provenance Covenant](./COVENANT.md). Use a person's provenance to benefit that person rather than to build systems that route around them.
