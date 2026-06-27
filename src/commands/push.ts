@@ -1,134 +1,79 @@
-import { readFileSync, existsSync } from "node:fs";
-import { join } from "node:path";
-import { HANDPRINT_DIR } from "./init.js";
-import { loadConfig, saveConfig } from "./config.js";
+import { readFileSync, existsSync } from 'node:fs';
+import { join } from 'node:path';
+import { globalDir, loadGlobalConfig } from '../dirs/global.js';
+import { loadProjectConfig, projectDir } from '../dirs/project.js';
+import { readObject } from '../store/objects.js';
+import { createHubClient } from '../hub/client.js';
+import type { PushHandprintInput, HandprintObject } from '@handprint/types';
 
 export interface PushResult {
-  handle: string;
-  keysWritten: number;
-  namespaceId: string;
+  pushed: number;
+  skipped: number;
+  visibility: string;
 }
 
-function getWranglerToken(): string {
-  const configPath = join(
-    process.env.HOME ?? "~",
-    ".wrangler",
-    "config",
-    "default.toml",
-  );
-  if (!existsSync(configPath)) {
-    throw new Error("no wrangler credentials — run 'wrangler login'");
+function loadToken(): string {
+  const credPath = join(globalDir(), 'credentials.json');
+  if (!existsSync(credPath)) {
+    throw new Error('not logged in: run "handprint login" first');
   }
-  const config = readFileSync(configPath, "utf-8");
-  const match = config.match(/oauth_token\s*=\s*"([^"]+)"/);
-  if (!match) throw new Error("no OAuth token in wrangler config");
-  return match[1];
+  const creds = JSON.parse(readFileSync(credPath, 'utf-8'));
+  if (!creds.accessToken) {
+    throw new Error('no access token: run "handprint login" first');
+  }
+  return creds.accessToken;
 }
 
-async function cfApi(
-  path: string,
-  token: string,
-  method: string = "GET",
-  body?: unknown,
-): Promise<any> {
-  const resp = await fetch(`https://api.cloudflare.com/client/v4${path}`, {
-    method,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const data = await resp.json();
-  if (!data.success) {
-    const errors =
-      data.errors?.map((e: any) => e.message).join(", ") ?? "unknown error";
-    throw new Error(`Cloudflare API: ${errors}`);
-  }
-  return data;
-}
+export async function push(projectRoot: string): Promise<PushResult> {
+  const config = loadProjectConfig(projectRoot);
 
-async function ensureNamespace(
-  accountId: string,
-  token: string,
-  config: any,
-  repoRoot: string,
-): Promise<string> {
-  if (config.remote.namespaceId) return config.remote.namespaceId;
-
-  // Try to create, or find existing
-  try {
-    const data = await cfApi(
-      `/accounts/${accountId}/storage/kv/namespaces`,
-      token,
-      "POST",
-      { title: "handprint-profiles" },
-    );
-    const nsId = data.result.id;
-    config.remote.namespaceId = nsId;
-    saveConfig(repoRoot, config);
-    console.error(`created KV namespace: ${nsId}`);
-    return nsId;
-  } catch (e: any) {
-    if (!e.message?.includes("already exists")) throw e;
+  if (config.visibility === 'private') {
+    return { pushed: 0, skipped: 0, visibility: 'private' };
   }
 
-  // Namespace exists — find it
-  const list = await cfApi(
-    `/accounts/${accountId}/storage/kv/namespaces`,
-    token,
-  );
-  const ns = list.result.find((n: any) => n.title === "handprint-profiles");
-  if (!ns) throw new Error("namespace exists but not found in list");
+  const globalConfig = loadGlobalConfig();
+  const token = loadToken();
+  const client = createHubClient(globalConfig.hub.url, token);
 
-  config.remote.namespaceId = ns.id;
-  saveConfig(repoRoot, config);
-  console.error(`found existing KV namespace: ${ns.id}`);
-  return ns.id;
-}
+  const hpDir = projectDir(projectRoot);
+  const logPath = join(hpDir, 'log');
 
-export async function push(repoRoot: string): Promise<PushResult> {
-  const profilePath = join(repoRoot, HANDPRINT_DIR, "profile.json");
-  if (!existsSync(profilePath)) {
-    throw new Error("no profile.json — run 'handprint profile' first");
+  if (!existsSync(logPath)) {
+    return { pushed: 0, skipped: 0, visibility: config.visibility };
   }
 
-  const profile = JSON.parse(readFileSync(profilePath, "utf-8"));
-  const config = loadConfig(repoRoot);
-  const token = getWranglerToken();
+  const hashes = readFileSync(logPath, 'utf-8').trim().split('\n').filter(Boolean);
 
-  const accountId = config.remote.accountId;
-  if (!accountId) {
-    throw new Error(
-      "no accountId in config — run 'handprint config set remote.accountId <id>'",
-    );
+  let pushed = 0;
+  let skipped = 0;
+
+  for (const hash of hashes) {
+    const obj = readObject(hpDir, hash);
+    if (!obj) {
+      skipped++;
+      continue;
+    }
+
+    const hp = obj as unknown as HandprintObject;
+    const input: PushHandprintInput = {
+      v: hp.v,
+      ts: hp.ts,
+      marks: hp.marks,
+      artifacts: hp.artifacts,
+      source: hp.source,
+      parent: hp.parent,
+      sig: hp.sig,
+      pubkey: hp.pubkey,
+    };
+
+    try {
+      await client.pushHandprint(input);
+      pushed++;
+    } catch (err) {
+      console.error(`  failed to push ${hash.slice(0, 10)}: ${(err as Error).message}`);
+      skipped++;
+    }
   }
 
-  const nsId = await ensureNamespace(accountId, token, config, repoRoot);
-  const handle = config.identity.handle;
-
-  // Write profile
-  await cfApi(
-    `/accounts/${accountId}/storage/kv/namespaces/${nsId}/values/${handle}:profile`,
-    token,
-    "PUT",
-    profile,
-  );
-
-  // Write meta (lightweight index entry)
-  const meta = {
-    handle,
-    name: config.identity.name,
-    total: profile.total,
-    merkleRoot: profile.merkleRoot,
-    lastPush: new Date().toISOString(),
-  };
-  await cfApi(
-    `/accounts/${accountId}/storage/kv/namespaces/${nsId}/values/${handle}:meta`,
-    token,
-    "PUT",
-    meta,
-  );
-
-  return { handle, keysWritten: 2, namespaceId: nsId };
+  return { pushed, skipped, visibility: config.visibility };
 }
