@@ -13,7 +13,7 @@ import {
   generateSeed,
   toBase64url,
   fromBase64url,
-} from '../crypto/sodium.js';
+} from '../crypto/noble.js';
 
 export function globalDir(): string {
   return process.env.HANDPRINT_HOME ?? join(homedir(), '.handprint');

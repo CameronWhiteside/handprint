@@ -66,7 +66,7 @@ describe('global dir', () => {
 
   it('loadSeed returns 32 bytes that re-derive same keypair', async () => {
     const { initGlobal, loadSeed } = await import('../../src/dirs/global.js');
-    const { deriveKeypair } = await import('../../src/crypto/sodium.js');
+    const { deriveKeypair } = await import('../../src/crypto/noble.js');
     await initGlobal({
       handle: 'testuser',
       name: 'Test User',

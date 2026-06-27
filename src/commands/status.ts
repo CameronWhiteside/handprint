@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isGlobalInitialized, loadSeed, loadGlobalConfig } from '../dirs/global.js';
 import { isProjectInitialized, loadProjectConfig, projectDir } from '../dirs/project.js';
-import { deriveKeypair, fingerprint, toBase64url, ensureSodium } from '../crypto/sodium.js';
+import { deriveKeypair, fingerprint, toBase64url } from '../crypto/noble.js';
 import { getRef } from '../store/refs.js';
 
 export interface StatusResult {
@@ -16,7 +16,6 @@ export interface StatusResult {
 }
 
 export async function status(projectRoot: string): Promise<StatusResult> {
-  await ensureSodium();
 
   const result: StatusResult = {
     globalInitialized: isGlobalInitialized(),

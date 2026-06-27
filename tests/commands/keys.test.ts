@@ -61,7 +61,7 @@ describe('key rotation keyring + verify trust anchor', () => {
   it('rejects a chain signed by a key that is not an authorized identity', async () => {
     const { buildHandprint } = await import('../../src/builder/handprint.js');
     const { verifyChain } = await import('../../src/commands/verify.js');
-    const { generateSeed, toBase64url } = await import('../../src/crypto/sodium.js');
+    const { generateSeed, toBase64url } = await import('../../src/crypto/noble.js');
     const { seedFilePath } = await import('../../src/dirs/global.js');
 
     await buildHandprint({

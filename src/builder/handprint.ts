@@ -9,8 +9,7 @@ import {
   signDetached,
   encrypt,
   toBase64url,
-  ensureSodium,
-} from '../crypto/sodium.js';
+} from '../crypto/noble.js';
 import { canonicalize, blake2b256 } from '../store/hash.js';
 import { writeObject } from '../store/objects.js';
 import { getRef, setRef } from '../store/refs.js';
@@ -29,7 +28,6 @@ export async function buildHandprint(input: BuildInput): Promise<{
   hash: string;
   handprint: HandprintObject;
 }> {
-  await ensureSodium();
 
   const hpDir = projectDir(input.projectRoot);
   if (!existsSync(hpDir)) {
