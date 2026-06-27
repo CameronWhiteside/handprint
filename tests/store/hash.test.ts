@@ -1,27 +1,60 @@
-import { describe, it, expect } from "vitest";
-import { hashObject } from "../../src/store/hash.js";
+import { describe, it, expect } from 'vitest';
+import { hashObject, canonicalize, sha256 } from '../../src/store/hash.js';
+import { ensureSodium } from '../../src/crypto/sodium.js';
 
-describe("hashObject", () => {
-  it("returns a 64-char hex string", () => {
-    const hash = hashObject({ foo: "bar" });
-    expect(hash).toMatch(/^[0-9a-f]{64}$/);
+describe('canonicalize', () => {
+  it('sorts object keys', () => {
+    const result = canonicalize({ b: 1, a: 2 });
+    expect(result).toBe('{"a":2,"b":1}');
   });
 
-  it("produces the same hash regardless of key order", () => {
-    const hash1 = hashObject({ a: 1, b: 2, c: 3 });
-    const hash2 = hashObject({ c: 3, a: 1, b: 2 });
-    expect(hash1).toBe(hash2);
+  it('sorts nested object keys', () => {
+    const result = canonicalize({ z: { b: 1, a: 2 }, a: 3 });
+    expect(result).toBe('{"a":3,"z":{"a":2,"b":1}}');
   });
 
-  it("produces different hashes for different content", () => {
-    const hash1 = hashObject({ foo: "bar" });
-    const hash2 = hashObject({ foo: "baz" });
-    expect(hash1).not.toBe(hash2);
+  it('handles arrays (no sorting)', () => {
+    const result = canonicalize([3, 1, 2]);
+    expect(result).toBe('[3,1,2]');
   });
 
-  it("handles nested objects with deterministic key ordering", () => {
-    const hash1 = hashObject({ outer: { b: 2, a: 1 } });
-    const hash2 = hashObject({ outer: { a: 1, b: 2 } });
-    expect(hash1).toBe(hash2);
+  it('handles null', () => {
+    expect(canonicalize(null)).toBe('null');
+  });
+
+  it('handles strings', () => {
+    expect(canonicalize('hello')).toBe('"hello"');
+  });
+
+  it('handles booleans', () => {
+    expect(canonicalize(true)).toBe('true');
+  });
+});
+
+describe('hashObject', () => {
+  it('returns 64-char hex string', async () => {
+    await ensureSodium();
+    const hash = await hashObject({ a: 1 });
+    expect(hash).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it('is deterministic', async () => {
+    const h1 = await hashObject({ x: 1, y: 2 });
+    const h2 = await hashObject({ y: 2, x: 1 });
+    expect(h1).toBe(h2);
+  });
+
+  it('differs for different objects', async () => {
+    const h1 = await hashObject({ a: 1 });
+    const h2 = await hashObject({ a: 2 });
+    expect(h1).not.toBe(h2);
+  });
+});
+
+describe('sha256', () => {
+  it('returns 32 bytes', async () => {
+    await ensureSodium();
+    const hash = sha256(new TextEncoder().encode('test'));
+    expect(hash.length).toBe(32);
   });
 });
