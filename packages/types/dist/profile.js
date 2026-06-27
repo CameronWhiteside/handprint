@@ -46,6 +46,12 @@ export const projectConfigSchema = z.object({
     createdAt: z.string(),
 });
 // ── Global config (~/.handprint/config.json) ─────────────────
+export const extractionConfigSchema = z.object({
+    provider: z.enum(['local', 'host']).optional(),
+    model: z.string().optional(),
+    agentCli: z.enum(['claude', 'opencode', 'codex']).optional(),
+    sources: z.array(z.string()).optional(),
+});
 export const globalConfigSchema = z.object({
     version: z.string(),
     createdAt: z.string(),
@@ -58,5 +64,6 @@ export const globalConfigSchema = z.object({
     hub: z.object({
         url: z.string(),
     }),
+    extraction: extractionConfigSchema.optional(),
 });
 //# sourceMappingURL=profile.js.map
