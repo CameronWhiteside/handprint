@@ -10,11 +10,11 @@ import { join } from "node:path";
 import type { DecisionMeta } from "../model/meta.js";
 import { hashObject } from "./hash.js";
 
-export function writeMeta(storeDir: string, meta: DecisionMeta): string {
+export async function writeMeta(storeDir: string, meta: DecisionMeta): Promise<string> {
   const metaDir = join(storeDir, "meta");
   if (!existsSync(metaDir)) mkdirSync(metaDir, { recursive: true });
 
-  const hash = hashObject(meta as unknown as Record<string, unknown>);
+  const hash = await hashObject(meta as unknown as Record<string, unknown>);
   const prefix = hash.slice(0, 2);
   const dir = join(metaDir, prefix);
   if (!existsSync(dir)) mkdirSync(dir, { recursive: true });

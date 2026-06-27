@@ -14,13 +14,13 @@ function objectPath(storeDir: string, hash: string): string {
 
 /**
  * Hashes the object, writes its JSON to the content-addressable store,
- * and returns the SHA-256 hash.
+ * and returns the BLAKE2b-256 hash (hex).
  */
-export function writeObject(
+export async function writeObject(
   storeDir: string,
   obj: Record<string, unknown>,
-): string {
-  const hash = hashObject(obj);
+): Promise<string> {
+  const hash = await hashObject(obj);
   const filePath = objectPath(storeDir, hash);
 
   mkdirSync(dirname(filePath), { recursive: true });

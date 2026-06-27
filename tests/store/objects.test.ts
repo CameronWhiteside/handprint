@@ -13,19 +13,19 @@ describe("object store", () => {
     }
   });
 
-  it("writeObject returns a 64-char SHA-256 hash and stores the file", () => {
+  it("writeObject returns a 64-char hash and stores the file", async () => {
     storeDir = mkdtempSync(join(tmpdir(), "handprint-test-"));
     const obj = { type: "handprint", title: "test decision" };
-    const hash = writeObject(storeDir, obj);
+    const hash = await writeObject(storeDir, obj);
 
     expect(hash).toMatch(/^[0-9a-f]{64}$/);
     expect(objectExists(storeDir, hash)).toBe(true);
   });
 
-  it("readObject returns the stored object", () => {
+  it("readObject returns the stored object", async () => {
     storeDir = mkdtempSync(join(tmpdir(), "handprint-test-"));
     const obj = { type: "handprint", title: "test decision", weight: 42 };
-    const hash = writeObject(storeDir, obj);
+    const hash = await writeObject(storeDir, obj);
     const result = readObject(storeDir, hash);
 
     expect(result).toEqual(obj);
@@ -46,10 +46,10 @@ describe("object store", () => {
     expect(objectExists(storeDir, fakeHash)).toBe(false);
   });
 
-  it("stores files in 2-char prefix subdirectories", () => {
+  it("stores files in 2-char prefix subdirectories", async () => {
     storeDir = mkdtempSync(join(tmpdir(), "handprint-test-"));
     const obj = { hello: "world" };
-    const hash = writeObject(storeDir, obj);
+    const hash = await writeObject(storeDir, obj);
 
     const prefix = hash.slice(0, 2);
     const rest = hash.slice(2);

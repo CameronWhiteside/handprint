@@ -32,10 +32,10 @@ describe("store/meta", () => {
     };
   }
 
-  it("writes and reads a meta entry", () => {
+  it("writes and reads a meta entry", async () => {
     storeDir = mkdtempSync(join(tmpdir(), "hp-meta-"));
     const meta = makeMeta();
-    const hash = writeMeta(storeDir, meta);
+    const hash = await writeMeta(storeDir, meta);
     expect(hash).toMatch(/^[a-f0-9]{64}$/);
 
     const read = readMeta(storeDir, hash);
@@ -51,11 +51,11 @@ describe("store/meta", () => {
     expect(read).toBeNull();
   });
 
-  it("lists all meta entries", () => {
+  it("lists all meta entries", async () => {
     storeDir = mkdtempSync(join(tmpdir(), "hp-meta-"));
-    writeMeta(storeDir, makeMeta({ intent: "first" }));
-    writeMeta(storeDir, makeMeta({ intent: "second" }));
-    writeMeta(storeDir, makeMeta({ intent: "third" }));
+    await writeMeta(storeDir, makeMeta({ intent: "first" }));
+    await writeMeta(storeDir, makeMeta({ intent: "second" }));
+    await writeMeta(storeDir, makeMeta({ intent: "third" }));
 
     const all = listAllMeta(storeDir);
     expect(all.length).toBe(3);
@@ -69,14 +69,14 @@ describe("store/meta", () => {
     expect(all).toEqual([]);
   });
 
-  it("filters meta by seal hash", () => {
+  it("filters meta by seal hash", async () => {
     storeDir = mkdtempSync(join(tmpdir(), "hp-meta-"));
     const sealA = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     const sealB = "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb";
 
-    writeMeta(storeDir, makeMeta({ seal: sealA, intent: "a1" }));
-    writeMeta(storeDir, makeMeta({ seal: sealA, intent: "a2" }));
-    writeMeta(storeDir, makeMeta({ seal: sealB, intent: "b1" }));
+    await writeMeta(storeDir, makeMeta({ seal: sealA, intent: "a1" }));
+    await writeMeta(storeDir, makeMeta({ seal: sealA, intent: "a2" }));
+    await writeMeta(storeDir, makeMeta({ seal: sealB, intent: "b1" }));
 
     const forA = metaForSeal(storeDir, sealA);
     expect(forA.length).toBe(2);
