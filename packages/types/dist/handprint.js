@@ -1,5 +1,30 @@
 import { z } from 'zod';
+// ── Types ────────────────────────────────────────────────────
 export const handprintTypeSchema = z.enum(['vision', 'choice', 'method']);
+// ── Subtypes (discriminated by type) ─────────────────────────
+export const visionSubtypeSchema = z.enum(['goal', 'direction', 'bet']);
+export const choiceSubtypeSchema = z.enum([
+    'override',
+    'rejection',
+    'constraint',
+    'wager',
+    'direction',
+]);
+export const methodSubtypeSchema = z.enum(['tool', 'knowledge']);
+export const subtypesByType = {
+    vision: visionSubtypeSchema,
+    choice: choiceSubtypeSchema,
+    method: methodSubtypeSchema,
+};
+export const allSubtypesSchema = z.enum([
+    ...visionSubtypeSchema.options,
+    ...choiceSubtypeSchema.options,
+    ...methodSubtypeSchema.options,
+]);
+export function subtypeSchemaForType(type) {
+    return subtypesByType[type];
+}
+// ── Status ───────────────────────────────────────────────────
 export const handprintStatusSchema = z.enum(['open', 'resolved']);
 export const resolutionStatusSchema = z.enum([
     'validated',
@@ -7,6 +32,7 @@ export const resolutionStatusSchema = z.enum([
     'revised',
     'invalidated',
 ]);
+// ── Building blocks ──────────────────────────────────────────
 export const anchorSchema = z.object({
     label: z.string(),
     verified: z.boolean(),
@@ -16,11 +42,10 @@ export const resolutionSchema = z.object({
     body: z.string(),
     timestamp: z.string(),
 });
-export const handprintSchema = z.object({
+// ── Handprint (flat schema with runtime subtype validation) ──
+const handprintBase = {
     signature: z.string(),
     madeAt: z.string(),
-    type: handprintTypeSchema,
-    subtype: z.string().optional(),
     intent: z.string(),
     risk: z.string(),
     context: z.string(),
@@ -34,5 +59,25 @@ export const handprintSchema = z.object({
     status: handprintStatusSchema,
     outcome: z.string().optional(),
     resolutions: z.array(resolutionSchema),
+};
+export const visionHandprintSchema = z.object({
+    ...handprintBase,
+    type: z.literal('vision'),
+    subtype: visionSubtypeSchema.optional(),
 });
+export const choiceHandprintSchema = z.object({
+    ...handprintBase,
+    type: z.literal('choice'),
+    subtype: choiceSubtypeSchema.optional(),
+});
+export const methodHandprintSchema = z.object({
+    ...handprintBase,
+    type: z.literal('method'),
+    subtype: methodSubtypeSchema.optional(),
+});
+export const handprintSchema = z.discriminatedUnion('type', [
+    visionHandprintSchema,
+    choiceHandprintSchema,
+    methodHandprintSchema,
+]);
 //# sourceMappingURL=handprint.js.map

@@ -1,7 +1,45 @@
 import { z } from 'zod';
 
+// ── Types ────────────────────────────────────────────────────
+
 export const handprintTypeSchema = z.enum(['vision', 'choice', 'method']);
 export type HandprintType = z.infer<typeof handprintTypeSchema>;
+
+// ── Subtypes (discriminated by type) ─────────────────────────
+
+export const visionSubtypeSchema = z.enum(['goal', 'direction', 'bet']);
+export type VisionSubtype = z.infer<typeof visionSubtypeSchema>;
+
+export const choiceSubtypeSchema = z.enum([
+  'override',
+  'rejection',
+  'constraint',
+  'wager',
+  'direction',
+]);
+export type ChoiceSubtype = z.infer<typeof choiceSubtypeSchema>;
+
+export const methodSubtypeSchema = z.enum(['tool', 'knowledge']);
+export type MethodSubtype = z.infer<typeof methodSubtypeSchema>;
+
+export const subtypesByType = {
+  vision: visionSubtypeSchema,
+  choice: choiceSubtypeSchema,
+  method: methodSubtypeSchema,
+} as const;
+
+export const allSubtypesSchema = z.enum([
+  ...visionSubtypeSchema.options,
+  ...choiceSubtypeSchema.options,
+  ...methodSubtypeSchema.options,
+]);
+export type Subtype = z.infer<typeof allSubtypesSchema>;
+
+export function subtypeSchemaForType(type: HandprintType) {
+  return subtypesByType[type];
+}
+
+// ── Status ───────────────────────────────────────────────────
 
 export const handprintStatusSchema = z.enum(['open', 'resolved']);
 export type HandprintStatus = z.infer<typeof handprintStatusSchema>;
@@ -13,6 +51,8 @@ export const resolutionStatusSchema = z.enum([
   'invalidated',
 ]);
 export type ResolutionStatus = z.infer<typeof resolutionStatusSchema>;
+
+// ── Building blocks ──────────────────────────────────────────
 
 export const anchorSchema = z.object({
   label: z.string(),
@@ -27,11 +67,11 @@ export const resolutionSchema = z.object({
 });
 export type Resolution = z.infer<typeof resolutionSchema>;
 
-export const handprintSchema = z.object({
+// ── Handprint (flat schema with runtime subtype validation) ──
+
+const handprintBase = {
   signature: z.string(),
   madeAt: z.string(),
-  type: handprintTypeSchema,
-  subtype: z.string().optional(),
   intent: z.string(),
   risk: z.string(),
   context: z.string(),
@@ -45,5 +85,29 @@ export const handprintSchema = z.object({
   status: handprintStatusSchema,
   outcome: z.string().optional(),
   resolutions: z.array(resolutionSchema),
+};
+
+export const visionHandprintSchema = z.object({
+  ...handprintBase,
+  type: z.literal('vision'),
+  subtype: visionSubtypeSchema.optional(),
 });
+
+export const choiceHandprintSchema = z.object({
+  ...handprintBase,
+  type: z.literal('choice'),
+  subtype: choiceSubtypeSchema.optional(),
+});
+
+export const methodHandprintSchema = z.object({
+  ...handprintBase,
+  type: z.literal('method'),
+  subtype: methodSubtypeSchema.optional(),
+});
+
+export const handprintSchema = z.discriminatedUnion('type', [
+  visionHandprintSchema,
+  choiceHandprintSchema,
+  methodHandprintSchema,
+]);
 export type Handprint = z.infer<typeof handprintSchema>;

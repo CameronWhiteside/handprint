@@ -13,10 +13,10 @@ export declare const pushProfileInputSchema: z.ZodObject<{
     meta?: Record<string, unknown> | undefined;
 }>;
 export type PushProfileInput = z.infer<typeof pushProfileInputSchema>;
-export declare const pushHandprintInputSchema: z.ZodObject<{
+export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
+    type: z.ZodLiteral<"vision">;
+    subtype: z.ZodOptional<z.ZodEnum<["goal", "direction", "bet"]>>;
     signature: z.ZodString;
-    type: z.ZodEnum<["vision", "choice", "method"]>;
-    subtype: z.ZodOptional<z.ZodString>;
     madeAt: z.ZodString;
     intent: z.ZodString;
     risk: z.ZodString;
@@ -53,7 +53,7 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
         timestamp: string;
     }>, "many">>;
 }, "strip", z.ZodTypeAny, {
-    type: "vision" | "choice" | "method";
+    type: "vision";
     status: "open" | "resolved";
     signature: string;
     madeAt: string;
@@ -69,7 +69,7 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
         body: string;
         timestamp: string;
     }[];
-    subtype?: string | undefined;
+    subtype?: "goal" | "direction" | "bet" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -78,14 +78,14 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
     source?: string | undefined;
     outcome?: string | undefined;
 }, {
-    type: "vision" | "choice" | "method";
+    type: "vision";
     signature: string;
     madeAt: string;
     intent: string;
     risk: string;
     context: string;
     status?: "open" | "resolved" | undefined;
-    subtype?: string | undefined;
+    subtype?: "goal" | "direction" | "bet" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -102,7 +102,185 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
         body: string;
         timestamp: string;
     }[] | undefined;
-}>;
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"choice">;
+    subtype: z.ZodOptional<z.ZodEnum<["override", "rejection", "constraint", "wager", "direction"]>>;
+    signature: z.ZodString;
+    madeAt: z.ZodString;
+    intent: z.ZodString;
+    risk: z.ZodString;
+    context: z.ZodString;
+    project: z.ZodOptional<z.ZodString>;
+    repo: z.ZodOptional<z.ZodString>;
+    branch: z.ZodOptional<z.ZodString>;
+    confidence: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+    horizon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    source: z.ZodOptional<z.ZodString>;
+    status: z.ZodDefault<z.ZodEnum<["open", "resolved"]>>;
+    outcome: z.ZodOptional<z.ZodString>;
+    anchors: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        label: z.ZodString;
+        verified: z.ZodBoolean;
+    }, "strip", z.ZodTypeAny, {
+        label: string;
+        verified: boolean;
+    }, {
+        label: string;
+        verified: boolean;
+    }>, "many">>;
+    resolutions: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        status: z.ZodEnum<["validated", "partial", "revised", "invalidated"]>;
+        body: z.ZodString;
+        timestamp: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }, {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }>, "many">>;
+}, "strip", z.ZodTypeAny, {
+    type: "choice";
+    status: "open" | "resolved";
+    signature: string;
+    madeAt: string;
+    intent: string;
+    risk: string;
+    context: string;
+    anchors: {
+        label: string;
+        verified: boolean;
+    }[];
+    resolutions: {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }[];
+    subtype?: "direction" | "override" | "rejection" | "constraint" | "wager" | undefined;
+    project?: string | undefined;
+    repo?: string | undefined;
+    branch?: string | undefined;
+    confidence?: number | null | undefined;
+    horizon?: string | null | undefined;
+    source?: string | undefined;
+    outcome?: string | undefined;
+}, {
+    type: "choice";
+    signature: string;
+    madeAt: string;
+    intent: string;
+    risk: string;
+    context: string;
+    status?: "open" | "resolved" | undefined;
+    subtype?: "direction" | "override" | "rejection" | "constraint" | "wager" | undefined;
+    project?: string | undefined;
+    repo?: string | undefined;
+    branch?: string | undefined;
+    confidence?: number | null | undefined;
+    horizon?: string | null | undefined;
+    anchors?: {
+        label: string;
+        verified: boolean;
+    }[] | undefined;
+    source?: string | undefined;
+    outcome?: string | undefined;
+    resolutions?: {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }[] | undefined;
+}>, z.ZodObject<{
+    type: z.ZodLiteral<"method">;
+    subtype: z.ZodOptional<z.ZodEnum<["tool", "knowledge"]>>;
+    signature: z.ZodString;
+    madeAt: z.ZodString;
+    intent: z.ZodString;
+    risk: z.ZodString;
+    context: z.ZodString;
+    project: z.ZodOptional<z.ZodString>;
+    repo: z.ZodOptional<z.ZodString>;
+    branch: z.ZodOptional<z.ZodString>;
+    confidence: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
+    horizon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
+    source: z.ZodOptional<z.ZodString>;
+    status: z.ZodDefault<z.ZodEnum<["open", "resolved"]>>;
+    outcome: z.ZodOptional<z.ZodString>;
+    anchors: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        label: z.ZodString;
+        verified: z.ZodBoolean;
+    }, "strip", z.ZodTypeAny, {
+        label: string;
+        verified: boolean;
+    }, {
+        label: string;
+        verified: boolean;
+    }>, "many">>;
+    resolutions: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        status: z.ZodEnum<["validated", "partial", "revised", "invalidated"]>;
+        body: z.ZodString;
+        timestamp: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }, {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }>, "many">>;
+}, "strip", z.ZodTypeAny, {
+    type: "method";
+    status: "open" | "resolved";
+    signature: string;
+    madeAt: string;
+    intent: string;
+    risk: string;
+    context: string;
+    anchors: {
+        label: string;
+        verified: boolean;
+    }[];
+    resolutions: {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }[];
+    subtype?: "tool" | "knowledge" | undefined;
+    project?: string | undefined;
+    repo?: string | undefined;
+    branch?: string | undefined;
+    confidence?: number | null | undefined;
+    horizon?: string | null | undefined;
+    source?: string | undefined;
+    outcome?: string | undefined;
+}, {
+    type: "method";
+    signature: string;
+    madeAt: string;
+    intent: string;
+    risk: string;
+    context: string;
+    status?: "open" | "resolved" | undefined;
+    subtype?: "tool" | "knowledge" | undefined;
+    project?: string | undefined;
+    repo?: string | undefined;
+    branch?: string | undefined;
+    confidence?: number | null | undefined;
+    horizon?: string | null | undefined;
+    anchors?: {
+        label: string;
+        verified: boolean;
+    }[] | undefined;
+    source?: string | undefined;
+    outcome?: string | undefined;
+    resolutions?: {
+        status: "validated" | "partial" | "revised" | "invalidated";
+        body: string;
+        timestamp: string;
+    }[] | undefined;
+}>]>;
 export type PushHandprintInput = z.infer<typeof pushHandprintInputSchema>;
 export declare const handleParamSchema: z.ZodObject<{
     handle: z.ZodString;
@@ -114,7 +292,7 @@ export declare const handleParamSchema: z.ZodObject<{
 export type HandleParam = z.infer<typeof handleParamSchema>;
 export declare const handprintsQuerySchema: z.ZodObject<{
     type: z.ZodOptional<z.ZodEnum<["vision", "choice", "method"]>>;
-    subtype: z.ZodOptional<z.ZodString>;
+    subtype: z.ZodOptional<z.ZodEnum<["goal", "direction", "bet", "override", "rejection", "constraint", "wager", "direction", "tool", "knowledge"]>>;
     status: z.ZodOptional<z.ZodEnum<["open", "resolved"]>>;
     repo: z.ZodOptional<z.ZodString>;
     project: z.ZodOptional<z.ZodString>;
@@ -130,7 +308,7 @@ export declare const handprintsQuerySchema: z.ZodObject<{
     offset: number;
     type?: "vision" | "choice" | "method" | undefined;
     status?: "open" | "resolved" | undefined;
-    subtype?: string | undefined;
+    subtype?: "goal" | "direction" | "bet" | "override" | "rejection" | "constraint" | "wager" | "tool" | "knowledge" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     source?: string | undefined;
@@ -140,7 +318,7 @@ export declare const handprintsQuerySchema: z.ZodObject<{
     sort?: "madeAt" | "-madeAt" | undefined;
     type?: "vision" | "choice" | "method" | undefined;
     status?: "open" | "resolved" | undefined;
-    subtype?: string | undefined;
+    subtype?: "goal" | "direction" | "bet" | "override" | "rejection" | "constraint" | "wager" | "tool" | "knowledge" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     source?: string | undefined;

@@ -1,5 +1,13 @@
 import { z } from 'zod';
-import { handprintTypeSchema, anchorSchema, resolutionSchema } from './handprint.js';
+import {
+  handprintTypeSchema,
+  allSubtypesSchema,
+  visionSubtypeSchema,
+  choiceSubtypeSchema,
+  methodSubtypeSchema,
+  anchorSchema,
+  resolutionSchema,
+} from './handprint.js';
 
 // ── Push payloads ────────────────────────────────────────────
 
@@ -14,10 +22,8 @@ export const pushProfileInputSchema = z.object({
 });
 export type PushProfileInput = z.infer<typeof pushProfileInputSchema>;
 
-export const pushHandprintInputSchema = z.object({
+const pushHandprintBase = {
   signature: z.string().min(1),
-  type: handprintTypeSchema,
-  subtype: z.string().optional(),
   madeAt: z.string(),
   intent: z.string().min(1),
   risk: z.string().min(1),
@@ -32,7 +38,13 @@ export const pushHandprintInputSchema = z.object({
   outcome: z.string().optional(),
   anchors: z.array(anchorSchema).default([]),
   resolutions: z.array(resolutionSchema).default([]),
-});
+};
+
+export const pushHandprintInputSchema = z.discriminatedUnion('type', [
+  z.object({ ...pushHandprintBase, type: z.literal('vision'), subtype: visionSubtypeSchema.optional() }),
+  z.object({ ...pushHandprintBase, type: z.literal('choice'), subtype: choiceSubtypeSchema.optional() }),
+  z.object({ ...pushHandprintBase, type: z.literal('method'), subtype: methodSubtypeSchema.optional() }),
+]);
 export type PushHandprintInput = z.infer<typeof pushHandprintInputSchema>;
 
 // ── Path params ──────────────────────────────────────────────
@@ -50,7 +62,7 @@ export type HandleParam = z.infer<typeof handleParamSchema>;
 
 export const handprintsQuerySchema = z.object({
   type: handprintTypeSchema.optional(),
-  subtype: z.string().optional(),
+  subtype: allSubtypesSchema.optional(),
   status: z.enum(['open', 'resolved']).optional(),
   repo: z.string().optional(),
   project: z.string().optional(),
