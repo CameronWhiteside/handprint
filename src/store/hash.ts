@@ -1,5 +1,5 @@
-import sodium from 'libsodium-wrappers';
-import { ensureSodium } from '../crypto/sodium.js';
+import { blake2b } from '@noble/hashes/blake2.js';
+import { bytesToHex } from '@noble/hashes/utils.js';
 
 export function canonicalize(value: unknown): string {
   if (value === null || typeof value !== 'object') {
@@ -21,12 +21,11 @@ export function canonicalize(value: unknown): string {
 }
 
 export function sha256(data: Uint8Array): Uint8Array {
-  return sodium.crypto_generichash(32, data);
+  return blake2b(data, { dkLen: 32 });
 }
 
 export async function hashObject(obj: Record<string, unknown>): Promise<string> {
-  await ensureSodium();
   const canonical = canonicalize(obj);
   const hash = sha256(new TextEncoder().encode(canonical));
-  return sodium.to_hex(hash);
+  return bytesToHex(hash);
 }

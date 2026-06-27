@@ -27,11 +27,11 @@ describe('sodium crypto', () => {
     expect(toBase64url(a)).not.toBe(toBase64url(b));
   });
 
-  it('deriveKeypair returns 32-byte public + 64-byte private', async () => {
+  it('deriveKeypair returns 32-byte public + 32-byte private (seed)', async () => {
     const seed = await generateSeed();
     const kp = await deriveKeypair(seed);
     expect(kp.publicKey.length).toBe(32);
-    expect(kp.privateKey.length).toBe(64);
+    expect(kp.privateKey.length).toBe(32);
   });
 
   it('deriveKeypair is deterministic from same seed', async () => {
