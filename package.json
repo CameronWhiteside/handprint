@@ -1,6 +1,6 @@
 {
-  "name": "handprint",
-  "version": "0.1.0",
+  "name": "handprint-sh",
+  "version": "0.2.0",
   "type": "module",
   "workspaces": ["packages/*"],
   "bin": {
@@ -13,8 +13,8 @@
   },
   "description": "Human decision provenance for the age of AI",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.102.0",
-    "commander": "^14.0.3"
+    "commander": "^14.0.3",
+    "libsodium-wrappers": "^0.7.15"
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
