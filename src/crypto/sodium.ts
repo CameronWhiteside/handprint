@@ -1,4 +1,5 @@
 import sodium from 'libsodium-wrappers';
+import { createHash } from 'crypto';
 
 const ENCRYPTION_CONTEXT = 'payload-encryption-v1';
 
@@ -34,8 +35,9 @@ export async function deriveEncryptionKey(seed: Uint8Array): Promise<Uint8Array>
 }
 
 export function fingerprint(publicKey: Uint8Array): string {
-  const hash = sodium.crypto_generichash(32, publicKey);
-  return toBase64url(hash).slice(0, 16);
+  if (!ready) throw new Error('call ensureSodium() first');
+  const hash = createHash('sha256').update(publicKey).digest();
+  return toBase64url(new Uint8Array(hash)).slice(0, 16);
 }
 
 export async function signDetached(
