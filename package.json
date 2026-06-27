@@ -2,6 +2,7 @@
   "name": "handprint",
   "version": "0.1.0",
   "type": "module",
+  "workspaces": ["packages/*"],
   "bin": {
     "handprint": "./bin/handprint.ts"
   },
