@@ -1,5 +1,3 @@
-#!/usr/bin/env npx tsx
-
 import { Command } from 'commander';
 import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';

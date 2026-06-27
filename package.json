@@ -2,18 +2,25 @@
   "name": "handprint-sh",
   "version": "0.2.0",
   "type": "module",
+  "description": "Human decision provenance for the age of AI",
   "workspaces": [
     "packages/*"
   ],
   "bin": {
-    "handprint": "./bin/handprint.ts"
+    "handprint": "./dist/bin/handprint.js"
   },
+  "files": [
+    "dist/bin/",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
+    "build": "tsup",
+    "prepublishOnly": "npm run build",
     "test": "vitest run",
     "test:watch": "vitest",
     "handprint": "tsx bin/handprint.ts"
   },
-  "description": "Human decision provenance for the age of AI",
   "dependencies": {
     "@noble/ciphers": "^2.2.0",
     "@noble/ed25519": "^3.1.0",
@@ -22,6 +29,7 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
+    "tsup": "^8.5.1",
     "tsx": "^4.22.4",
     "typescript": "^6.0.3",
     "vitest": "^4.1.8"
