@@ -15,7 +15,6 @@ export const choiceSubtypeSchema = z.enum([
   'override',
   'rejection',
   'constraint',
-  'tradeoff',
   'inquiry',
 ]);
 export type ChoiceSubtype = z.infer<typeof choiceSubtypeSchema>;

@@ -3,18 +3,18 @@ export declare const handprintTypeSchema: z.ZodEnum<["vision", "choice", "method
 export type HandprintType = z.infer<typeof handprintTypeSchema>;
 export declare const visionSubtypeSchema: z.ZodEnum<["goal", "direction", "principle"]>;
 export type VisionSubtype = z.infer<typeof visionSubtypeSchema>;
-export declare const choiceSubtypeSchema: z.ZodEnum<["approval", "override", "rejection", "constraint", "tradeoff", "inquiry"]>;
+export declare const choiceSubtypeSchema: z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>;
 export type ChoiceSubtype = z.infer<typeof choiceSubtypeSchema>;
 export declare const methodSubtypeSchema: z.ZodEnum<["tool", "knowledge", "process", "delegation"]>;
 export type MethodSubtype = z.infer<typeof methodSubtypeSchema>;
 export declare const subtypesByType: {
     readonly vision: z.ZodEnum<["goal", "direction", "principle"]>;
-    readonly choice: z.ZodEnum<["approval", "override", "rejection", "constraint", "tradeoff", "inquiry"]>;
+    readonly choice: z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>;
     readonly method: z.ZodEnum<["tool", "knowledge", "process", "delegation"]>;
 };
-export declare const allSubtypesSchema: z.ZodEnum<["goal", "direction", "principle", "approval", "override", "rejection", "constraint", "tradeoff", "inquiry", "tool", "knowledge", "process", "delegation"]>;
+export declare const allSubtypesSchema: z.ZodEnum<["goal", "direction", "principle", "approval", "override", "rejection", "constraint", "inquiry", "tool", "knowledge", "process", "delegation"]>;
 export type Subtype = z.infer<typeof allSubtypesSchema>;
-export declare function subtypeSchemaForType(type: HandprintType): z.ZodEnum<["goal", "direction", "principle"]> | z.ZodEnum<["approval", "override", "rejection", "constraint", "tradeoff", "inquiry"]> | z.ZodEnum<["tool", "knowledge", "process", "delegation"]>;
+export declare function subtypeSchemaForType(type: HandprintType): z.ZodEnum<["goal", "direction", "principle"]> | z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]> | z.ZodEnum<["tool", "knowledge", "process", "delegation"]>;
 export declare const handprintStatusSchema: z.ZodEnum<["open", "resolved"]>;
 export type HandprintStatus = z.infer<typeof handprintStatusSchema>;
 export declare const resolutionStatusSchema: z.ZodEnum<["validated", "partial", "revised", "invalidated"]>;
@@ -136,7 +136,7 @@ export declare const visionHandprintSchema: z.ZodObject<{
 }>;
 export declare const choiceHandprintSchema: z.ZodObject<{
     type: z.ZodLiteral<"choice">;
-    subtype: z.ZodOptional<z.ZodEnum<["approval", "override", "rejection", "constraint", "tradeoff", "inquiry"]>>;
+    subtype: z.ZodOptional<z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>>;
     signature: z.ZodString;
     madeAt: z.ZodString;
     intent: z.ZodString;
@@ -193,7 +193,7 @@ export declare const choiceHandprintSchema: z.ZodObject<{
         body: string;
         timestamp: string;
     }[];
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | undefined;
+    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -218,7 +218,7 @@ export declare const choiceHandprintSchema: z.ZodObject<{
         body: string;
         timestamp: string;
     }[];
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | undefined;
+    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -405,7 +405,7 @@ export declare const handprintSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObje
     outcome?: string | undefined;
 }>, z.ZodObject<{
     type: z.ZodLiteral<"choice">;
-    subtype: z.ZodOptional<z.ZodEnum<["approval", "override", "rejection", "constraint", "tradeoff", "inquiry"]>>;
+    subtype: z.ZodOptional<z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>>;
     signature: z.ZodString;
     madeAt: z.ZodString;
     intent: z.ZodString;
@@ -462,7 +462,7 @@ export declare const handprintSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObje
         body: string;
         timestamp: string;
     }[];
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | undefined;
+    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -487,7 +487,7 @@ export declare const handprintSchema: z.ZodDiscriminatedUnion<"type", [z.ZodObje
         body: string;
         timestamp: string;
     }[];
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | undefined;
+    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;

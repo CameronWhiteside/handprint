@@ -104,7 +104,7 @@ export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [
     }[] | undefined;
 }>, z.ZodObject<{
     type: z.ZodLiteral<"choice">;
-    subtype: z.ZodOptional<z.ZodEnum<["approval", "override", "rejection", "constraint", "tradeoff", "inquiry"]>>;
+    subtype: z.ZodOptional<z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>>;
     signature: z.ZodString;
     madeAt: z.ZodString;
     intent: z.ZodString;
@@ -158,7 +158,7 @@ export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [
         body: string;
         timestamp: string;
     }[];
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | undefined;
+    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -174,7 +174,7 @@ export declare const pushHandprintInputSchema: z.ZodDiscriminatedUnion<"type", [
     risk: string;
     context: string;
     status?: "open" | "resolved" | undefined;
-    subtype?: "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | undefined;
+    subtype?: "approval" | "override" | "rejection" | "constraint" | "inquiry" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     branch?: string | undefined;
@@ -292,7 +292,7 @@ export declare const handleParamSchema: z.ZodObject<{
 export type HandleParam = z.infer<typeof handleParamSchema>;
 export declare const handprintsQuerySchema: z.ZodObject<{
     type: z.ZodOptional<z.ZodEnum<["vision", "choice", "method"]>>;
-    subtype: z.ZodOptional<z.ZodEnum<["goal", "direction", "principle", "approval", "override", "rejection", "constraint", "tradeoff", "inquiry", "tool", "knowledge", "process", "delegation"]>>;
+    subtype: z.ZodOptional<z.ZodEnum<["goal", "direction", "principle", "approval", "override", "rejection", "constraint", "inquiry", "tool", "knowledge", "process", "delegation"]>>;
     status: z.ZodOptional<z.ZodEnum<["open", "resolved"]>>;
     repo: z.ZodOptional<z.ZodString>;
     project: z.ZodOptional<z.ZodString>;
@@ -308,7 +308,7 @@ export declare const handprintsQuerySchema: z.ZodObject<{
     offset: number;
     type?: "vision" | "choice" | "method" | undefined;
     status?: "open" | "resolved" | undefined;
-    subtype?: "goal" | "direction" | "principle" | "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | "tool" | "knowledge" | "process" | "delegation" | undefined;
+    subtype?: "goal" | "direction" | "principle" | "approval" | "override" | "rejection" | "constraint" | "inquiry" | "tool" | "knowledge" | "process" | "delegation" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     source?: string | undefined;
@@ -318,7 +318,7 @@ export declare const handprintsQuerySchema: z.ZodObject<{
     sort?: "madeAt" | "-madeAt" | undefined;
     type?: "vision" | "choice" | "method" | undefined;
     status?: "open" | "resolved" | undefined;
-    subtype?: "goal" | "direction" | "principle" | "approval" | "override" | "rejection" | "constraint" | "tradeoff" | "inquiry" | "tool" | "knowledge" | "process" | "delegation" | undefined;
+    subtype?: "goal" | "direction" | "principle" | "approval" | "override" | "rejection" | "constraint" | "inquiry" | "tool" | "knowledge" | "process" | "delegation" | undefined;
     project?: string | undefined;
     repo?: string | undefined;
     source?: string | undefined;

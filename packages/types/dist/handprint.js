@@ -8,7 +8,6 @@ export const choiceSubtypeSchema = z.enum([
     'override',
     'rejection',
     'constraint',
-    'tradeoff',
     'inquiry',
 ]);
 export const methodSubtypeSchema = z.enum(['tool', 'knowledge', 'process', 'delegation']);
