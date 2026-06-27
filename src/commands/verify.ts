@@ -7,8 +7,7 @@ import {
   fromBase64url,
   toBase64url,
   deriveKeypair,
-  ensureSodium,
-} from '../crypto/sodium.js';
+} from '../crypto/noble.js';
 import { projectDir } from '../dirs/project.js';
 import { loadAllSeeds } from '../dirs/global.js';
 import { handprintObjectSchema } from '@handprint/types';
@@ -36,7 +35,6 @@ async function authorizedPubkeys(): Promise<Set<string>> {
 }
 
 export async function verifyChain(projectRoot: string): Promise<VerifyResult> {
-  await ensureSodium();
   const hpDir = projectDir(projectRoot);
 
   if (!existsSync(hpDir)) {

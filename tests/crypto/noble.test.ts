@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  ensureSodium,
   generateSeed,
   deriveKeypair,
   deriveEncryptionKey,
@@ -11,11 +10,10 @@ import {
   decrypt,
   toBase64url,
   fromBase64url,
-} from '../../src/crypto/sodium.js';
+} from '../../src/crypto/noble.js';
 
-describe('sodium crypto', () => {
+describe('noble crypto', () => {
   it('generateSeed returns 32 bytes', async () => {
-    await ensureSodium();
     const seed = await generateSeed();
     expect(seed).toBeInstanceOf(Uint8Array);
     expect(seed.length).toBe(32);

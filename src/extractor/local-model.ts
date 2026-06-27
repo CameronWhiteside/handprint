@@ -111,9 +111,9 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
       const ready = await ensureModel(entry, opts.homeDir, opts.onDownload);
       if (!ready) throw new Error('local model not available, run "handprint grab" to download it');
 
-      // node-llama-cpp is an optional dependency (large native binaries). Lazy
-      // import keeps it off the hot path and lets us give a clear hint if a
-      // local-model user never installed it.
+      // node-llama-cpp is not bundled or installed by default; local-model users
+      // add it with `npm i -g node-llama-cpp`. Lazy import keeps it off the hot
+      // path and lets us give a clear hint if it is missing.
       const llamaModule = await import('node-llama-cpp').catch(() => {
         throw new Error(
           'the local model needs node-llama-cpp, which is not installed.\n' +

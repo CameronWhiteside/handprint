@@ -3,7 +3,7 @@ import { join } from 'node:path';
 import { readObject } from '../store/objects.js';
 import { projectDir } from '../dirs/project.js';
 import { loadAllSeeds } from '../dirs/global.js';
-import { deriveEncryptionKey, decrypt } from '../crypto/sodium.js';
+import { deriveEncryptionKey, decrypt } from '../crypto/noble.js';
 import { handprintObjectSchema } from '@handprint/types';
 import type { HandprintObject } from '@handprint/types';
 

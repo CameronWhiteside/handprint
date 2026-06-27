@@ -12,8 +12,7 @@ import {
   fingerprint,
   toBase64url,
   generateSeed,
-  ensureSodium,
-} from '../crypto/sodium.js';
+} from '../crypto/noble.js';
 import { createHubClient } from '../hub/client.js';
 
 function loadToken(): string {
@@ -24,7 +23,6 @@ function loadToken(): string {
 }
 
 export async function keysAdd(label: string): Promise<{ fingerprint: string }> {
-  await ensureSodium();
   const seed = loadSeed();
   const kp = await deriveKeypair(seed);
   const fp = fingerprint(kp.publicKey);
@@ -43,7 +41,6 @@ export async function keysList(): Promise<{
   fingerprint: string;
   pubkey: string;
 }> {
-  await ensureSodium();
   const seed = loadSeed();
   const kp = await deriveKeypair(seed);
   return {
@@ -56,7 +53,6 @@ export async function keysRotate(): Promise<{
   fingerprint: string;
   previousFingerprint: string;
 }> {
-  await ensureSodium();
 
   // Archive the current seed before replacing it. The encryption key is derived
   // from the seed, so without this every payload written under the old key would

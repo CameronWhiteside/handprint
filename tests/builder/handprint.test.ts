@@ -103,7 +103,7 @@ describe('handprint builder', () => {
   it('sanitizes plaintext before encrypting', async () => {
     const { buildHandprint } = await import('../../src/builder/handprint.js');
     const { loadSeed } = await import('../../src/dirs/global.js');
-    const { deriveEncryptionKey, decrypt } = await import('../../src/crypto/sodium.js');
+    const { deriveEncryptionKey, decrypt } = await import('../../src/crypto/noble.js');
 
     const result = await buildHandprint({
       projectRoot: TEST_PROJECT,

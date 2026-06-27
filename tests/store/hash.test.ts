@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import { hashObject, canonicalize, blake2b256 } from '../../src/store/hash.js';
-import { ensureSodium } from '../../src/crypto/sodium.js';
 
 describe('canonicalize', () => {
   it('sorts object keys', () => {
@@ -33,7 +32,6 @@ describe('canonicalize', () => {
 
 describe('hashObject', () => {
   it('returns 64-char hex string', async () => {
-    await ensureSodium();
     const hash = await hashObject({ a: 1 });
     expect(hash).toMatch(/^[a-f0-9]{64}$/);
   });
@@ -53,7 +51,6 @@ describe('hashObject', () => {
 
 describe('blake2b256', () => {
   it('returns 32 bytes', async () => {
-    await ensureSodium();
     const hash = blake2b256(new TextEncoder().encode('test'));
     expect(hash.length).toBe(32);
   });

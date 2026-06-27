@@ -7,6 +7,6 @@ describe('source types', () => {
     const err = new NotImplementedError('codex');
     expect(err).toBeInstanceOf(Error);
     expect(err.message).toContain('codex');
-    expect(err.message).toContain('adding-a-source-adapter');
+    expect(err.message).toContain('CONTRIBUTING');
   });
 });
