@@ -2,17 +2,12 @@ import { readFileSync, existsSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { execSync } from "node:child_process";
 import { parseTranscriptLine, type TranscriptEntry } from "./claude-code.js";
+import type { Mark, Artifact } from "@handprint/types";
+import { markSchema, artifactSchema } from "@handprint/types";
 
 export interface ExtractedHandprint {
-  type: "vision" | "choice" | "method";
-  subtype?: string;
-  intent: string;
-  risk: string;
-  context: string;
-  horizon: string | null;
-  confidence: number;
-  source: string;
-  quote: string;
+  marks: Mark[];
+  artifacts: Artifact[];
   timestamp: string;
 }
 
@@ -56,45 +51,33 @@ function buildConversationWindow(
   return lines.join("\n\n");
 }
 
-const SYSTEM_PROMPT = `You are a handprint detector. You analyze conversations between a human and an AI coding assistant to identify moments of human judgment — decisions where the human steered the work rather than just accepting what the AI suggested.
+const SYSTEM_PROMPT = `You are a handprint detector. You analyze conversations between a human and an AI assistant to identify moments of human judgment — decisions where the human steered the work.
 
-There are three types of handprints, each with subtypes:
+There are three types of marks:
 
-1. **vision** — What did the human want to achieve? Goal-setting, direction, planning.
-   Subtypes: goal, direction, bet
-   "Switching the pipeline to streaming so latency drops below 100ms." "We're building a CLI tool for decision provenance."
+1. **vision** — What the human wants to achieve.
+   Subtypes: goal, direction, principle
 
-2. **choice** — What decisions did the human make? Overrides, rejections, constraints, trade-offs.
-   Subtypes: override, rejection, constraint, wager, direction
-   "No, use edge JWT instead of the centralized gateway." "We're not adding a recommendations engine in v2." "Never use gendered language in tile suggestions."
+2. **choice** — Decisions the human made.
+   Subtypes: approval, override, rejection, constraint, inquiry
 
-3. **method** — What tools and knowledge did the human apply? Tool selection, framework choices, integrations.
-   Subtypes: tools, knowledge
-   "Using Cloudflare Workers with Hono for the API layer." "Wire up Drizzle ORM instead of raw SQL."
+3. **method** — Tools and knowledge the human applied.
+   Subtypes: tool, knowledge, process
 
-IMPORTANT rules:
-- Only flag moments where a HUMAN made a real decision that shaped the work
-- Routine instructions ("format the code", "deploy please", "commit and push") are NOT handprints
-- Approvals of AI suggestions ("yes", "go ahead", "looks good") are NOT handprints unless the human adds meaningful constraints
-- The human choosing between options the AI presented IS a handprint (vision or choice)
-- "Never do X" and "always do Y" are choices (constraints)
-- Short steering corrections ("no, use X instead") count as choices
-- Tool/framework/library selections are method
-- Extract the EXACT quote from the human that constitutes the handprint
+For each decision moment, return an object with:
+- marks: array of { type, subtype, note } — note is 1-280 chars describing the decision
+- artifacts: array of { type, uri } — any outputs referenced (git-commit, file, url, deployment, etc.)
+- timestamp: the ISO timestamp from the conversation
 
-For each handprint, extract:
-- type: one of vision, choice, method
-- subtype: the specific subtype within the type (see lists above)
-- intent: one sentence capturing what the human decided (in third person, like a log entry)
-- risk: what could go wrong if this decision is wrong (one sentence)
-- context: the project/feature area this applies to
-- horizon: ISO 8601 duration if there's a time component (P3M, P12M, etc.), or null
-- confidence: how confident you are this is a real handprint (0.0-1.0)
-- quote: the exact human text that constitutes the handprint (keep it short, max ~150 chars)
-- timestamp: the timestamp from the conversation
+IMPORTANT:
+- Only flag moments where a HUMAN made a real decision
+- Routine instructions are NOT handprints
+- Simple approvals without constraints are NOT handprints
+- "Never do X" / "always do Y" = choice/constraint
+- Tool/framework selections = method/tool or method/process
+- Each note should be a concise third-person description of what the human decided
 
-Respond ONLY with a JSON array. No markdown, no explanation. If no handprints found, return [].
-Only include handprints with confidence >= 0.7.`;
+Respond ONLY with a JSON array. No markdown. If none found, return [].`;
 
 function getCloudflareAuth(): { accountId: string; token: string } {
   if (process.env.CLOUDFLARE_ACCOUNT_ID && process.env.CLOUDFLARE_API_TOKEN) {
@@ -227,8 +210,34 @@ export async function extractHandprintsFromTranscript(
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) continue;
 
-      const raw = JSON.parse(jsonMatch[0]) as ExtractedHandprint[];
-      allHandprints.push(...raw.filter((h) => h.confidence >= 0.7));
+      const raw = JSON.parse(jsonMatch[0]) as Array<{
+        marks?: unknown[];
+        artifacts?: unknown[];
+        timestamp?: string;
+      }>;
+
+      for (const item of raw) {
+        const marks: Mark[] = [];
+        const artifacts: Artifact[] = [];
+
+        for (const m of item.marks ?? []) {
+          const parsed = markSchema.safeParse(m);
+          if (parsed.success) marks.push(parsed.data);
+        }
+
+        for (const a of item.artifacts ?? []) {
+          const parsed = artifactSchema.safeParse(a);
+          if (parsed.success) artifacts.push(parsed.data);
+        }
+
+        if (marks.length === 0) continue;
+
+        allHandprints.push({
+          marks,
+          artifacts,
+          timestamp: item.timestamp ?? new Date().toISOString(),
+        });
+      }
     } catch (err) {
       console.error(`  chunk ${i + 1} error: ${(err as Error).message}`);
     }
