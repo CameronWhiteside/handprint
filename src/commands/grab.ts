@@ -1,134 +1,105 @@
-import {
-  discoverTranscripts,
-  loadTranscriptEntries,
-  extractHandprintsFromTranscript,
-} from '../scanner/ai-extractor.js';
+// src/commands/grab.ts
+import { discoverSessions, adapterById } from '../sources/index.js';
+import { resolveProvider, extractFromEntries } from '../extractor/index.js';
+import { buildConversationWindow } from '../extractor/window.js';
+import type { ExtractorProvider } from '../extractor/types.js';
 import { buildHandprint } from '../builder/handprint.js';
-import { findProjectRoot, isProjectInitialized } from '../dirs/project.js';
-import { isGlobalInitialized } from '../dirs/global.js';
-import type { TranscriptEntry } from '../scanner/claude-code.js';
+import { findProjectRoot } from '../dirs/project.js';
+import { isGlobalInitialized, loadGlobalConfig } from '../dirs/global.js';
+import type { ModelEntry } from '../extractor/models.js';
 
 export interface GrabResult {
   handprintsCreated: number;
   sessionsScanned: number;
   details: Array<{
     hash: string;
+    agent: string;
+    extractor: string;
     marks: Array<{ type: string; subtype: string; note: string }>;
   }>;
 }
 
-function chunkByTimeGap(
-  entries: TranscriptEntry[],
-  gapMs: number = 5 * 60 * 1000,
-): TranscriptEntry[][] {
-  if (entries.length === 0) return [];
-
-  const chunks: TranscriptEntry[][] = [];
-  let current: TranscriptEntry[] = [entries[0]];
-
-  for (let i = 1; i < entries.length; i++) {
-    const prevTs = new Date(entries[i - 1].timestamp).getTime();
-    const currTs = new Date(entries[i].timestamp).getTime();
-
-    if (currTs - prevTs > gapMs || isNaN(prevTs) || isNaN(currTs)) {
-      chunks.push(current);
-      current = [entries[i]];
-    } else {
-      current.push(entries[i]);
-    }
-  }
-
-  if (current.length > 0) chunks.push(current);
-  return chunks;
+export interface GrabOptions {
+  homeDir?: string;
+  limit?: number;
+  dryRun?: boolean;
+  source?: string;
+  extractor?: 'local' | 'host';
+  provider?: ExtractorProvider; // injectable for tests
+  onDownload?: (entry: ModelEntry) => Promise<boolean>;
 }
 
-function buildChunkPlaintext(entries: TranscriptEntry[]): string {
-  return entries
-    .map((e) => {
-      const role = e.role === 'user' ? 'user' : 'assistant';
-      const time = e.timestamp.slice(11, 16);
-      const text = e.text.slice(0, 1000);
-      return `[${role} ${time}] ${text}`;
-    })
-    .join('\n');
-}
-
-export async function grab(
-  cwd: string,
-  options?: {
-    claudeDir?: string;
-    limit?: number;
-    dryRun?: boolean;
-  },
-): Promise<GrabResult> {
+export async function grab(cwd: string, options: GrabOptions = {}): Promise<GrabResult> {
   const projectRoot = findProjectRoot(cwd);
-  if (!projectRoot && !options?.dryRun) {
+  if (!projectRoot && !options.dryRun) {
     throw new Error('not initialized: run "handprint init" first');
   }
-  if (!isGlobalInitialized() && !options?.dryRun) {
+  if (!isGlobalInitialized() && !options.dryRun) {
     throw new Error('global config not found: run "handprint init --global" first');
   }
 
-  const transcripts = discoverTranscripts(options?.claudeDir);
-  const limit = options?.limit ?? transcripts.length;
-  const toProcess = transcripts.slice(0, limit);
+  const config = isGlobalInitialized() ? loadGlobalConfig().extraction : undefined;
+  const provider =
+    options.provider ??
+    resolveProvider({
+      config,
+      homeDir: options.homeDir,
+      forceProvider: options.extractor,
+      onDownload: options.onDownload,
+    });
 
-  const result: GrabResult = {
-    handprintsCreated: 0,
-    sessionsScanned: 0,
-    details: [],
-  };
+  const sessions = discoverSessions({
+    homeDir: options.homeDir,
+    sourceId: options.source,
+    sources: config?.sources,
+  });
+  const toProcess = sessions.slice(0, options.limit ?? sessions.length);
 
-  for (const transcript of toProcess) {
+  const result: GrabResult = { handprintsCreated: 0, sessionsScanned: 0, details: [] };
+
+  for (const ref of toProcess) {
+    const adapter = adapterById(ref.sourceId);
+    if (!adapter) continue;
     result.sessionsScanned++;
-    console.error(
-      `scanning ${transcript.project} / ${transcript.sessionId.slice(0, 8)}...`,
-    );
+    console.error(`scanning ${ref.sourceId}:${ref.project} / ${ref.sessionId.slice(0, 8)}...`);
 
-    const entries = loadTranscriptEntries(transcript.path);
+    const { entries } = adapter.parse(ref);
     if (entries.length === 0) continue;
 
-    const chunks = chunkByTimeGap(entries);
+    const extractions = await extractFromEntries(entries, provider);
+    for (const hp of extractions) {
+      if (hp.marks.length === 0) continue;
 
-    for (const chunk of chunks) {
-      const plaintext = buildChunkPlaintext(chunk);
-      if (!plaintext.trim()) continue;
-
-      const extraction = await extractHandprintsFromTranscript(
-        chunk,
-        transcript.sessionId,
-        transcript.project,
-      );
-
-      for (const hp of extraction.handprints) {
-        if (hp.marks.length === 0) continue;
-
-        if (options?.dryRun) {
-          result.details.push({
-            hash: '(dry-run)',
-            marks: hp.marks,
-          });
-          result.handprintsCreated++;
-          continue;
-        }
-
-        const built = await buildHandprint({
-          projectRoot: projectRoot!,
-          marks: hp.marks,
-          artifacts: hp.artifacts,
-          source: {
-            agent: 'claude-code',
-            session: transcript.sessionId,
-          },
-          plaintext,
-        });
-
+      if (options.dryRun) {
         result.details.push({
-          hash: built.hash,
-          marks: built.handprint.marks,
+          hash: '(dry-run)',
+          agent: adapter.descriptor.sourceAgent,
+          extractor: provider.label(),
+          marks: hp.marks,
         });
         result.handprintsCreated++;
+        continue;
       }
+
+      const built = await buildHandprint({
+        projectRoot: projectRoot!,
+        marks: hp.marks,
+        artifacts: hp.artifacts,
+        source: {
+          agent: adapter.descriptor.sourceAgent,
+          extractor: provider.label(),
+          session: ref.sessionId,
+        },
+        plaintext: hp.sourcePlaintext ?? buildConversationWindow(entries),
+      });
+
+      result.details.push({
+        hash: built.hash,
+        agent: adapter.descriptor.sourceAgent,
+        extractor: provider.label(),
+        marks: built.handprint.marks,
+      });
+      result.handprintsCreated++;
     }
   }
 

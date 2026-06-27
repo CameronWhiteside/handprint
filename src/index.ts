@@ -1,5 +1,6 @@
 export { init } from './commands/init.js';
 export { grab } from './commands/grab.js';
+export { listSources } from './commands/sources.js';
 export { push } from './commands/push.js';
 export { verifyChain } from './commands/verify.js';
 export { listHandprints } from './commands/log.js';
@@ -20,3 +21,5 @@ export {
   findProjectRoot,
   loadProjectConfig,
 } from './dirs/project.js';
+export { discoverSessions, ALL_ADAPTERS, adapterById } from './sources/index.js';
+export { resolveProvider, extractFromEntries, MODELS, DEFAULT_MODEL_ID } from './extractor/index.js';

@@ -385,6 +385,23 @@ export declare const projectConfigSchema: z.ZodObject<{
     visibility?: "private" | "unlisted" | "public" | undefined;
 }>;
 export type ProjectConfig = z.infer<typeof projectConfigSchema>;
+export declare const extractionConfigSchema: z.ZodObject<{
+    provider: z.ZodOptional<z.ZodEnum<["local", "host"]>>;
+    model: z.ZodOptional<z.ZodString>;
+    agentCli: z.ZodOptional<z.ZodEnum<["claude", "opencode", "codex"]>>;
+    sources: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+}, "strip", z.ZodTypeAny, {
+    provider?: "local" | "host" | undefined;
+    model?: string | undefined;
+    agentCli?: "claude" | "opencode" | "codex" | undefined;
+    sources?: string[] | undefined;
+}, {
+    provider?: "local" | "host" | undefined;
+    model?: string | undefined;
+    agentCli?: "claude" | "opencode" | "codex" | undefined;
+    sources?: string[] | undefined;
+}>;
+export type ExtractionConfig = z.infer<typeof extractionConfigSchema>;
 export declare const globalConfigSchema: z.ZodObject<{
     version: z.ZodString;
     createdAt: z.ZodString;
@@ -504,6 +521,22 @@ export declare const globalConfigSchema: z.ZodObject<{
     }, {
         url: string;
     }>;
+    extraction: z.ZodOptional<z.ZodObject<{
+        provider: z.ZodOptional<z.ZodEnum<["local", "host"]>>;
+        model: z.ZodOptional<z.ZodString>;
+        agentCli: z.ZodOptional<z.ZodEnum<["claude", "opencode", "codex"]>>;
+        sources: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    }, "strip", z.ZodTypeAny, {
+        provider?: "local" | "host" | undefined;
+        model?: string | undefined;
+        agentCli?: "claude" | "opencode" | "codex" | undefined;
+        sources?: string[] | undefined;
+    }, {
+        provider?: "local" | "host" | undefined;
+        model?: string | undefined;
+        agentCli?: "claude" | "opencode" | "codex" | undefined;
+        sources?: string[] | undefined;
+    }>>;
 }, "strip", z.ZodTypeAny, {
     version: string;
     createdAt: string;
@@ -537,6 +570,12 @@ export declare const globalConfigSchema: z.ZodObject<{
             verified?: boolean | undefined;
         } | undefined;
     } | undefined;
+    extraction?: {
+        provider?: "local" | "host" | undefined;
+        model?: string | undefined;
+        agentCli?: "claude" | "opencode" | "codex" | undefined;
+        sources?: string[] | undefined;
+    } | undefined;
 }, {
     version: string;
     createdAt: string;
@@ -569,6 +608,12 @@ export declare const globalConfigSchema: z.ZodObject<{
             visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
+    } | undefined;
+    extraction?: {
+        provider?: "local" | "host" | undefined;
+        model?: string | undefined;
+        agentCli?: "claude" | "opencode" | "codex" | undefined;
+        sources?: string[] | undefined;
     } | undefined;
 }>;
 export type GlobalConfig = z.infer<typeof globalConfigSchema>;

@@ -51,4 +51,25 @@ describe('globalConfigSchema', () => {
     const result = globalConfigSchema.safeParse(noIdentity);
     expect(result.success).toBe(false);
   });
+
+  it('accepts an optional extraction block', () => {
+    const parsed = globalConfigSchema.parse({
+      version: '1.0.0',
+      createdAt: '2026-06-27T00:00:00Z',
+      identity: { handle: 'a', name: 'b', email: 'c@d.e' },
+      hub: { url: 'https://handprint.sh' },
+      extraction: { provider: 'local', model: 'qwen2.5-3b-instruct-q4', sources: ['claude-code'] },
+    });
+    expect(parsed.extraction?.provider).toBe('local');
+  });
+
+  it('still parses config with no extraction block', () => {
+    const parsed = globalConfigSchema.parse({
+      version: '1.0.0',
+      createdAt: '2026-06-27T00:00:00Z',
+      identity: { handle: 'a', name: 'b', email: 'c@d.e' },
+      hub: { url: 'https://handprint.sh' },
+    });
+    expect(parsed.extraction).toBeUndefined();
+  });
 });

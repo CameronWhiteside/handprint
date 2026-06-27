@@ -1,4 +1,5 @@
 import { Command } from 'commander';
+import { createInterface } from 'node:readline/promises';
 import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';
 import { push } from '../src/commands/push.js';
@@ -8,6 +9,7 @@ import { showHandprint } from '../src/commands/show.js';
 import { status } from '../src/commands/status.js';
 import { login } from '../src/commands/login.js';
 import { keysAdd, keysList, keysRotate, keysExport } from '../src/commands/keys.js';
+import { listSources } from '../src/commands/sources.js';
 import {
   getConfig,
   getConfigValue,
@@ -56,15 +58,39 @@ program
   });
 
 program
+  .command('sources')
+  .description('List transcript sources, where they live, and how many sessions are found')
+  .action(() => {
+    for (const s of listSources()) {
+      const status = s.implemented ? `${s.sessions} sessions` : 'not yet supported';
+      console.log(`${s.id.padEnd(12)} ${s.displayName.padEnd(14)} ${status}`);
+      console.log(`  paths: ${s.locations.join(', ')}`);
+      console.log(`  data:  timestamps=${s.capabilities.timestamps} project=${s.capabilities.project} branch=${s.capabilities.gitBranch} model=${s.capabilities.model}`);
+    }
+  });
+
+program
   .command('grab')
   .description('Extract decisions from AI transcripts')
   .option('-n, --limit <n>', 'Sessions to scan', parseInt)
+  .option('--source <id>', 'Only scan one source (claude-code, opencode)')
+  .option('--extractor <kind>', 'Extractor: local | host')
   .option('--dry-run', 'Show what would be extracted')
   .action(async (opts) => {
     try {
+      const onDownload = async (entry: { id: string; sizeMb: number }) => {
+        if (!process.stdin.isTTY) return false;
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+        const answer = await rl.question(`Download local model ${entry.id} (${entry.sizeMb} MB)? [y/N] `);
+        rl.close();
+        return answer.trim().toLowerCase() === 'y';
+      };
       const result = await grab(process.cwd(), {
         limit: opts.limit,
         dryRun: opts.dryRun,
+        source: opts.source,
+        extractor: opts.extractor,
+        onDownload,
       });
 
       if (result.handprintsCreated === 0) {
