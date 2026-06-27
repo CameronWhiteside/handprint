@@ -115,12 +115,15 @@ by `mtimeMs` desc. A `--source <id>` flag narrows to one adapter; config control
 ## 2. Normalized model + provenance
 
 `TranscriptEntry` keeps today's fields; **timestamps are always normalized to ISO 8601** regardless of
-source. Provenance is split into two honest facts on the handprint `source`:
+source. Provenance is split into two honest facts on the handprint `source` — **both fields already
+exist** in `sourceSchema` (`@handprint/types`), so no schema change is required:
 
 - `source.agent` — which tool's transcript it came from (from the **adapter** descriptor).
-- `source.extractedBy` — which provider/model produced the marks, e.g. `"local:qwen2.5-3b-instruct"`
-  or `"host:claude"` (from the **extractor**). New field; additive to the schema in
-  `@handprint/types`.
+- `source.extractor` — which provider/model produced the marks, e.g. `"local:qwen2.5-3b-instruct"`
+  or `"host:claude"` (from the **extractor** provider's `label()`).
+
+Today `grab` hardcodes `source.agent = 'claude-code'` and never sets `source.extractor`. After this
+refactor `source.agent` comes from the adapter descriptor and `source.extractor` from the provider.
 
 ## 3. Inference providers (`src/extractor/`)
 
