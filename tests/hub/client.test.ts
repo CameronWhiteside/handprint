@@ -9,7 +9,7 @@ describe('hub client', () => {
     mockFetch.mockReset();
   });
 
-  it('pushHandprint sends POST to /v1/push/handprint', async () => {
+  it('pushHandprint sends POST to /api/v1/push/handprint', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ status: 200 }),
@@ -31,7 +31,7 @@ describe('hub client', () => {
     expect(result.ok).toBe(true);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.handprint.sh/v1/push/handprint',
+      'https://api.handprint.sh/api/v1/push/handprint',
       expect.objectContaining({
         method: 'POST',
         headers: expect.objectContaining({
@@ -41,7 +41,7 @@ describe('hub client', () => {
     );
   });
 
-  it('registerKey sends POST to /v1/keys', async () => {
+  it('registerKey sends POST to /api/v1/keys', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({ status: 200 }),
@@ -52,7 +52,7 @@ describe('hub client', () => {
     expect(result.ok).toBe(true);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      'https://api.handprint.sh/v1/keys',
+      'https://api.handprint.sh/api/v1/keys',
       expect.objectContaining({
         method: 'POST',
         body: JSON.stringify({ pubkey: 'abc', label: 'MacBook' }),
@@ -82,7 +82,7 @@ describe('hub client', () => {
     ).rejects.toThrow();
   });
 
-  it('deviceCodeStart sends POST to /v1/auth/device', async () => {
+  it('deviceCodeStart sends POST to /api/auth/device', async () => {
     mockFetch.mockResolvedValueOnce({
       ok: true,
       json: async () => ({

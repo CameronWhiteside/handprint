@@ -1,0 +1,13 @@
+handprint
+Copyright 2026 Cameron Whiteside
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+Use of this software, the handprint hub (handprint.sh and its API), and any
+data it produces is additionally subject to the Human Provenance Covenant.
+The Covenant is an ethical-use commitment and the basis on which hub access
+tiers are granted. See COVENANT.md.
+
+In short: respect the data of the humans whose decisions handprint records,
+keep them in the loop, and use their provenance to benefit them, not to train
+systems that route around or replace them.

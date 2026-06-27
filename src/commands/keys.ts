@@ -1,6 +1,12 @@
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { loadSeed, loadGlobalConfig, globalDir } from '../dirs/global.js';
+import {
+  loadSeed,
+  loadGlobalConfig,
+  globalDir,
+  writeSeedFile,
+  archiveSeedFile,
+} from '../dirs/global.js';
 import {
   deriveKeypair,
   fingerprint,
@@ -46,16 +52,27 @@ export async function keysList(): Promise<{
   };
 }
 
-export async function keysRotate(): Promise<{ fingerprint: string }> {
+export async function keysRotate(): Promise<{
+  fingerprint: string;
+  previousFingerprint: string;
+}> {
   await ensureSodium();
+
+  // Archive the current seed before replacing it. The encryption key is derived
+  // from the seed, so without this every payload written under the old key would
+  // become permanently undecryptable, and signatures made by the old key would
+  // stop verifying. Archived seeds keep old payloads readable and old entries
+  // verifiable as authorized.
+  const currentSeed = loadSeed();
+  const currentKp = await deriveKeypair(currentSeed);
+  const previousFingerprint = fingerprint(currentKp.publicKey);
+  archiveSeedFile(currentSeed, previousFingerprint);
+
   const newSeed = await generateSeed();
-  const kp = await deriveKeypair(newSeed);
-  const fp = fingerprint(kp.publicKey);
+  const newKp = await deriveKeypair(newSeed);
+  writeSeedFile(newSeed);
 
-  const seedPath = join(globalDir(), 'keys', 'seed');
-  writeFileSync(seedPath, toBase64url(newSeed), { mode: 0o600 });
-
-  return { fingerprint: fp };
+  return { fingerprint: fingerprint(newKp.publicKey), previousFingerprint };
 }
 
 export async function keysExport(): Promise<string> {

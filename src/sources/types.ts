@@ -51,7 +51,7 @@ export interface SourceAdapter {
 export class NotImplementedError extends Error {
   constructor(sourceId: string) {
     super(
-      `source adapter "${sourceId}" is not implemented yet — see docs/adding-a-source-adapter.md`,
+      `source adapter "${sourceId}" is not implemented yet, see docs/adding-a-source-adapter.md`,
     );
     this.name = 'NotImplementedError';
   }

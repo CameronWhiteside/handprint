@@ -2,6 +2,7 @@ import {
   existsSync,
   mkdirSync,
   readFileSync,
+  readdirSync,
   writeFileSync,
   chmodSync,
 } from 'node:fs';
@@ -68,11 +69,53 @@ export function saveGlobalConfig(config: GlobalConfig): void {
   writeFileSync(configPath, JSON.stringify(config, null, 2));
 }
 
+export function seedFilePath(): string {
+  return join(globalDir(), 'keys', 'seed');
+}
+
+export function seedHistoryDir(): string {
+  return join(globalDir(), 'keys', 'history');
+}
+
 export function loadSeed(): Uint8Array {
-  const seedPath = join(globalDir(), 'keys', 'seed');
-  if (!existsSync(seedPath)) {
+  const path = seedFilePath();
+  if (!existsSync(path)) {
     throw new Error('no seed found: run "handprint init --global" first');
   }
-  const encoded = readFileSync(seedPath, 'utf-8').trim();
-  return fromBase64url(encoded);
+  return fromBase64url(readFileSync(path, 'utf-8').trim());
+}
+
+/** Previously-active seeds, archived on rotation. Empty if never rotated. */
+export function loadHistoricalSeeds(): Uint8Array[] {
+  const dir = seedHistoryDir();
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir)
+    .filter((f) => f.endsWith('.seed'))
+    .map((f) => fromBase64url(readFileSync(join(dir, f), 'utf-8').trim()));
+}
+
+/** Current seed first, then all archived historical seeds. */
+export function loadAllSeeds(): Uint8Array[] {
+  const seeds: Uint8Array[] = [];
+  if (existsSync(seedFilePath())) seeds.push(loadSeed());
+  seeds.push(...loadHistoricalSeeds());
+  return seeds;
+}
+
+/** Write the active seed with strict permissions (0600). */
+export function writeSeedFile(seed: Uint8Array): void {
+  const path = seedFilePath();
+  writeFileSync(path, toBase64url(seed), { mode: 0o600 });
+  chmodSync(path, 0o600);
+}
+
+/** Archive a seed under keys/history so its payloads stay decryptable and its
+ *  signatures stay verifiable after rotation. Named by the caller (fingerprint). */
+export function archiveSeedFile(seed: Uint8Array, name: string): void {
+  const dir = seedHistoryDir();
+  mkdirSync(dir, { recursive: true });
+  chmodSync(dir, 0o700);
+  const path = join(dir, `${name}.seed`);
+  writeFileSync(path, toBase64url(seed), { mode: 0o600 });
+  chmodSync(path, 0o600);
 }

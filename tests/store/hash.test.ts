@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { hashObject, canonicalize, sha256 } from '../../src/store/hash.js';
+import { hashObject, canonicalize, blake2b256 } from '../../src/store/hash.js';
 import { ensureSodium } from '../../src/crypto/sodium.js';
 
 describe('canonicalize', () => {
@@ -51,10 +51,10 @@ describe('hashObject', () => {
   });
 });
 
-describe('sha256', () => {
+describe('blake2b256', () => {
   it('returns 32 bytes', async () => {
     await ensureSodium();
-    const hash = sha256(new TextEncoder().encode('test'));
+    const hash = blake2b256(new TextEncoder().encode('test'));
     expect(hash.length).toBe(32);
   });
 });

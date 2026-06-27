@@ -1,6 +1,6 @@
 // src/extractor/types.ts
 import type { Mark, Artifact } from '@handprint/types';
-import { markSchema, artifactSchema } from '@handprint/types';
+import { markSchema, artifactSchema, MARK_NOTE_MAX } from '@handprint/types';
 
 export interface RawExtraction {
   marks: Mark[];
@@ -15,34 +15,6 @@ export interface ExtractorProvider {
   isAvailable(): Promise<boolean>;
   extract(window: string, system: string): Promise<RawExtraction[]>;
 }
-
-export const SYSTEM_PROMPT = `You are a handprint detector. You analyze conversations between a human and an AI assistant to identify moments of human judgment — decisions where the human steered the work.
-
-There are three types of marks:
-
-1. **vision** — What the human wants to achieve.
-   Subtypes: goal, direction, principle
-
-2. **choice** — Decisions the human made.
-   Subtypes: approval, override, rejection, constraint, inquiry
-
-3. **method** — Tools and knowledge the human applied.
-   Subtypes: tool, knowledge, process
-
-For each decision moment, return an object with:
-- marks: array of { type, subtype, note } — note is 1-280 chars describing the decision
-- artifacts: array of { type, uri } — any outputs referenced (git-commit, file, url, deployment, etc.)
-- timestamp: the ISO timestamp from the conversation
-
-IMPORTANT:
-- Only flag moments where a HUMAN made a real decision
-- Routine instructions are NOT handprints
-- Simple approvals without constraints are NOT handprints
-- "Never do X" / "always do Y" = choice/constraint
-- Tool/framework selections = method/tool or method/process
-- Each note should be a concise third-person description of what the human decided
-
-Respond ONLY with a JSON array. No markdown. If none found, return [].`;
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null;
@@ -70,7 +42,24 @@ function* scanJsonArrays(text: string): Generator<string> {
   }
 }
 
-export function parseExtractionJson(text: string): RawExtraction[] {
+// Guard: accept only strings that are valid ISO-8601 datetimes (YYYY-MM-DDTHH:...).
+// Rejects arbitrary attacker-controlled strings stored as timestamps.
+function isValidIsoTimestamp(v: unknown): v is string {
+  return (
+    typeof v === 'string' &&
+    /^\d{4}-\d{2}-\d{2}T/.test(v) &&
+    !Number.isNaN(Date.parse(v))
+  );
+}
+
+export function parseExtractionJson(text: string, opts?: { requireLeadingArray?: boolean }): RawExtraction[] {
+  // Item 3: reject leading prose, if the caller requires the text to start
+  // directly with a JSON array, bail out early instead of scanning for an
+  // embedded array (prevents JSON front-running in host-agent output).
+  if (opts?.requireLeadingArray && !text.trimStart().startsWith('[')) {
+    return [];
+  }
+
   for (const slice of scanJsonArrays(text)) {
     let raw: unknown;
     try {
@@ -87,15 +76,27 @@ export function parseExtractionJson(text: string): RawExtraction[] {
       const artifacts: Artifact[] = [];
       for (const m of Array.isArray(item['marks']) ? item['marks'] : []) {
         const parsed = markSchema.safeParse(m);
-        if (parsed.success) marks.push(parsed.data);
+        if (parsed.success) {
+          marks.push(parsed.data);
+        } else if (
+          isRecord(m) &&
+          typeof m['note'] === 'string' &&
+          m['note'].length > MARK_NOTE_MAX
+        ) {
+          // Salvage over-length note: truncate to the schema max and retry once.
+          const salvaged = markSchema.safeParse({ ...m, note: m['note'].slice(0, MARK_NOTE_MAX) });
+          if (salvaged.success) marks.push(salvaged.data);
+        }
       }
       for (const a of Array.isArray(item['artifacts']) ? item['artifacts'] : []) {
         const parsed = artifactSchema.safeParse(a);
         if (parsed.success) artifacts.push(parsed.data);
       }
       if (marks.length === 0) continue;
+      // Item 4: validate timestamp as ISO-8601; fall back to now() to avoid
+      // storing arbitrary attacker-controlled strings.
       const ts = item['timestamp'];
-      out.push({ marks, artifacts, timestamp: typeof ts === 'string' ? ts : new Date().toISOString() });
+      out.push({ marks, artifacts, timestamp: isValidIsoTimestamp(ts) ? ts : new Date().toISOString() });
     }
     // Return results from the first array that parses (even if out is empty after filtering).
     return out;

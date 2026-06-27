@@ -9,6 +9,8 @@ export interface ModelEntry {
   sizeMb: number;
   ramGb: number;
   notes: string;
+  // TODO: pin sha256 once published digests are confirmed
+  sha256?: string;
 }
 
 // Lightest-appropriate-first. The grab flow presents these and asks the

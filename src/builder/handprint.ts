@@ -11,7 +11,7 @@ import {
   toBase64url,
   ensureSodium,
 } from '../crypto/sodium.js';
-import { canonicalize, sha256 } from '../store/hash.js';
+import { canonicalize, blake2b256 } from '../store/hash.js';
 import { writeObject } from '../store/objects.js';
 import { getRef, setRef } from '../store/refs.js';
 import { sanitize } from '../sanitizer/sanitize.js';
@@ -43,21 +43,29 @@ export async function buildHandprint(input: BuildInput): Promise<{
   const sanitized = sanitize(input.plaintext);
   const payload = await encrypt(sanitized, encKey);
 
+  // marks, artifacts, and source are stored in cleartext (only the payload is
+  // encrypted), so scrub secrets/PII out of those fields too before writing.
+  const marks = input.marks.map((m) => ({ ...m, note: sanitize(m.note) }));
+  const artifacts = (input.artifacts ?? []).map((a) => ({
+    ...a,
+    uri: sanitize(a.uri),
+  }));
+
   const currentHead = getRef(hpDir, 'HEAD');
 
   const unsigned: Omit<HandprintObject, 'sig'> = {
     v: HANDPRINT_OBJECT_VERSION,
     ts: new Date().toISOString(),
-    marks: input.marks,
-    artifacts: input.artifacts ?? [],
+    marks,
+    artifacts,
     source: input.source,
     payload,
     parent: currentHead,
     pubkey: toBase64url(kp.publicKey),
   };
 
-  const canonical = canonicalize(unsigned as unknown as Record<string, unknown>);
-  const digest = sha256(new TextEncoder().encode(canonical));
+  const canonical = canonicalize(unsigned);
+  const digest = blake2b256(new TextEncoder().encode(canonical));
   const sig = await signDetached(digest, kp.privateKey);
 
   const handprint: HandprintObject = {
@@ -65,10 +73,7 @@ export async function buildHandprint(input: BuildInput): Promise<{
     sig: toBase64url(sig),
   };
 
-  const hash = await writeObject(
-    hpDir,
-    handprint as unknown as Record<string, unknown>,
-  );
+  const hash = await writeObject(hpDir, handprint);
 
   setRef(hpDir, 'HEAD', hash);
   appendFileSync(join(hpDir, 'log'), hash + '\n', 'utf-8');
