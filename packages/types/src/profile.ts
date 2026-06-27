@@ -1,8 +1,7 @@
 import { z } from 'zod';
-import { handprintTypeSchema, anchorSchema, resolutionSchema } from './handprint.js';
+import { VISIBILITY_LEVELS, visibilitySchema, registeredKeySchema } from './handprint.js';
 
-export const visibilitySchema = z.enum(['public', 'connections', 'private']);
-export type Visibility = z.infer<typeof visibilitySchema>;
+// ── Social links ─────────────────────────────────────────────
 
 export const socialLinkSchema = z.object({
   url: z.string(),
@@ -19,25 +18,7 @@ export const socialProfileSchema = z.object({
 });
 export type SocialProfile = z.infer<typeof socialProfileSchema>;
 
-export const timelineEntrySchema = z.object({
-  signature: z.string(),
-  type: handprintTypeSchema,
-  subtype: z.string().optional(),
-  context: z.string(),
-  intent: z.string(),
-  risk: z.string(),
-  status: z.string(),
-  horizon: z.string().nullable(),
-  anchors: z.array(anchorSchema),
-  resolutions: z.array(resolutionSchema),
-});
-export type TimelineEntry = z.infer<typeof timelineEntrySchema>;
-
-export const timelineMonthSchema = z.object({
-  month: z.string(),
-  entries: z.array(timelineEntrySchema),
-});
-export type TimelineMonth = z.infer<typeof timelineMonthSchema>;
+// ── Profile ──────────────────────────────────────────────────
 
 export const handprintProfileSchema = z.object({
   version: z.string(),
@@ -45,6 +26,7 @@ export const handprintProfileSchema = z.object({
   handle: z.string(),
   name: z.string(),
   social: socialProfileSchema.optional(),
+  publicKeys: z.array(registeredKeySchema),
   typeCounts: z.object({
     vision: z.number(),
     choice: z.number(),
@@ -52,33 +34,6 @@ export const handprintProfileSchema = z.object({
   }),
   subtypeCounts: z.record(z.number()).optional(),
   total: z.number(),
-  calibration: z.object({
-    score: z.number().nullable(),
-    resolved: z.number(),
-    open: z.number(),
-    breakdown: z.object({
-      validated: z.number(),
-      partial: z.number(),
-      revised: z.number(),
-      invalidated: z.number(),
-    }),
-    formula: z.string(),
-  }),
-  domains: z.array(
-    z.object({
-      name: z.string(),
-      count: z.number(),
-      percentage: z.number(),
-      strong: z.boolean(),
-    })
-  ),
-  tools: z.array(
-    z.object({
-      name: z.string(),
-      count: z.number(),
-      percentage: z.number(),
-    })
-  ),
   heatmap: z.array(
     z.object({
       date: z.string(),
@@ -90,47 +45,23 @@ export const handprintProfileSchema = z.object({
     current: z.number(),
     longest: z.number(),
   }),
-  firstHandprint: z.string(),
-  featured: z
-    .object({
-      hash: z.string(),
-      strategy: z.string(),
-    })
-    .nullable(),
-  timeline: z.array(timelineMonthSchema),
-  repos: z.array(
-    z.object({
-      url: z.string(),
-      handprintCount: z.number(),
-    })
-  ),
+  firstHandprint: z.string().nullable(),
   merkleRoot: z.string().nullable(),
 });
 export type HandprintProfile = z.infer<typeof handprintProfileSchema>;
 
-export const protocolConfigSchema = z.object({
-  calibration: z.object({
-    weights: z.object({
-      validated: z.number(),
-      partial: z.number(),
-      revised: z.number(),
-      invalidated: z.number(),
-    }),
-    minResolved: z.number(),
-  }),
-  domains: z.object({ strongThreshold: z.number() }),
-  heatmap: z.object({ weeks: z.number(), levels: z.number() }),
-  featured: z.object({ strategy: z.string() }),
-  anchors: z.object({
-    commitWindowBefore: z.string(),
-    commitWindowAfter: z.string(),
-    linkPRs: z.boolean(),
-    linkRepo: z.boolean(),
-  }),
-});
-export type ProtocolConfig = z.infer<typeof protocolConfigSchema>;
+// ── Project config (.handprint/config.json) ──────────────────
 
-export const handprintConfigSchema = z.object({
+export const projectConfigSchema = z.object({
+  version: z.string(),
+  visibility: visibilitySchema.default(VISIBILITY_LEVELS[0]),
+  createdAt: z.string(),
+});
+export type ProjectConfig = z.infer<typeof projectConfigSchema>;
+
+// ── Global config (~/.handprint/config.json) ─────────────────
+
+export const globalConfigSchema = z.object({
   version: z.string(),
   createdAt: z.string(),
   identity: z.object({
@@ -139,11 +70,8 @@ export const handprintConfigSchema = z.object({
     email: z.string(),
   }),
   social: socialProfileSchema.optional(),
-  remote: z.object({
-    type: z.string(),
-    accountId: z.string(),
-    namespaceId: z.string().nullable(),
+  hub: z.object({
+    url: z.string(),
   }),
-  protocol: protocolConfigSchema,
 });
-export type HandprintConfig = z.infer<typeof handprintConfigSchema>;
+export type GlobalConfig = z.infer<typeof globalConfigSchema>;

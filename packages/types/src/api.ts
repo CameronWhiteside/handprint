@@ -1,14 +1,11 @@
 import { z } from 'zod';
 import {
-  HANDPRINT_TYPES,
-  HANDPRINT_STATUSES,
-  ALL_SUBTYPES,
+  HANDPRINT_OBJECT_VERSION,
   handprintTypeSchema,
-  handprintStatusSchema,
   allSubtypesSchema,
   markSchema,
-  anchorSchema,
-  resolutionSchema,
+  artifactSchema,
+  sourceSchema,
 } from './handprint.js';
 
 // ── Push payloads ────────────────────────────────────────────
@@ -25,24 +22,22 @@ export const pushProfileInputSchema = z.object({
 export type PushProfileInput = z.infer<typeof pushProfileInputSchema>;
 
 export const pushHandprintInputSchema = z.object({
-  signature: z.string().min(1),
-  madeAt: z.string(),
-  intent: z.string().min(1),
-  risk: z.string().min(1),
-  context: z.string().min(1),
+  v: z.literal(HANDPRINT_OBJECT_VERSION),
+  ts: z.string(),
   marks: z.array(markSchema).min(1),
-  project: z.string().optional(),
-  repo: z.string().optional(),
-  branch: z.string().optional(),
-  confidence: z.number().min(0).max(1).nullable().optional(),
-  horizon: z.string().nullable().optional(),
-  source: z.string().optional(),
-  status: handprintStatusSchema.default(HANDPRINT_STATUSES[0]),
-  outcome: z.string().optional(),
-  anchors: z.array(anchorSchema).default([]),
-  resolutions: z.array(resolutionSchema).default([]),
+  artifacts: z.array(artifactSchema).default([]),
+  source: sourceSchema,
+  parent: z.string().nullable(),
+  sig: z.string().min(1),
+  pubkey: z.string().min(1),
 });
 export type PushHandprintInput = z.infer<typeof pushHandprintInputSchema>;
+
+export const registerKeyInputSchema = z.object({
+  pubkey: z.string().min(1),
+  label: z.string().min(1).max(64),
+});
+export type RegisterKeyInput = z.infer<typeof registerKeyInputSchema>;
 
 // ── Path params ──────────────────────────────────────────────
 
@@ -61,15 +56,12 @@ export type HandleParam = z.infer<typeof handleParamSchema>;
 
 const QUERY_LIMIT_MAX = 100 as const;
 const QUERY_LIMIT_DEFAULT = 50 as const;
-const SORT_OPTIONS = ['madeAt', '-madeAt'] as const;
+const SORT_OPTIONS = ['ts', '-ts'] as const;
 
 export const handprintsQuerySchema = z.object({
   type: handprintTypeSchema.optional(),
   subtype: allSubtypesSchema.optional(),
-  status: handprintStatusSchema.optional(),
-  repo: z.string().optional(),
-  project: z.string().optional(),
-  source: z.string().optional(),
+  agent: z.string().optional(),
   after: z.string().optional(),
   before: z.string().optional(),
   limit: z.coerce.number().int().min(1).max(QUERY_LIMIT_MAX).default(QUERY_LIMIT_DEFAULT),
@@ -88,27 +80,15 @@ export const heatmapQuerySchema = z.object({
 });
 export type HeatmapQuery = z.infer<typeof heatmapQuerySchema>;
 
-// ── Repos query ──────────────────────────────────────────────
-
-const REPOS_LIMIT_MAX = 50 as const;
-const REPOS_LIMIT_DEFAULT = 20 as const;
-
-export const reposQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(REPOS_LIMIT_MAX).default(REPOS_LIMIT_DEFAULT),
-});
-export type ReposQuery = z.infer<typeof reposQuerySchema>;
-
 // ── Search ───────────────────────────────────────────────────
 
 const SEARCH_Q_MAX = 256 as const;
 const SEARCH_LIMIT_MAX = 50 as const;
 const SEARCH_LIMIT_DEFAULT = 20 as const;
-const SEARCH_DOMAIN_MAX = 128 as const;
 
 export const searchQuerySchema = z.object({
   q: z.string().min(1).max(SEARCH_Q_MAX),
   type: handprintTypeSchema.optional(),
-  domain: z.string().max(SEARCH_DOMAIN_MAX).optional(),
   limit: z.coerce.number().int().min(1).max(SEARCH_LIMIT_MAX).default(SEARCH_LIMIT_DEFAULT),
   offset: z.coerce.number().int().min(0).default(0),
 });

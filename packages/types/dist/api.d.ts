@@ -14,11 +14,8 @@ export declare const pushProfileInputSchema: z.ZodObject<{
 }>;
 export type PushProfileInput = z.infer<typeof pushProfileInputSchema>;
 export declare const pushHandprintInputSchema: z.ZodObject<{
-    signature: z.ZodString;
-    madeAt: z.ZodString;
-    intent: z.ZodString;
-    risk: z.ZodString;
-    context: z.ZodString;
+    v: z.ZodLiteral<1>;
+    ts: z.ZodString;
     marks: z.ZodArray<z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
         type: z.ZodLiteral<"vision">;
         subtype: z.ZodEnum<["goal", "direction", "principle"]>;
@@ -56,44 +53,42 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
         subtype: "tool" | "knowledge" | "process";
         note: string;
     }>]>, "many">;
-    project: z.ZodOptional<z.ZodString>;
-    repo: z.ZodOptional<z.ZodString>;
-    branch: z.ZodOptional<z.ZodString>;
-    confidence: z.ZodOptional<z.ZodNullable<z.ZodNumber>>;
-    horizon: z.ZodOptional<z.ZodNullable<z.ZodString>>;
-    source: z.ZodOptional<z.ZodString>;
-    status: z.ZodDefault<z.ZodEnum<["open", "resolved"]>>;
-    outcome: z.ZodOptional<z.ZodString>;
-    anchors: z.ZodDefault<z.ZodArray<z.ZodObject<{
-        label: z.ZodString;
-        verified: z.ZodBoolean;
+    artifacts: z.ZodDefault<z.ZodArray<z.ZodObject<{
+        type: z.ZodEnum<["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"]>;
+        uri: z.ZodString;
+        hash: z.ZodOptional<z.ZodString>;
+        parent: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        label: string;
-        verified: boolean;
+        type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+        uri: string;
+        hash?: string | undefined;
+        parent?: string | undefined;
     }, {
-        label: string;
-        verified: boolean;
+        type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+        uri: string;
+        hash?: string | undefined;
+        parent?: string | undefined;
     }>, "many">>;
-    resolutions: z.ZodDefault<z.ZodArray<z.ZodObject<{
-        status: z.ZodEnum<["validated", "partial", "revised", "invalidated"]>;
-        body: z.ZodString;
-        timestamp: z.ZodString;
+    source: z.ZodObject<{
+        agent: z.ZodString;
+        extractor: z.ZodOptional<z.ZodString>;
+        session: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
+        agent: string;
+        extractor?: string | undefined;
+        session?: string | undefined;
     }, {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }>, "many">>;
+        agent: string;
+        extractor?: string | undefined;
+        session?: string | undefined;
+    }>;
+    parent: z.ZodNullable<z.ZodString>;
+    sig: z.ZodString;
+    pubkey: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    status: "open" | "resolved";
-    signature: string;
-    madeAt: string;
-    intent: string;
-    risk: string;
-    context: string;
+    parent: string | null;
+    v: 1;
+    ts: string;
     marks: ({
         type: "vision";
         subtype: "goal" | "direction" | "principle";
@@ -107,28 +102,23 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
         subtype: "tool" | "knowledge" | "process";
         note: string;
     })[];
-    anchors: {
-        label: string;
-        verified: boolean;
+    artifacts: {
+        type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+        uri: string;
+        hash?: string | undefined;
+        parent?: string | undefined;
     }[];
-    resolutions: {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
-    }[];
-    project?: string | undefined;
-    repo?: string | undefined;
-    branch?: string | undefined;
-    confidence?: number | null | undefined;
-    horizon?: string | null | undefined;
-    source?: string | undefined;
-    outcome?: string | undefined;
+    source: {
+        agent: string;
+        extractor?: string | undefined;
+        session?: string | undefined;
+    };
+    sig: string;
+    pubkey: string;
 }, {
-    signature: string;
-    madeAt: string;
-    intent: string;
-    risk: string;
-    context: string;
+    parent: string | null;
+    v: 1;
+    ts: string;
     marks: ({
         type: "vision";
         subtype: "goal" | "direction" | "principle";
@@ -142,25 +132,32 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
         subtype: "tool" | "knowledge" | "process";
         note: string;
     })[];
-    status?: "open" | "resolved" | undefined;
-    project?: string | undefined;
-    repo?: string | undefined;
-    branch?: string | undefined;
-    confidence?: number | null | undefined;
-    horizon?: string | null | undefined;
-    anchors?: {
-        label: string;
-        verified: boolean;
-    }[] | undefined;
-    source?: string | undefined;
-    outcome?: string | undefined;
-    resolutions?: {
-        status: "validated" | "partial" | "revised" | "invalidated";
-        body: string;
-        timestamp: string;
+    source: {
+        agent: string;
+        extractor?: string | undefined;
+        session?: string | undefined;
+    };
+    sig: string;
+    pubkey: string;
+    artifacts?: {
+        type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+        uri: string;
+        hash?: string | undefined;
+        parent?: string | undefined;
     }[] | undefined;
 }>;
 export type PushHandprintInput = z.infer<typeof pushHandprintInputSchema>;
+export declare const registerKeyInputSchema: z.ZodObject<{
+    pubkey: z.ZodString;
+    label: z.ZodString;
+}, "strip", z.ZodTypeAny, {
+    pubkey: string;
+    label: string;
+}, {
+    pubkey: string;
+    label: string;
+}>;
+export type RegisterKeyInput = z.infer<typeof registerKeyInputSchema>;
 export declare const handleParamSchema: z.ZodObject<{
     handle: z.ZodString;
 }, "strip", z.ZodTypeAny, {
@@ -172,35 +169,26 @@ export type HandleParam = z.infer<typeof handleParamSchema>;
 export declare const handprintsQuerySchema: z.ZodObject<{
     type: z.ZodOptional<z.ZodEnum<["vision", "choice", "method"]>>;
     subtype: z.ZodOptional<z.ZodEnum<["goal", "direction", "principle", "approval", "override", "rejection", "constraint", "inquiry", "tool", "knowledge", "process"]>>;
-    status: z.ZodOptional<z.ZodEnum<["open", "resolved"]>>;
-    repo: z.ZodOptional<z.ZodString>;
-    project: z.ZodOptional<z.ZodString>;
-    source: z.ZodOptional<z.ZodString>;
+    agent: z.ZodOptional<z.ZodString>;
     after: z.ZodOptional<z.ZodString>;
     before: z.ZodOptional<z.ZodString>;
     limit: z.ZodDefault<z.ZodNumber>;
     offset: z.ZodDefault<z.ZodNumber>;
-    sort: z.ZodDefault<z.ZodEnum<["madeAt", "-madeAt"]>>;
+    sort: z.ZodDefault<z.ZodEnum<["ts", "-ts"]>>;
 }, "strip", z.ZodTypeAny, {
-    sort: "madeAt" | "-madeAt";
+    sort: "ts" | "-ts";
     limit: number;
     offset: number;
     type?: "vision" | "choice" | "method" | undefined;
-    status?: "open" | "resolved" | undefined;
     subtype?: "goal" | "direction" | "principle" | "approval" | "override" | "rejection" | "constraint" | "inquiry" | "tool" | "knowledge" | "process" | undefined;
-    project?: string | undefined;
-    repo?: string | undefined;
-    source?: string | undefined;
+    agent?: string | undefined;
     after?: string | undefined;
     before?: string | undefined;
 }, {
-    sort?: "madeAt" | "-madeAt" | undefined;
+    sort?: "ts" | "-ts" | undefined;
     type?: "vision" | "choice" | "method" | undefined;
-    status?: "open" | "resolved" | undefined;
     subtype?: "goal" | "direction" | "principle" | "approval" | "override" | "rejection" | "constraint" | "inquiry" | "tool" | "knowledge" | "process" | undefined;
-    project?: string | undefined;
-    repo?: string | undefined;
-    source?: string | undefined;
+    agent?: string | undefined;
     after?: string | undefined;
     before?: string | undefined;
     limit?: number | undefined;
@@ -215,18 +203,9 @@ export declare const heatmapQuerySchema: z.ZodObject<{
     weeks?: number | undefined;
 }>;
 export type HeatmapQuery = z.infer<typeof heatmapQuerySchema>;
-export declare const reposQuerySchema: z.ZodObject<{
-    limit: z.ZodDefault<z.ZodNumber>;
-}, "strip", z.ZodTypeAny, {
-    limit: number;
-}, {
-    limit?: number | undefined;
-}>;
-export type ReposQuery = z.infer<typeof reposQuerySchema>;
 export declare const searchQuerySchema: z.ZodObject<{
     q: z.ZodString;
     type: z.ZodOptional<z.ZodEnum<["vision", "choice", "method"]>>;
-    domain: z.ZodOptional<z.ZodString>;
     limit: z.ZodDefault<z.ZodNumber>;
     offset: z.ZodDefault<z.ZodNumber>;
 }, "strip", z.ZodTypeAny, {
@@ -234,13 +213,11 @@ export declare const searchQuerySchema: z.ZodObject<{
     offset: number;
     q: string;
     type?: "vision" | "choice" | "method" | undefined;
-    domain?: string | undefined;
 }, {
     q: string;
     type?: "vision" | "choice" | "method" | undefined;
     limit?: number | undefined;
     offset?: number | undefined;
-    domain?: string | undefined;
 }>;
 export type SearchQuery = z.infer<typeof searchQuerySchema>;
 export declare const deviceCodeResponseSchema: z.ZodObject<{

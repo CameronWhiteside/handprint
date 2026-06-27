@@ -1,13 +1,11 @@
 import { z } from 'zod';
 
-// ── Constants ────────────────────────────────────────────────
+// ── Mark constants ───────────────────────────────────────────
 
 export const HANDPRINT_TYPES = ['vision', 'choice', 'method'] as const;
 export const VISION_SUBTYPES = ['goal', 'direction', 'principle'] as const;
 export const CHOICE_SUBTYPES = ['approval', 'override', 'rejection', 'constraint', 'inquiry'] as const;
 export const METHOD_SUBTYPES = ['tool', 'knowledge', 'process'] as const;
-export const HANDPRINT_STATUSES = ['open', 'resolved'] as const;
-export const RESOLUTION_STATUSES = ['validated', 'partial', 'revised', 'invalidated'] as const;
 
 export const ALL_SUBTYPES = [
   ...VISION_SUBTYPES,
@@ -20,6 +18,24 @@ export const SUBTYPES_BY_TYPE = {
   choice: CHOICE_SUBTYPES,
   method: METHOD_SUBTYPES,
 } as const;
+
+export const MARK_NOTE_MAX = 280 as const;
+
+// ── Artifact constants ───────────────────────────────────────
+
+export const ARTIFACT_TYPES = [
+  'git-commit',
+  'git-repo',
+  'file',
+  'url',
+  'deployment',
+  'c2pa',
+  'custom',
+] as const;
+
+// ── Visibility constants ─────────────────────────────────────
+
+export const VISIBILITY_LEVELS = ['private', 'unlisted', 'public'] as const;
 
 // ── Type schemas ─────────────────────────────────────────────
 
@@ -38,11 +54,11 @@ export type MethodSubtype = z.infer<typeof methodSubtypeSchema>;
 export const allSubtypesSchema = z.enum(ALL_SUBTYPES);
 export type Subtype = z.infer<typeof allSubtypesSchema>;
 
-export const handprintStatusSchema = z.enum(HANDPRINT_STATUSES);
-export type HandprintStatus = z.infer<typeof handprintStatusSchema>;
+export const artifactTypeSchema = z.enum(ARTIFACT_TYPES);
+export type ArtifactType = z.infer<typeof artifactTypeSchema>;
 
-export const resolutionStatusSchema = z.enum(RESOLUTION_STATUSES);
-export type ResolutionStatus = z.infer<typeof resolutionStatusSchema>;
+export const visibilitySchema = z.enum(VISIBILITY_LEVELS);
+export type Visibility = z.infer<typeof visibilitySchema>;
 
 export function subtypeSchemaForType(type: HandprintType) {
   const map = {
@@ -58,19 +74,19 @@ export function subtypeSchemaForType(type: HandprintType) {
 export const visionMarkSchema = z.object({
   type: z.literal(HANDPRINT_TYPES[0]),
   subtype: visionSubtypeSchema,
-  note: z.string().min(1).max(280),
+  note: z.string().min(1).max(MARK_NOTE_MAX),
 });
 
 export const choiceMarkSchema = z.object({
   type: z.literal(HANDPRINT_TYPES[1]),
   subtype: choiceSubtypeSchema,
-  note: z.string().min(1).max(280),
+  note: z.string().min(1).max(MARK_NOTE_MAX),
 });
 
 export const methodMarkSchema = z.object({
   type: z.literal(HANDPRINT_TYPES[2]),
   subtype: methodSubtypeSchema,
-  note: z.string().min(1).max(280),
+  note: z.string().min(1).max(MARK_NOTE_MAX),
 });
 
 export const markSchema = z.discriminatedUnion('type', [
@@ -80,39 +96,48 @@ export const markSchema = z.discriminatedUnion('type', [
 ]);
 export type Mark = z.infer<typeof markSchema>;
 
-// ── Building blocks ──────────────────────────────────────────
+// ── Artifacts ────────────────────────────────────────────────
 
-export const anchorSchema = z.object({
-  label: z.string().min(1),
-  verified: z.boolean(),
+export const artifactSchema = z.object({
+  type: artifactTypeSchema,
+  uri: z.string().min(1),
+  hash: z.string().optional(),
+  parent: z.string().optional(),
 });
-export type Anchor = z.infer<typeof anchorSchema>;
+export type Artifact = z.infer<typeof artifactSchema>;
 
-export const resolutionSchema = z.object({
-  status: resolutionStatusSchema,
-  body: z.string().min(1),
-  timestamp: z.string(),
+// ── Source ────────────────────────────────────────────────────
+
+export const sourceSchema = z.object({
+  agent: z.string().min(1),
+  extractor: z.string().optional(),
+  session: z.string().optional(),
 });
-export type Resolution = z.infer<typeof resolutionSchema>;
+export type Source = z.infer<typeof sourceSchema>;
 
-// ── Handprint ────────────────────────────────────────────────
+// ── Handprint object (local, includes encrypted payload) ─────
 
-export const handprintSchema = z.object({
-  signature: z.string().min(1),
-  madeAt: z.string(),
-  intent: z.string().min(1),
-  risk: z.string().min(1),
-  context: z.string().min(1),
+export const HANDPRINT_OBJECT_VERSION = 1 as const;
+
+export const handprintObjectSchema = z.object({
+  v: z.literal(HANDPRINT_OBJECT_VERSION),
+  ts: z.string(),
   marks: z.array(markSchema).min(1),
-  project: z.string().optional(),
-  repo: z.string().optional(),
-  branch: z.string().optional(),
-  confidence: z.number().min(0).max(1).nullable(),
-  horizon: z.string().nullable(),
-  anchors: z.array(anchorSchema),
-  source: z.string().min(1),
-  status: handprintStatusSchema,
-  outcome: z.string().optional(),
-  resolutions: z.array(resolutionSchema),
+  artifacts: z.array(artifactSchema).default([]),
+  source: sourceSchema,
+  payload: z.string().min(1),
+  parent: z.string().nullable(),
+  sig: z.string().min(1),
+  pubkey: z.string().min(1),
 });
-export type Handprint = z.infer<typeof handprintSchema>;
+export type HandprintObject = z.infer<typeof handprintObjectSchema>;
+
+// ── Public key registration (multi-device) ───────────────────
+
+export const registeredKeySchema = z.object({
+  pubkey: z.string().min(1),
+  fingerprint: z.string().min(1),
+  label: z.string().min(1).max(64),
+  addedAt: z.string(),
+});
+export type RegisteredKey = z.infer<typeof registeredKeySchema>;
