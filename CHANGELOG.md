@@ -13,7 +13,7 @@ All notable changes to handprint are documented here. This project adheres to [S
 
 ### Changed
 - **Hardened extraction prompt.** Defines what a handprint is, grounds every enum in the `@handprint/types` Zod schema (so the prompt cannot drift from validation), and adds explicit prompt-injection defenses. Transcripts are fenced as untrusted data and forged delimiters are stripped.
-- `node-llama-cpp` is now an `optionalDependency`; if it is absent when the local model is used, handprint prints the one-line command to add it.
+- `node-llama-cpp` is NOT a runtime dependency. It is installed manually for local mode (`npm i -g node-llama-cpp`). If it is absent when the local model is requested, handprint prints that install hint and exits.
 - Package metadata completed for npm publishing (license, repository, keywords, engines).
 
 ### Removed

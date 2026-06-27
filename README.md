@@ -2,7 +2,7 @@
 
 Human decision provenance for the age of AI. *(npm package: `handprint-sh`)*
 
-handprint captures the decisions you and your AI make (what you chose, why, and what you ruled out) and anchors them in a cryptographically signed, tamper-evident chain. Your handprint stays with your work.
+handprint captures the decisions you and your AI make (what you chose, why, and what you ruled out) and records them in a hash-linked chain, each entry signed with your local key. Your handprint stays with your work.
 
 > **Why this exists.** A record of *who decided what* should keep humans in the loop rather than erase them. handprint is built on the [Human Provenance Covenant](./COVENANT.md): respect people's data, credit their judgment, and use their provenance to benefit *them* rather than to train systems that route around them. See [License & Covenant](#license--covenant).
 
@@ -79,7 +79,8 @@ See [AGENTS.md](./AGENTS.md) for a full non-interactive setup guide.
 
 - **Local by default.** Transcripts are read and analyzed on your machine. In `local` mode nothing ever leaves the host; in `host` mode the conversation is sent only to the AI tool you already use and have authenticated.
 - **Secrets are scrubbed before storage.** An aggressive sanitizer redacts emails, API keys, tokens, and credential-like strings from a handprint's payload before it is written. False positives are preferred over leaks.
-- **Records are signed and encrypted.** Each handprint is appended to a tamper-evident chain, signed with your local Ed25519 key, with its payload encrypted at rest.
+- **Records are signed, hash-linked, and encrypted.** Each handprint is appended to a chain linked by BLAKE2b-256 content hashes, signed with your local Ed25519 key, with its payload encrypted at rest (XSalsa20-Poly1305). `handprint verify` recomputes every hash, checks every signature, and confirms each entry was signed by one of your own keys (current or rotated), so a chain forged or spliced with a foreign key is rejected.
+- **Scope of the guarantee.** Verification proves a chain is internally consistent and attributable to your key. It does not by itself stop the holder of your seed from rewriting their own history (re-signing a different chain). Detecting that requires an external append-only anchor; the hub will provide server-side timestamping for this, and it is on the roadmap rather than shipped today. Treat local verification as integrity-and-attribution, not third-party notarization.
 - **The extractor treats transcripts as untrusted input.** Conversation text is fenced as untrusted data and the model is instructed to never follow instructions embedded in it. This defends against prompt injection from pasted or third-party content. Output is validated against a strict Zod schema, and anything off-schema is discarded.
 - **Publishing is opt-in.** `handprint grab`, `log`, `verify`, and `show` are fully offline. Only `handprint push` contacts the hub, and only after `handprint login`. For fully offline use, never run `push`.
 

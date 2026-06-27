@@ -18,7 +18,7 @@ function objectPath(storeDir: string, hash: string): string {
  */
 export async function writeObject(
   storeDir: string,
-  obj: Record<string, unknown>,
+  obj: object,
 ): Promise<string> {
   const hash = await hashObject(obj);
   const filePath = objectPath(storeDir, hash);

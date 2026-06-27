@@ -1,12 +1,17 @@
 // src/extractor/window.ts
 import type { TranscriptEntry } from '../sources/types.js';
 
+// Shared limit for entry text in both the conversation window and stored
+// plaintext. Using 1000 means the stored sourcePlaintext is the fuller record
+// and matches what the model sees.
+const ENTRY_TEXT_MAX = 1000;
+
 export function buildChunkPlaintext(entries: TranscriptEntry[]): string {
   return entries
     .map((e) => {
       const role = e.role === 'user' ? 'user' : 'assistant';
       const time = e.timestamp.slice(11, 16);
-      return `[${role} ${time}] ${e.text.slice(0, 1000)}`;
+      return `[${role} ${time}] ${e.text.slice(0, ENTRY_TEXT_MAX)}`;
     })
     .join('\n');
 }
@@ -35,7 +40,7 @@ export function buildConversationWindow(
   for (const e of clean) {
     const role = e.role === 'user' ? 'HUMAN' : 'AI';
     const ts = e.timestamp.slice(0, 19);
-    const text = e.text.slice(0, 600);
+    const text = e.text.slice(0, ENTRY_TEXT_MAX);
     const line = `[${ts}] ${role}: ${text}`;
     if (total + line.length > maxChars) break;
     lines.push(line);
@@ -53,7 +58,7 @@ export function chunkEntries(
   let current: TranscriptEntry[] = [];
   let currentSize = 0;
   for (const e of clean) {
-    const size = e.text.slice(0, 600).length + 50;
+    const size = e.text.slice(0, ENTRY_TEXT_MAX).length + 50;
     if (currentSize + size > maxCharsPerChunk && current.length > 0) {
       chunks.push(current);
       current = [];

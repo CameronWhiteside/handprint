@@ -10,7 +10,7 @@ export interface AgentCliSpec {
   buildArgs(system: string, prompt: string): string[];
 }
 
-export type Runner = (bin: string, args: string[], input: string) => Promise<string>;
+export type Runner = (bin: string, args: string[]) => Promise<string>;
 
 /**
  * Seam for detecting whether the claude CLI supports the --append-system-prompt
@@ -127,7 +127,7 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
         args = s.buildArgs(system, prompt);
       }
 
-      const stdout = await run(s.bin, args, prompt);
+      const stdout = await run(s.bin, args);
       // Item 3: require output to start with '[', rejects leading prose /
       // JSON front-running attacks in host-agent output.
       return parseExtractionJson(stdout, { requireLeadingArray: true });

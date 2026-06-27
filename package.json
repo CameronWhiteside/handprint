@@ -35,6 +35,7 @@
     "dist/bin/",
     "README.md",
     "AGENTS.md",
+    "CHANGELOG.md",
     "LICENSE",
     "NOTICE",
     "COVENANT.md"
@@ -44,7 +45,7 @@
   },
   "scripts": {
     "build": "tsup",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build && npx tsc --noEmit && npm test",
     "test": "vitest run",
     "test:watch": "vitest",
     "handprint": "tsx bin/handprint.ts"

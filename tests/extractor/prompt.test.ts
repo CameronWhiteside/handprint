@@ -32,6 +32,15 @@ describe('SYSTEM_PROMPT', () => {
     expect(SYSTEM_PROMPT).toMatch(/discarded|rejected by schema validation/);
   });
 
+  it('contains an EXAMPLES section with at least one positive and one negative example', () => {
+    expect(SYSTEM_PROMPT).toContain('EXAMPLES');
+    // Positive example: shows a choice/override mark
+    expect(SYSTEM_PROMPT).toContain('"choice"');
+    expect(SYSTEM_PROMPT).toContain('"override"');
+    // Negative example: empty array
+    expect(SYSTEM_PROMPT).toMatch(/\[\]/);
+  });
+
   it('carries explicit prompt-injection defenses', () => {
     expect(SYSTEM_PROMPT).toContain('UNTRUSTED DATA');
     expect(SYSTEM_PROMPT).toContain(TRANSCRIPT_OPEN);

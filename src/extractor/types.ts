@@ -1,6 +1,6 @@
 // src/extractor/types.ts
 import type { Mark, Artifact } from '@handprint/types';
-import { markSchema, artifactSchema } from '@handprint/types';
+import { markSchema, artifactSchema, MARK_NOTE_MAX } from '@handprint/types';
 
 export interface RawExtraction {
   marks: Mark[];
@@ -76,7 +76,17 @@ export function parseExtractionJson(text: string, opts?: { requireLeadingArray?:
       const artifacts: Artifact[] = [];
       for (const m of Array.isArray(item['marks']) ? item['marks'] : []) {
         const parsed = markSchema.safeParse(m);
-        if (parsed.success) marks.push(parsed.data);
+        if (parsed.success) {
+          marks.push(parsed.data);
+        } else if (
+          isRecord(m) &&
+          typeof m['note'] === 'string' &&
+          m['note'].length > MARK_NOTE_MAX
+        ) {
+          // Salvage over-length note: truncate to the schema max and retry once.
+          const salvaged = markSchema.safeParse({ ...m, note: m['note'].slice(0, MARK_NOTE_MAX) });
+          if (salvaged.success) marks.push(salvaged.data);
+        }
       }
       for (const a of Array.isArray(item['artifacts']) ? item['artifacts'] : []) {
         const parsed = artifactSchema.safeParse(a);

@@ -31,6 +31,32 @@ describe('parseExtractionJson', () => {
   });
 });
 
+// Item 11: note-length salvage
+describe('parseExtractionJson note-length salvage', () => {
+  it('keeps a mark whose note exceeds MARK_NOTE_MAX by truncating to the max', () => {
+    const longNote = 'x'.repeat(400); // 400 > MARK_NOTE_MAX (280)
+    const text = JSON.stringify([{
+      marks: [{ type: 'choice', subtype: 'override', note: longNote }],
+      artifacts: [],
+      timestamp: '2026-06-01T10:00:00Z',
+    }]);
+    const out = parseExtractionJson(text);
+    expect(out).toHaveLength(1);
+    expect(out[0].marks).toHaveLength(1);
+    expect(out[0].marks[0].note.length).toBe(280);
+    expect(out[0].marks[0].note).toBe(longNote.slice(0, 280));
+  });
+
+  it('still drops marks with a genuinely invalid enum (bad type), not just a long note', () => {
+    const text = JSON.stringify([{
+      marks: [{ type: 'bogus', subtype: 'override', note: 'short' }],
+      artifacts: [],
+      timestamp: '2026-06-01T10:00:00Z',
+    }]);
+    expect(parseExtractionJson(text)).toHaveLength(0);
+  });
+});
+
 // Item 3: requireLeadingArray option
 describe('parseExtractionJson requireLeadingArray', () => {
   it('returns [] when text has leading prose and requireLeadingArray is true', () => {
