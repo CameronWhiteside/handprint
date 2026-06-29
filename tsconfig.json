@@ -10,7 +10,15 @@
     "skipLibCheck": true,
     "declaration": true,
     "sourceMap": true,
-    "types": ["node"]
+    "types": [
+      "node"
+    ],
+    "noUnusedLocals": true,
+    "noUnusedParameters": true
   },
-  "include": ["src/**/*", "bin/**/*", "tests/**/*"]
+  "include": [
+    "src/**/*",
+    "bin/**/*",
+    "tests/**/*"
+  ]
 }

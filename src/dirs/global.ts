@@ -73,7 +73,7 @@ export function seedFilePath(): string {
   return join(globalDir(), 'keys', 'seed');
 }
 
-export function seedHistoryDir(): string {
+function seedHistoryDir(): string {
   return join(globalDir(), 'keys', 'history');
 }
 
@@ -86,7 +86,7 @@ export function loadSeed(): Uint8Array {
 }
 
 /** Previously-active seeds, archived on rotation. Empty if never rotated. */
-export function loadHistoricalSeeds(): Uint8Array[] {
+function loadHistoricalSeeds(): Uint8Array[] {
   const dir = seedHistoryDir();
   if (!existsSync(dir)) return [];
   return readdirSync(dir)

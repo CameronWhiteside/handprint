@@ -1,5 +1,5 @@
 // tests/extractor/types.test.ts
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { parseExtractionJson } from '../../src/extractor/types.js';
 
 describe('parseExtractionJson', () => {

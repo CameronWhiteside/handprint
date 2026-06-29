@@ -28,8 +28,11 @@ jobs:
       - name: Build types package
         run: (cd packages/types && npm run build)
 
-      - name: Type check
+      - name: Type check (incl. unused locals/parameters)
         run: npx tsc --noEmit
 
-      - name: Run tests
-        run: npm test
+      - name: Unused code, exports, and dependencies (knip)
+        run: npm run lint:unused
+
+      - name: Tests with coverage thresholds
+        run: npm run test:coverage

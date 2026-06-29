@@ -29,7 +29,7 @@ export interface SourceCapabilities {
   model: boolean;
 }
 
-export interface SourceDescriptor {
+interface SourceDescriptor {
   id: 'claude-code' | 'opencode' | 'codex' | 'cursor';
   displayName: string;
   sourceAgent: string;

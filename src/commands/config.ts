@@ -1,12 +1,10 @@
 import {
   loadGlobalConfig,
   saveGlobalConfig,
-  isGlobalInitialized,
 } from '../dirs/global.js';
 import {
   loadProjectConfig,
   saveProjectConfig,
-  isProjectInitialized,
 } from '../dirs/project.js';
 
 export function getConfig(cwd: string, scope: 'global' | 'project' = 'project'): unknown {
@@ -47,4 +45,4 @@ export function setConfigValue(
   return result;
 }
 
-export { saveGlobalConfig, isGlobalInitialized, saveProjectConfig, isProjectInitialized };
+export { saveGlobalConfig, saveProjectConfig };

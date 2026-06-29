@@ -14,6 +14,8 @@ cd handprint
 npm install
 npm test          # vitest
 npm run build     # tsup -> dist/bin/handprint.js
+npm run lint           # tsc --noEmit + knip (unused files/exports/deps)
+npm run test:coverage  # vitest with coverage thresholds
 npm run handprint -- --help   # run from source via tsx
 ```
 

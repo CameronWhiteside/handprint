@@ -48,7 +48,10 @@
     "prepublishOnly": "npm run build && npx tsc --noEmit && npm test",
     "test": "vitest run",
     "test:watch": "vitest",
-    "handprint": "tsx bin/handprint.ts"
+    "handprint": "tsx bin/handprint.ts",
+    "lint:unused": "knip",
+    "lint": "tsc --noEmit && knip",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "@noble/ciphers": "^2.2.0",
@@ -58,6 +61,8 @@
   },
   "devDependencies": {
     "@types/node": "^25.9.2",
+    "@vitest/coverage-v8": "^4.1.9",
+    "knip": "^6.22.0",
     "node-llama-cpp": "^3.0.0",
     "tsup": "^8.5.1",
     "tsx": "^4.22.4",
