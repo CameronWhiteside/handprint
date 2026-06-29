@@ -19,7 +19,7 @@ handprint init --global
 
 ## 2. Choose an extraction provider
 
-handprint supports two extraction providers. Set one before running `grab`:
+handprint supports three extraction providers. Set one before running `grab`:
 
 ### Option A: `local` (private, free, no quota)
 
@@ -50,6 +50,35 @@ npm i -g node-llama-cpp
 ```
 
 If it is missing when `grab` runs in local mode, handprint prints this exact command. The model file itself is downloaded automatically on first `grab` if not already present at `~/.handprint/models/`.
+
+### Option C: `ollama` (local via Ollama, or any OpenAI-compatible server: LM Studio, llama.cpp, vLLM)
+
+Routes extraction through a local OpenAI-compatible HTTP server. handprint does not download or manage models: you pull them with Ollama (or another server) and handprint POSTs to the server. Fully on-machine, no cloud, no API key required.
+
+```sh
+handprint config set extraction.provider ollama --global   # 'openai' is accepted as an alias
+handprint config set extraction.model qwen2.5:3b --global
+```
+
+Default server: `http://localhost:11434/v1` (Ollama). Override:
+
+```sh
+handprint config set extraction.baseUrl http://localhost:1234/v1 --global
+```
+
+Start the server and pull the model before running `grab`:
+
+```sh
+ollama serve
+ollama pull qwen2.5:3b
+handprint grab
+```
+
+For servers that require an API key (LM Studio, vLLM with auth):
+
+```sh
+handprint config set extraction.apiKey <your-key> --global
+```
 
 ### Option B: `host` (uses the user's existing Claude / opencode / codex quota)
 

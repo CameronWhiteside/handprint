@@ -22,4 +22,11 @@ export {
   loadProjectConfig,
 } from './dirs/project.js';
 export { discoverSessions, ALL_ADAPTERS, adapterById } from './sources/index.js';
-export { resolveProvider, extractFromEntries, MODELS, DEFAULT_MODEL_ID } from './extractor/index.js';
+export {
+  resolveProvider,
+  extractFromEntries,
+  MODELS,
+  DEFAULT_MODEL_ID,
+  OLLAMA_DEFAULT_BASE_URL,
+  DEFAULT_OLLAMA_MODEL,
+} from './extractor/index.js';

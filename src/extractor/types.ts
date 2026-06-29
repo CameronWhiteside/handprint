@@ -13,6 +13,8 @@ export interface ExtractorProvider {
   id: string;
   label(): string;
   isAvailable(): Promise<boolean>;
+  /** Cheap readiness check with NO side effects (no downloads): is the runtime usable? */
+  preflight?(): Promise<{ ok: boolean; reason?: string }>;
   extract(window: string, system: string): Promise<RawExtraction[]>;
 }
 

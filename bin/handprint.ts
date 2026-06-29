@@ -85,7 +85,12 @@ program
   .option('-n, --limit <n>', 'Max sessions to scan', parseInt)
   .option('--source <id>', 'Only scan one source (claude-code, opencode)')
   .option('--project <name...>', 'Only sessions whose project path contains this (repeatable)')
-  .option('--extractor <kind>', 'Extractor: local | host')
+  .option('--days <n>', 'Only sessions active in the last N days', parseInt)
+  .option('--since <when>', 'Only sessions active on/after this (ISO date or relative like 7d)')
+  .option('--until <when>', 'Only sessions active on/before this (ISO date or relative)')
+  .option('--min-messages <n>', 'Skip sessions with fewer than N messages', parseInt)
+  .option('--redo', 'Re-grab sessions already in the local chain (default: skip them)')
+  .option('--extractor <kind>', 'Extractor: local | host | openai')
   .option('-y, --yes', 'Skip the confirm step and process everything (for agents/scripts)')
   .option('--dry-run', 'Quick scan: preview scope without processing or confirming')
   .action(async (opts) => {
@@ -110,6 +115,12 @@ program
               );
             });
             console.log(`Extractor: ${plan.extractor}`);
+            const skipped: string[] = [];
+            if (plan.skippedAlreadyGrabbed) skipped.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
+            if (plan.skippedUnchanged) skipped.push(`${plan.skippedUnchanged} with no new activity`);
+            if (plan.skippedTooSmall) skipped.push(`${plan.skippedTooSmall} below --min-messages`);
+            if (plan.skippedOutOfRange) skipped.push(`${plan.skippedOutOfRange} outside the time window`);
+            if (skipped.length) console.log(`Skipped: ${skipped.join(', ')}.`);
             const rl = createInterface({ input: process.stdin, output: process.stdout });
             const ans = (await rl.question('\nProcess [a]ll, pick numbers (e.g. 1,3), or [n]o? ')).trim().toLowerCase();
             rl.close();
@@ -121,11 +132,20 @@ program
           }
         : undefined;
 
+      // 'ollama' is an alias for 'openai' (same protocol)
+      const extractor: 'local' | 'host' | 'openai' | undefined =
+        opts.extractor === 'ollama' ? 'openai' : opts.extractor;
+
       const result = await grab(process.cwd(), {
         limit: opts.limit,
         source: opts.source,
         project: opts.project,
-        extractor: opts.extractor,
+        days: opts.days,
+        since: opts.since,
+        until: opts.until,
+        minMessages: opts.minMessages,
+        redo: opts.redo,
+        extractor,
         dryRun: opts.dryRun,
         yes: opts.yes,
         onDownload,
@@ -140,6 +160,11 @@ program
         return;
       }
 
+      if (result.blockedReason) {
+        console.log(`\nCannot run the ${plan.extractor} extractor:\n${result.blockedReason}\n`);
+        return;
+      }
+
       const printScope = () => {
         console.log(
           `\n${plan.totalSessions} session(s), ${plan.totalMessages} message(s), ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`,
@@ -148,6 +173,12 @@ program
           console.log(`  ${pr.project}  ${pr.sessions} · ${pr.messages} msgs · ${pr.chunks} chunks`);
         }
         console.log(`Extractor: ${plan.extractor}`);
+        const skips: string[] = [];
+        if (plan.skippedAlreadyGrabbed) skips.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
+        if (plan.skippedUnchanged) skips.push(`${plan.skippedUnchanged} with no new activity`);
+        if (plan.skippedTooSmall) skips.push(`${plan.skippedTooSmall} below --min-messages`);
+        if (plan.skippedOutOfRange) skips.push(`${plan.skippedOutOfRange} outside the time window`);
+        if (skips.length) console.log(`Skipped: ${skips.join(', ')}.`);
       };
 
       if (result.dryRun) {

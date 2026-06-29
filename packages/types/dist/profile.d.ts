@@ -332,20 +332,26 @@ export declare const projectConfigSchema: z.ZodObject<{
 }>;
 export type ProjectConfig = z.infer<typeof projectConfigSchema>;
 export declare const extractionConfigSchema: z.ZodObject<{
-    provider: z.ZodOptional<z.ZodEnum<["local", "host"]>>;
+    provider: z.ZodOptional<z.ZodEnum<["local", "host", "ollama", "openai"]>>;
     model: z.ZodOptional<z.ZodString>;
     agentCli: z.ZodOptional<z.ZodEnum<["claude", "opencode", "codex"]>>;
     sources: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    baseUrl: z.ZodOptional<z.ZodString>;
+    apiKey: z.ZodOptional<z.ZodString>;
 }, "strip", z.ZodTypeAny, {
-    provider?: "local" | "host" | undefined;
+    provider?: "local" | "host" | "ollama" | "openai" | undefined;
     model?: string | undefined;
     agentCli?: "claude" | "opencode" | "codex" | undefined;
     sources?: string[] | undefined;
+    baseUrl?: string | undefined;
+    apiKey?: string | undefined;
 }, {
-    provider?: "local" | "host" | undefined;
+    provider?: "local" | "host" | "ollama" | "openai" | undefined;
     model?: string | undefined;
     agentCli?: "claude" | "opencode" | "codex" | undefined;
     sources?: string[] | undefined;
+    baseUrl?: string | undefined;
+    apiKey?: string | undefined;
 }>;
 export type ExtractionConfig = z.infer<typeof extractionConfigSchema>;
 export declare const globalConfigSchema: z.ZodObject<{
@@ -448,20 +454,26 @@ export declare const globalConfigSchema: z.ZodObject<{
         url: string;
     }>;
     extraction: z.ZodOptional<z.ZodObject<{
-        provider: z.ZodOptional<z.ZodEnum<["local", "host"]>>;
+        provider: z.ZodOptional<z.ZodEnum<["local", "host", "ollama", "openai"]>>;
         model: z.ZodOptional<z.ZodString>;
         agentCli: z.ZodOptional<z.ZodEnum<["claude", "opencode", "codex"]>>;
         sources: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+        baseUrl: z.ZodOptional<z.ZodString>;
+        apiKey: z.ZodOptional<z.ZodString>;
     }, "strip", z.ZodTypeAny, {
-        provider?: "local" | "host" | undefined;
+        provider?: "local" | "host" | "ollama" | "openai" | undefined;
         model?: string | undefined;
         agentCli?: "claude" | "opencode" | "codex" | undefined;
         sources?: string[] | undefined;
+        baseUrl?: string | undefined;
+        apiKey?: string | undefined;
     }, {
-        provider?: "local" | "host" | undefined;
+        provider?: "local" | "host" | "ollama" | "openai" | undefined;
         model?: string | undefined;
         agentCli?: "claude" | "opencode" | "codex" | undefined;
         sources?: string[] | undefined;
+        baseUrl?: string | undefined;
+        apiKey?: string | undefined;
     }>>;
 }, "strip", z.ZodTypeAny, {
     version: string;
@@ -493,10 +505,12 @@ export declare const globalConfigSchema: z.ZodObject<{
         } | undefined;
     } | undefined;
     extraction?: {
-        provider?: "local" | "host" | undefined;
+        provider?: "local" | "host" | "ollama" | "openai" | undefined;
         model?: string | undefined;
         agentCli?: "claude" | "opencode" | "codex" | undefined;
         sources?: string[] | undefined;
+        baseUrl?: string | undefined;
+        apiKey?: string | undefined;
     } | undefined;
 }, {
     version: string;
@@ -528,10 +542,12 @@ export declare const globalConfigSchema: z.ZodObject<{
         } | undefined;
     } | undefined;
     extraction?: {
-        provider?: "local" | "host" | undefined;
+        provider?: "local" | "host" | "ollama" | "openai" | undefined;
         model?: string | undefined;
         agentCli?: "claude" | "opencode" | "codex" | undefined;
         sources?: string[] | undefined;
+        baseUrl?: string | undefined;
+        apiKey?: string | undefined;
     } | undefined;
 }>;
 export type GlobalConfig = z.infer<typeof globalConfigSchema>;

@@ -6,22 +6,33 @@ import { SYSTEM_PROMPT } from './prompt.js';
 import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './window.js';
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
+import { createOllamaProvider } from './ollama.js';
 import { DEFAULT_MODEL_ID } from './models.js';
 
 export * from './types.js';
 export { MODELS, DEFAULT_MODEL_ID } from './models.js';
 
+export const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434/v1';
+export const DEFAULT_OLLAMA_MODEL = 'qwen2.5:3b';
+
 export interface ResolveOpts {
   config?: ExtractionConfig;
   homeDir?: string;
   onDownload?: LocalProviderOpts['onDownload'];
-  forceProvider?: 'local' | 'host';
+  forceProvider?: 'local' | 'host' | 'ollama' | 'openai';
 }
 
 export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
   const provider = opts.forceProvider ?? opts.config?.provider ?? 'local';
   if (provider === 'host') {
     return createHostProvider({ cli: opts.config?.agentCli });
+  }
+  if (provider === 'ollama' || provider === 'openai') {
+    return createOllamaProvider({
+      baseUrl: opts.config?.baseUrl ?? OLLAMA_DEFAULT_BASE_URL,
+      model: opts.config?.model ?? DEFAULT_OLLAMA_MODEL,
+      apiKey: opts.config?.apiKey,
+    });
   }
   return createLocalProvider({
     modelId: opts.config?.model ?? DEFAULT_MODEL_ID,
@@ -33,6 +44,8 @@ export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
 export interface ExtractProgress {
   /** Called before each chunk is sent to the model: (chunkNumber, totalChunks, messages). */
   onChunk?: (chunkNumber: number, totalChunks: number, messages: number) => void;
+  /** Called after each chunk's extraction settles (success or error). */
+  onChunkDone?: () => void;
 }
 
 export async function extractFromEntries(
@@ -60,6 +73,8 @@ export async function extractFromEntries(
       const msg = err instanceof Error ? err.message : String(err);
       lastMsg = msg;
       console.error(`  chunk ${i + 1} error: ${msg}`);
+    } finally {
+      progress.onChunkDone?.();
     }
   }
   if (attempted > 0 && errored === attempted) {
