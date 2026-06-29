@@ -153,6 +153,12 @@ describe('grab scan / confirm / target', () => {
     expect(grown.plan.totalMessages).toBe(1);
   });
 
+  it('plan includes estTokensIn > 0 when a session has scanned entries', async () => {
+    const res = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, provider: fakeProvider(), log: () => {} });
+    expect(res.plan.totalSessions).toBe(1);
+    expect(res.plan.estTokensIn).toBeGreaterThan(0);
+  });
+
   it('aborts with a clear reason when the runtime is not ready (no processing, no download)', async () => {
     const extract = vi.fn(async () => []);
     const provider: ExtractorProvider = {

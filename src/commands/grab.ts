@@ -4,6 +4,7 @@ import { join } from 'node:path';
 import { discoverSessions, adapterById } from '../sources/index.js';
 import { resolveProvider, extractFromEntries } from '../extractor/index.js';
 import { buildConversationWindow, chunkEntries } from '../extractor/window.js';
+import { SYSTEM_PROMPT } from '../extractor/prompt.js';
 import type { ExtractorProvider } from '../extractor/types.js';
 import type { TranscriptEntry } from '../sources/types.js';
 import { buildHandprint } from '../builder/handprint.js';
@@ -12,6 +13,9 @@ import { isGlobalInitialized, loadGlobalConfig } from '../dirs/global.js';
 import { readObject } from '../store/objects.js';
 import { loadGrabIndex, saveGrabIndex } from '../store/grabIndex.js';
 import type { ModelEntry } from '../extractor/models.js';
+
+// Cap on entry text length used by the window builder (matches ENTRY_TEXT_MAX in window.ts).
+const ENTRY_TEXT_CAP = 1000;
 
 interface PlanProject {
   project: string;
@@ -26,6 +30,8 @@ export interface GrabPlan {
   totalMessages: number;
   totalChunks: number;
   extractor: string;
+  /** Rough input-token estimate: (contentChars + chunks * systemPromptChars) / 4. */
+  estTokensIn: number;
   skippedAlreadyGrabbed: number;
   skippedUnchanged: number;
   skippedTooSmall: number;
@@ -176,6 +182,9 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   let skippedAlreadyGrabbed = 0;
   let skippedUnchanged = 0;
   let skippedTooSmall = 0;
+  // Accumulated content characters across all fresh entries that will be processed.
+  // Used to compute the rough input-token estimate.
+  let contentChars = 0;
 
   for (const ref of sessions) {
     const adapter = adapterById(ref.sourceId);
@@ -196,12 +205,19 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
       skippedTooSmall++;
       continue;
     }
+    // Accumulate chars for the token estimate: cap each entry at ENTRY_TEXT_CAP
+    // (the same cap applied by the window builder, so the estimate reflects what
+    // the model actually sees rather than raw transcript size).
+    for (const e of fresh) {
+      contentChars += Math.min(e.text.length, ENTRY_TEXT_CAP);
+    }
+    const chunks = fresh.length === 0 ? 0 : chunkEntries(fresh).length;
     scanned.push({
       sourceId: ref.sourceId,
       sessionId: ref.sessionId,
       project: ref.project,
       messages: fresh.length,
-      chunks: fresh.length === 0 ? 0 : chunkEntries(fresh).length,
+      chunks,
       lastTs: indexed,
     });
   }
@@ -214,12 +230,17 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
     p.chunks += s.chunks;
     byProject.set(s.project, p);
   }
+  const totalChunks = scanned.reduce((n, s) => n + s.chunks, 0);
+  // Rough input-token estimate: ~4 chars per token (standard heuristic).
+  // Each chunk includes the system prompt once plus the content chars from that chunk.
+  const estTokensIn = Math.round((contentChars + totalChunks * SYSTEM_PROMPT.length) / 4);
   const plan: GrabPlan = {
     projects: [...byProject.values()].sort((a, b) => b.chunks - a.chunks),
     totalSessions: scanned.length,
     totalMessages: scanned.reduce((n, s) => n + s.messages, 0),
-    totalChunks: scanned.reduce((n, s) => n + s.chunks, 0),
+    totalChunks,
     extractor,
+    estTokensIn,
     skippedAlreadyGrabbed,
     skippedUnchanged,
     skippedTooSmall,
@@ -259,11 +280,11 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   }
 
   const toProcess = scanned.filter((s) => allowed === null || allowed.has(s.project));
-  const totalChunks = toProcess.reduce((n, s) => n + s.chunks, 0);
+  const chunksToProcess = toProcess.reduce((n, s) => n + s.chunks, 0);
 
   // ── Process with rich, always-on progress + ETA ───────────
   log(
-    `Processing ${toProcess.length} session(s), ~${totalChunks} model call(s) with ${extractor}.\n` +
+    `Processing ${toProcess.length} session(s), ~${chunksToProcess} model call(s) with ${extractor}.\n` +
       `Progress is saved per session. If this is slow, press Ctrl-C (finished sessions are kept) and narrow with --days N, --project NAME, or -n N.`,
   );
 
@@ -294,9 +315,9 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
           chunksDone++;
           const elapsed = Date.now() - t0;
           const avg = elapsed / chunksDone;
-          const remaining = Math.max(0, totalChunks - chunksDone);
-          const pct = totalChunks > 0 ? Math.round((chunksDone / totalChunks) * 100) : 100;
-          log(`    ${chunksDone}/${totalChunks} chunks · ${pct}% · ~${fmtDuration(avg * remaining)} left`);
+          const remaining = Math.max(0, chunksToProcess - chunksDone);
+          const pct = chunksToProcess > 0 ? Math.round((chunksDone / chunksToProcess) * 100) : 100;
+          log(`    ${chunksDone}/${chunksToProcess} chunks · ${pct}% · ~${fmtDuration(avg * remaining)} left`);
         },
       });
       for (const hp of extractions) {

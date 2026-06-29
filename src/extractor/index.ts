@@ -25,7 +25,7 @@ export interface ResolveOpts {
 export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
   const provider = opts.forceProvider ?? opts.config?.provider ?? 'local';
   if (provider === 'host') {
-    return createHostProvider({ cli: opts.config?.agentCli });
+    return createHostProvider({ cli: opts.config?.agentCli, model: opts.config?.model });
   }
   if (provider === 'ollama' || provider === 'openai') {
     return createOllamaProvider({

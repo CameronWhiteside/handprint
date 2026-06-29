@@ -4,6 +4,14 @@ import type { ExtractorProvider, RawExtraction } from './types.js';
 import { parseExtractionJson } from './types.js';
 import { buildUserPrompt } from './prompt.js';
 
+/** Map a CLI id to its user-facing brand name. */
+export function agentBrand(id: string): string {
+  if (id === 'claude') return 'Claude Code';
+  if (id === 'opencode') return 'opencode';
+  if (id === 'codex') return 'Codex';
+  return id;
+}
+
 export interface AgentCliSpec {
   id: 'claude' | 'opencode' | 'codex';
   bin: string;
@@ -67,7 +75,7 @@ function onPath(bin: string): boolean {
   }
 }
 
-function detectAgentCli(): AgentCliSpec | undefined {
+export function detectAgentCli(): AgentCliSpec | undefined {
   return AGENT_CLIS.find((c) => onPath(c.bin));
 }
 
@@ -85,17 +93,24 @@ export interface HostProviderOpts {
   detect?: () => AgentCliSpec | undefined;
   /** Injectable seam for claude flag detection, defaults to claudeSupportsSystemFlag(). */
   claudeFlagDetector?: FlagDetector;
+  /**
+   * Model to pass to the claude CLI via --model. Only claude supports this for
+   * now; opencode and codex do not accept a --model flag and ignore this option.
+   */
+  model?: string;
 }
 
 /** Build claude CLI args, separating system prompt at the correct authority level. */
-function buildClaudeArgs(supportsFlag: boolean, system: string, prompt: string): string[] {
+function buildClaudeArgs(supportsFlag: boolean, system: string, prompt: string, model: string | undefined): string[] {
+  // Prepend --model when the caller selected a specific model.
+  const modelArgs: string[] = model ? ['--model', model] : [];
   if (supportsFlag) {
     // Item 1 fix: deliver SECURITY system rules at the dedicated flag authority,
     // not concatenated into the user message.
-    return ['-p', prompt, '--append-system-prompt', system];
+    return [...modelArgs, '-p', prompt, '--append-system-prompt', system];
   }
   // Degraded fallback: flag unsupported (old claude version or missing binary).
-  return ['-p', `${system}\n\n${prompt}`];
+  return [...modelArgs, '-p', `${system}\n\n${prompt}`];
 }
 
 export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvider {
@@ -131,7 +146,7 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
         // Item 1: use the injectable flag-detection seam so this path is
         // testable without the real claude binary.
         const detector = opts.claudeFlagDetector ?? claudeSupportsSystemFlag;
-        args = buildClaudeArgs(detector(), system, prompt);
+        args = buildClaudeArgs(detector(), system, prompt, opts.model);
       } else {
         args = s.buildArgs(system, prompt);
       }

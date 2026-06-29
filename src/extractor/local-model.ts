@@ -16,6 +16,7 @@ import {
   modelsDir,
   isModelDownloaded,
 } from './models.js';
+import { detectAgentCli, agentBrand } from './host-agent.js';
 
 export interface LocalProviderOpts {
   modelId: string;
@@ -110,12 +111,18 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
         createRequire(import.meta.url).resolve('node-llama-cpp');
         return { ok: true };
       } catch {
+        // If an agent CLI is already on PATH, name it so the user knows they
+        // have a ready alternative without installing anything extra.
+        const detected = detectAgentCli();
+        const hostLine = detected
+          ? `  or use your installed agent (${agentBrand(detected.id)}):  handprint grab --extractor host`
+          : '  or use your agent:    handprint grab --extractor host';
         return {
           ok: false,
           reason:
             'Local extraction needs node-llama-cpp, a one-time install (it is not bundled).\n' +
             '  install it:           npm i -g node-llama-cpp\n' +
-            '  or use your agent:    handprint grab --extractor host\n' +
+            hostLine + '\n' +
             '  or make host default: handprint config set extraction.provider host --global',
         };
       }

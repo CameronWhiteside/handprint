@@ -88,6 +88,16 @@ Routes extraction through the agent that is already running on the machine (whic
 handprint config set extraction.provider host --global
 ```
 
+To choose which model the agent uses, set `extraction.model` (passed as `--model` to the claude CLI):
+
+```sh
+handprint config set extraction.model claude-opus-4-5 --global
+```
+
+Without this setting the agent uses its own default model.
+
+The grab plan names the detected agent by brand (e.g. `host:claude (Claude Code)`) and shows a rough input-token estimate so you can see what will be billed before confirming.
+
 ---
 
 ## 3. Scope discovery to specific sources

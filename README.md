@@ -81,6 +81,17 @@ ollama pull qwen2.5:3b
 #   extraction.provider host    (your installed agent; runs in the cloud)
 ```
 
+For the `host` engine you can pick which model the agent uses by passing `--model` to the CLI:
+
+```sh
+handprint config set extraction.provider host --global
+handprint config set extraction.model claude-opus-4-5 --global   # optional; defaults to the agent's own default
+```
+
+Without `extraction.model` the agent (e.g. Claude Code) uses whatever model it defaults to.
+
+The grab plan always shows a rough input-token estimate and names the engine (e.g. `host:claude (Claude Code)`) so you can confirm the scope before any tokens are billed.
+
 If the chosen engine is not ready (no Ollama server, `node-llama-cpp` not installed, or no agent CLI), `grab` stops with a one-line fix instead of failing mid-run. See [AGENTS.md](./AGENTS.md) for non-interactive setup.
 
 ## Visibility (private / unlisted / public)

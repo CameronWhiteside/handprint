@@ -2,6 +2,15 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.3] - 2026-06-29
+
+### Added
+- `grab` plan now prints a rough input-token estimate: the scan step shows `~N model calls, ~Xk input tokens` so you can gauge cost before confirming. For host engines the line notes the tokens are billed to your quota; for on-machine engines it notes nothing is billed.
+- The extractor line in the grab plan now names the agent by brand (e.g. `host:claude (Claude Code)`) and says whether it runs locally or bills a quota.
+- Host engine model selection via `extraction.model`: `handprint config set extraction.model claude-opus-4-5 --global` passes `--model <model>` to the claude CLI. Without this setting Claude Code uses its own default model.
+- Blocked runs (engine not ready) now show the full plan and estimate before the error, so you can see the scope and decide which alternative to use.
+- The local-engine block message now names any agent CLI already on PATH (e.g. "or use your installed agent (Claude Code)") so the ready alternative is obvious.
+
 ## [0.4.2] - 2026-06-29
 
 ### Added
