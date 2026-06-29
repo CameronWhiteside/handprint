@@ -117,6 +117,7 @@ program
             console.log(`Extractor: ${plan.extractor}`);
             const skipped: string[] = [];
             if (plan.skippedAlreadyGrabbed) skipped.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
+            if (plan.skippedUnchanged) skipped.push(`${plan.skippedUnchanged} with no new activity`);
             if (plan.skippedTooSmall) skipped.push(`${plan.skippedTooSmall} below --min-messages`);
             if (plan.skippedOutOfRange) skipped.push(`${plan.skippedOutOfRange} outside the time window`);
             if (skipped.length) console.log(`Skipped: ${skipped.join(', ')}.`);
@@ -165,6 +166,7 @@ program
         console.log(`Extractor: ${plan.extractor}`);
         const skips: string[] = [];
         if (plan.skippedAlreadyGrabbed) skips.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
+        if (plan.skippedUnchanged) skips.push(`${plan.skippedUnchanged} with no new activity`);
         if (plan.skippedTooSmall) skips.push(`${plan.skippedTooSmall} below --min-messages`);
         if (plan.skippedOutOfRange) skips.push(`${plan.skippedOutOfRange} outside the time window`);
         if (skips.length) console.log(`Skipped: ${skips.join(', ')}.`);

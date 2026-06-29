@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'node:fs';
+import { mkdtempSync, mkdirSync, writeFileSync, appendFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { grab } from '../../src/commands/grab.js';
@@ -129,9 +129,27 @@ describe('grab scan / confirm / target', () => {
 
     const second = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, provider: fakeProvider(), log: () => {} });
     expect(second.plan.totalSessions).toBe(0);
-    expect(second.plan.skippedAlreadyGrabbed).toBe(1);
+    expect(second.plan.skippedUnchanged).toBe(1);
 
     const redo = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, redo: true, provider: fakeProvider(), log: () => {} });
     expect(redo.plan.totalSessions).toBe(1);
+  });
+
+  it('re-grabs only the NEW activity when a session grows', async () => {
+    // First grab takes the 2 existing messages.
+    const first = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, yes: true, provider: fakeProvider(), log: () => {} });
+    expect(first.handprintsCreated).toBe(1);
+
+    // Append a newer message to the same session.
+    const sess = join(CLAUDE_HOME, '.claude', 'projects', '-Users-test-app', 'sess-1.jsonl');
+    appendFileSync(
+      sess,
+      '\n' + JSON.stringify({ type: 'user', message: { role: 'user', content: 'actually, also rate-limit the token endpoint hard' }, timestamp: '2026-06-02T09:00:00Z', cwd: '/Users/test/app', sessionId: 'sess-1', gitBranch: 'main' }),
+    );
+
+    // Dry run now sees exactly one new message, not the whole session.
+    const grown = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, provider: fakeProvider(), log: () => {} });
+    expect(grown.plan.totalSessions).toBe(1);
+    expect(grown.plan.totalMessages).toBe(1);
   });
 });

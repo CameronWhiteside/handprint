@@ -33,6 +33,8 @@ export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
 export interface ExtractProgress {
   /** Called before each chunk is sent to the model: (chunkNumber, totalChunks, messages). */
   onChunk?: (chunkNumber: number, totalChunks: number, messages: number) => void;
+  /** Called after each chunk's extraction settles (success or error). */
+  onChunkDone?: () => void;
 }
 
 export async function extractFromEntries(
@@ -60,6 +62,8 @@ export async function extractFromEntries(
       const msg = err instanceof Error ? err.message : String(err);
       lastMsg = msg;
       console.error(`  chunk ${i + 1} error: ${msg}`);
+    } finally {
+      progress.onChunkDone?.();
     }
   }
   if (attempted > 0 && errored === attempted) {

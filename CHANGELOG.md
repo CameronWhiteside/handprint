@@ -6,9 +6,10 @@ All notable changes to handprint are documented here. This project adheres to [S
 
 ### Added
 - `handprint grab` time and message filters: `--days <n>`, `--since <when>`, `--until <when>` (ISO date such as 2026-06-01, or relative such as 7d / 24h), and `--min-messages <n>`.
+- Always-on progress during processing: a per-session line with new-message and chunk counts, an overall `chunks done / total, percent, and ETA`, and a one-line hint for what to do if a run is slow (Ctrl-C is safe, then narrow with the filters).
 
 ### Changed
-- `handprint grab` is now idempotent. Sessions already extracted into the local chain (matched by `source.session`) are skipped, so overlapping runs (for example last 2 days, then last 4 days) never re-grab the same session. `--redo` forces a re-grab. The plan and confirm step report what was skipped and why (already grabbed, below `--min-messages`, or outside the time window).
+- `handprint grab` is now incremental and idempotent. It keeps a per-session watermark in `.handprint/grabbed.json` and on each run processes only messages newer than the last grab, re-grabbing a session only when it has new activity. Overlapping windows (for example last 2 days, then last 4 days) never re-grab the same work. `--redo` forces a full re-grab. The plan and confirm step report what was skipped and why (already grabbed, no new activity, below `--min-messages`, or outside the time window).
 
 ## [0.4.0] - 2026-06-29
 
