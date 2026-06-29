@@ -51,12 +51,12 @@ npm i -g node-llama-cpp
 
 If it is missing when `grab` runs in local mode, handprint prints this exact command. The model file itself is downloaded automatically on first `grab` if not already present at `~/.handprint/models/`.
 
-### Option C: `openai` (local via an OpenAI-compatible server: Ollama, LM Studio, llama.cpp, vLLM)
+### Option C: `ollama` (local via Ollama, or any OpenAI-compatible server: LM Studio, llama.cpp, vLLM)
 
 Routes extraction through a local OpenAI-compatible HTTP server. handprint does not download or manage models: you pull them with Ollama (or another server) and handprint POSTs to the server. Fully on-machine, no cloud, no API key required.
 
 ```sh
-handprint config set extraction.provider openai --global
+handprint config set extraction.provider ollama --global   # 'openai' is accepted as an alias
 handprint config set extraction.model qwen2.5:3b --global
 ```
 

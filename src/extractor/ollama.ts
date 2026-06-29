@@ -3,7 +3,7 @@ import type { ExtractorProvider, RawExtraction } from './types.js';
 import { parseExtractionJson } from './types.js';
 import { buildUserPrompt } from './prompt.js';
 
-export interface OpenAIProviderOpts {
+export interface OllamaProviderOpts {
   baseUrl: string;
   model: string;
   apiKey?: string;
@@ -26,7 +26,7 @@ function isCompletionResponse(v: unknown): v is { choices: Array<{ message: { co
   return Array.isArray(choices) && choices.length > 0 && isChoice(choices[0]);
 }
 
-export function createOpenAIProvider(opts: OpenAIProviderOpts): ExtractorProvider {
+export function createOllamaProvider(opts: OllamaProviderOpts): ExtractorProvider {
   const { baseUrl, model, apiKey } = opts;
 
   const headers: Record<string, string> = {
@@ -43,8 +43,8 @@ export function createOpenAIProvider(opts: OpenAIProviderOpts): ExtractorProvide
     `  or use your agent:  handprint grab --extractor host`;
 
   return {
-    id: 'openai',
-    label: () => `openai:${model}`,
+    id: 'ollama',
+    label: () => `ollama:${model}`,
 
     async preflight(): Promise<{ ok: boolean; reason?: string }> {
       try {

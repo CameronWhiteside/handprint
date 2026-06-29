@@ -6,20 +6,20 @@ import { SYSTEM_PROMPT } from './prompt.js';
 import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './window.js';
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
-import { createOpenAIProvider } from './openai.js';
+import { createOllamaProvider } from './ollama.js';
 import { DEFAULT_MODEL_ID } from './models.js';
 
 export * from './types.js';
 export { MODELS, DEFAULT_MODEL_ID } from './models.js';
 
 export const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434/v1';
-export const DEFAULT_OPENAI_MODEL = 'qwen2.5:3b';
+export const DEFAULT_OLLAMA_MODEL = 'qwen2.5:3b';
 
 export interface ResolveOpts {
   config?: ExtractionConfig;
   homeDir?: string;
   onDownload?: LocalProviderOpts['onDownload'];
-  forceProvider?: 'local' | 'host' | 'openai';
+  forceProvider?: 'local' | 'host' | 'ollama' | 'openai';
 }
 
 export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
@@ -27,10 +27,10 @@ export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
   if (provider === 'host') {
     return createHostProvider({ cli: opts.config?.agentCli });
   }
-  if (provider === 'openai') {
-    return createOpenAIProvider({
+  if (provider === 'ollama' || provider === 'openai') {
+    return createOllamaProvider({
       baseUrl: opts.config?.baseUrl ?? OLLAMA_DEFAULT_BASE_URL,
-      model: opts.config?.model ?? DEFAULT_OPENAI_MODEL,
+      model: opts.config?.model ?? DEFAULT_OLLAMA_MODEL,
       apiKey: opts.config?.apiKey,
     });
   }

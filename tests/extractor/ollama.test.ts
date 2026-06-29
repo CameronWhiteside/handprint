@@ -1,6 +1,6 @@
 // tests/extractor/openai.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { createOpenAIProvider } from '../../src/extractor/openai.js';
+import { createOllamaProvider } from '../../src/extractor/ollama.js';
 import { resolveProvider } from '../../src/extractor/index.js';
 
 const BASE_URL = 'http://localhost:11434/v1';
@@ -15,7 +15,7 @@ beforeEach(() => {
   vi.restoreAllMocks();
 });
 
-describe('createOpenAIProvider - preflight', () => {
+describe('createOllamaProvider - preflight', () => {
   it('returns ok:true when /models returns 200', async () => {
     let capturedUrl = '';
     vi.stubGlobal('fetch', async (url: unknown, _init?: unknown) => {
@@ -23,7 +23,7 @@ describe('createOpenAIProvider - preflight', () => {
       return { ok: true, status: 200, json: async () => ({ data: [] }) };
     });
 
-    const provider = createOpenAIProvider({ baseUrl: BASE_URL, model: MODEL });
+    const provider = createOllamaProvider({ baseUrl: BASE_URL, model: MODEL });
     const result = await provider.preflight!();
     expect(result.ok).toBe(true);
     expect(capturedUrl).toBe(`${BASE_URL}/models`);
@@ -32,7 +32,7 @@ describe('createOpenAIProvider - preflight', () => {
   it('returns ok:false with reason when /models returns non-2xx', async () => {
     vi.stubGlobal('fetch', async () => ({ ok: false, status: 503, json: async () => ({}) }));
 
-    const provider = createOpenAIProvider({ baseUrl: BASE_URL, model: MODEL });
+    const provider = createOllamaProvider({ baseUrl: BASE_URL, model: MODEL });
     const result = await provider.preflight!();
     expect(result.ok).toBe(false);
     expect(result.reason).toContain(BASE_URL);
@@ -42,14 +42,14 @@ describe('createOpenAIProvider - preflight', () => {
   it('returns ok:false with reason when fetch rejects', async () => {
     vi.stubGlobal('fetch', async () => Promise.reject(new Error('ECONNREFUSED')));
 
-    const provider = createOpenAIProvider({ baseUrl: BASE_URL, model: MODEL });
+    const provider = createOllamaProvider({ baseUrl: BASE_URL, model: MODEL });
     const result = await provider.preflight!();
     expect(result.ok).toBe(false);
     expect(result.reason).toContain(BASE_URL);
   });
 });
 
-describe('createOpenAIProvider - extract', () => {
+describe('createOllamaProvider - extract', () => {
   it('POSTs to /chat/completions with model + system + user messages', async () => {
     const marks = [{ type: 'choice', subtype: 'override', note: 'chose Drizzle over Prisma' }];
     const chatResponse = {
@@ -83,7 +83,7 @@ describe('createOpenAIProvider - extract', () => {
       return { ok: true, status: 200, json: async () => chatResponse };
     });
 
-    const provider = createOpenAIProvider({ baseUrl: BASE_URL, model: MODEL });
+    const provider = createOllamaProvider({ baseUrl: BASE_URL, model: MODEL });
     const extractions = await provider.extract('some window text', 'system prompt here');
 
     expect(capturedPostUrl).toBe(`${BASE_URL}/chat/completions`);
@@ -142,7 +142,7 @@ describe('createOpenAIProvider - extract', () => {
       return { ok: true, status: 200, json: async () => chatResponse };
     });
 
-    const provider = createOpenAIProvider({ baseUrl: BASE_URL, model: MODEL, apiKey: 'sk-test' });
+    const provider = createOllamaProvider({ baseUrl: BASE_URL, model: MODEL, apiKey: 'sk-test' });
     await provider.extract('window', 'system');
 
     expect(capturedAuthHeader).toBe('Bearer sk-test');
@@ -150,23 +150,23 @@ describe('createOpenAIProvider - extract', () => {
 
   it('throws on non-2xx from chat/completions', async () => {
     vi.stubGlobal('fetch', async () => ({ ok: false, status: 500, json: async () => ({}) }));
-    const provider = createOpenAIProvider({ baseUrl: BASE_URL, model: MODEL });
+    const provider = createOllamaProvider({ baseUrl: BASE_URL, model: MODEL });
     await expect(provider.extract('w', 's')).rejects.toThrow('500');
   });
 });
 
-describe('resolveProvider - openai', () => {
-  it('resolves to openai provider when config.provider=openai', () => {
+describe('resolveProvider - ollama', () => {
+  it('resolves to openai provider when config.provider=ollama', () => {
     const provider = resolveProvider({
-      config: { provider: 'openai', baseUrl: 'http://x/v1', model: 'm' },
+      config: { provider: 'ollama', baseUrl: 'http://x/v1', model: 'm' },
     });
-    expect(provider.id).toBe('openai');
+    expect(provider.id).toBe('ollama');
   });
 
-  it('openai provider label includes model name', () => {
+  it('ollama provider label includes model name', () => {
     const provider = resolveProvider({
-      config: { provider: 'openai', baseUrl: 'http://x/v1', model: 'my-model' },
+      config: { provider: 'ollama', baseUrl: 'http://x/v1', model: 'my-model' },
     });
-    expect(provider.label()).toBe('openai:my-model');
+    expect(provider.label()).toBe('ollama:my-model');
   });
 });

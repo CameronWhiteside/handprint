@@ -28,5 +28,5 @@ export {
   MODELS,
   DEFAULT_MODEL_ID,
   OLLAMA_DEFAULT_BASE_URL,
-  DEFAULT_OPENAI_MODEL,
+  DEFAULT_OLLAMA_MODEL,
 } from './extractor/index.js';

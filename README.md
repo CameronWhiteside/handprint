@@ -26,6 +26,12 @@ Extract decisions from AI transcripts in the current project:
 handprint grab
 ```
 
+`grab` scans first and shows a plan grouped by project, then asks before processing anything:
+
+- It is **incremental and idempotent**: each run processes only sessions (and only the messages) that are new since the last grab, so overlapping runs never redo work. `--redo` forces a re-grab.
+- Narrow what you process: `--days N` (or `--since` / `--until`), `--project <name>`, `--min-messages N`, `-n N`.
+- It shows live progress and an ETA, and a bare `grab` with no terminal to confirm will scan and stop rather than run unattended. Use `-y` to skip the prompt (for agents and scripts).
+
 Publish handprints to the hub:
 
 ```sh
@@ -45,7 +51,7 @@ handprint status
 | Command | Description |
 |---------|-------------|
 | `handprint init [--global]` | Initialize global identity or project |
-| `handprint grab [--dry-run] [--source <id>] [--extractor <provider>]` | Extract decisions from AI transcripts |
+| `handprint grab [--days N] [--project <name>] [--min-messages N] [--dry-run] [-y] [--extractor <engine>]` | Scan, confirm, then extract decisions |
 | `handprint sources` | List available source adapters and their status |
 | `handprint push` | Publish handprints to the hub (opt-in; requires `handprint login`) |
 | `handprint log` | List local handprints |
@@ -60,20 +66,22 @@ handprint status
 
 ## Runs entirely on your machine, no account required
 
-handprint has two extraction modes, both of which work without signing up for anything:
+handprint extracts decisions with one of three engines, none of which require signing up for anything:
 
-- **`local`:** runs a small open-weight model (1-2 GB) on your hardware. No data leaves the machine. No API key. No quota. Uses the optional [`node-llama-cpp`](https://github.com/withcatai/node-llama-cpp) dependency. If it isn't present, handprint tells you the one-line command to add it.
-- **`host`:** routes extraction through whichever AI tool is already installed (Claude Code, opencode, codex). Uses the quota you already have with that tool, with no extra authentication required.
-
-Configure your preferred mode:
+- **`ollama` (recommended for local):** runs a model on a local OpenAI-compatible server: Ollama by default, or LM Studio / llama.cpp server / vLLM. Fully on-machine and private. The server owns model download and storage, so handprint downloads nothing. `--extractor openai` is an accepted alias.
+- **`local`:** an embedded engine via the optional [`node-llama-cpp`](https://github.com/withcatai/node-llama-cpp) dependency. Self-contained, but handprint manages a one-time model download (about 2 GB) itself.
+- **`host`:** routes through an AI tool you already have installed (Claude Code, opencode, codex). Convenient and uses your existing quota, but it runs that tool's cloud model, not a local one.
 
 ```sh
-handprint config set extraction.provider local   # private, free, offline
-# or
-handprint config set extraction.provider host    # uses your existing tool quota
+handprint config set extraction.provider ollama --global    # local + private (recommended)
+handprint config set extraction.model qwen2.5:3b --global
+ollama pull qwen2.5:3b
+# alternatives:
+#   extraction.provider local   (embedded engine, self-managed download)
+#   extraction.provider host    (your installed agent; runs in the cloud)
 ```
 
-See [AGENTS.md](./AGENTS.md) for a full non-interactive setup guide.
+If the chosen engine is not ready (no Ollama server, `node-llama-cpp` not installed, or no agent CLI), `grab` stops with a one-line fix instead of failing mid-run. See [AGENTS.md](./AGENTS.md) for non-interactive setup.
 
 ## Visibility (private / unlisted / public)
 
