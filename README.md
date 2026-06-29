@@ -81,14 +81,14 @@ ollama pull qwen2.5:3b
 #   extraction.provider host    (your installed agent; runs in the cloud)
 ```
 
-For the `host` engine you can pick which model the agent uses by passing `--model` to the CLI:
+For the `host` engine, the claude path defaults to the cheap, fast `haiku` model (extraction is a structured task, so this avoids burning Opus). Override it per machine:
 
 ```sh
 handprint config set extraction.provider host --global
-handprint config set extraction.model claude-opus-4-5 --global   # optional; defaults to the agent's own default
+handprint config set extraction.model sonnet --global   # optional; default is haiku
 ```
 
-Without `extraction.model` the agent (e.g. Claude Code) uses whatever model it defaults to.
+Without `extraction.model`, the claude host engine uses `haiku`. The model is recorded in each handprint's source (for example `host:claude:haiku`) so you know what extracted it.
 
 The grab plan always shows a rough input-token estimate and names the engine (e.g. `host:claude (Claude Code)`) so you can confirm the scope before any tokens are billed.
 

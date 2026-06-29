@@ -45,8 +45,9 @@ function humanTokens(n: number): string {
  */
 function extractorLabel(extractor: string): string {
   if (extractor.startsWith('host:')) {
-    const id = extractor.slice('host:'.length);
-    return `${extractor} (${agentBrand(id)})`;
+    const [id, model] = extractor.slice('host:'.length).split(':');
+    const brand = agentBrand(id);
+    return model ? `${extractor} (${brand}, model: ${model})` : `${extractor} (${brand})`;
   }
   if (extractor.startsWith('ollama:') || extractor.startsWith('local:')) {
     return `${extractor} (on your machine)`;
@@ -57,7 +58,7 @@ function extractorLabel(extractor: string): string {
 /** Build the estimate line appropriate for the extractor type. */
 function estimateLine(plan: GrabPlan): string {
   if (plan.extractor.startsWith('host:')) {
-    const id = plan.extractor.slice('host:'.length);
+    const id = plan.extractor.slice('host:'.length).split(':')[0];
     return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, billed to your ${agentBrand(id)} quota.`;
   }
   return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, runs on your machine (nothing billed).`;

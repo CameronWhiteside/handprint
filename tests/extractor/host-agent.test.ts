@@ -22,10 +22,38 @@ describe('agentBrand', () => {
 });
 
 describe('host-agent provider', () => {
-  it('labels itself host:<cli> and is available when a cli is detected', async () => {
+  it('labels itself host:<cli>:<model> and is available when a cli is detected', async () => {
     const p = createHostProvider({ detect: () => ({ id: 'claude', bin: 'claude', buildArgs: () => [] }) });
-    expect(p.label()).toBe('host:claude');
+    // claude gets the sensible default model in the label for provenance + display.
+    expect(p.label()).toBe('host:claude:haiku');
     expect(await p.isAvailable()).toBe(true);
+  });
+
+  it('defaults the claude model to haiku when none is configured', async () => {
+    let capturedArgs: string[] = [];
+    const fakeRunner = async (_bin: string, args: string[]) => {
+      capturedArgs = args;
+      return '[]';
+    };
+    const p = createHostProvider({
+      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (s, pr) => ['-p', `${s}\n\n${pr}`] }),
+      claudeFlagDetector: () => true,
+      run: fakeRunner,
+    });
+    await p.extract('window', 'system');
+    const modelIdx = capturedArgs.indexOf('--model');
+    expect(modelIdx).toBeGreaterThan(-1);
+    expect(capturedArgs[modelIdx + 1]).toBe('haiku');
+  });
+
+  it('does not pass --model for non-claude clis', async () => {
+    let capturedArgs: string[] = [];
+    const p = createHostProvider({
+      detect: () => ({ id: 'opencode', bin: 'opencode', buildArgs: (s, pr) => ['run', `${s}\n\n${pr}`] }),
+      run: async (_b, a) => { capturedArgs = a; return '[]'; },
+    });
+    await p.extract('window', 'system');
+    expect(capturedArgs).not.toContain('--model');
   });
 
   it('is unavailable when nothing is detected', async () => {

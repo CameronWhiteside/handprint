@@ -87,6 +87,12 @@ const defaultRunner: Runner = (bin, args) =>
     });
   });
 
+// Extraction is a structured classification task, not open-ended generation,
+// so the host default is the cheapest capable Claude model. Override per machine
+// with `handprint config set extraction.model <model>` (e.g. sonnet for higher
+// fidelity). The 'haiku' alias resolves to the current Haiku in the user's CLI.
+const DEFAULT_CLAUDE_HOST_MODEL = 'haiku';
+
 export interface HostProviderOpts {
   cli?: 'claude' | 'opencode' | 'codex';
   run?: Runner;
@@ -120,10 +126,17 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
     if (opts.cli) return AGENT_CLIS.find((c) => c.id === opts.cli);
     return detect();
   };
+  // claude is the only host CLI that takes --model today, so the sensible
+  // default applies only there; opencode/codex keep their own defaults.
+  const claudeModel = (): string => opts.model ?? DEFAULT_CLAUDE_HOST_MODEL;
 
   return {
     id: 'host-agent',
-    label: () => `host:${resolveSpec()?.id ?? 'none'}`,
+    label: () => {
+      const s = resolveSpec();
+      const model = s?.id === 'claude' ? claudeModel() : undefined;
+      return `host:${s?.id ?? 'none'}${model ? `:${model}` : ''}`;
+    },
     async preflight() {
       if (resolveSpec()) return { ok: true };
       return {
@@ -146,7 +159,7 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
         // Item 1: use the injectable flag-detection seam so this path is
         // testable without the real claude binary.
         const detector = opts.claudeFlagDetector ?? claudeSupportsSystemFlag;
-        args = buildClaudeArgs(detector(), system, prompt, opts.model);
+        args = buildClaudeArgs(detector(), system, prompt, claudeModel());
       } else {
         args = s.buildArgs(system, prompt);
       }

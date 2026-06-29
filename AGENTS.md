@@ -88,10 +88,10 @@ Routes extraction through the agent that is already running on the machine (whic
 handprint config set extraction.provider host --global
 ```
 
-To choose which model the agent uses, set `extraction.model` (passed as `--model` to the claude CLI):
+Extraction is a structured task, not open-ended generation, so the claude host engine defaults to the cheap, fast `haiku` model rather than inheriting your Claude Code default (which could be Opus). Override per machine with `extraction.model` (passed as `--model` to the claude CLI), for example `sonnet` for higher fidelity:
 
 ```sh
-handprint config set extraction.model claude-opus-4-5 --global
+handprint config set extraction.model sonnet --global   # default is haiku
 ```
 
 Without this setting the agent uses its own default model.
