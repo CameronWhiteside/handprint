@@ -9,7 +9,7 @@ import { isGlobalInitialized, loadGlobalConfig } from '../dirs/global.js';
 import type { ModelEntry } from '../extractor/models.js';
 
 /** One project's scope in the scan, shown before processing. */
-export interface PlanProject {
+interface PlanProject {
   project: string;
   sessions: number;
   messages: number;
