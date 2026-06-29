@@ -1,14 +1,16 @@
 // src/commands/grab.ts
+import { existsSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { discoverSessions, adapterById } from '../sources/index.js';
 import { resolveProvider, extractFromEntries } from '../extractor/index.js';
 import { buildConversationWindow, chunkEntries } from '../extractor/window.js';
 import type { ExtractorProvider } from '../extractor/types.js';
 import { buildHandprint } from '../builder/handprint.js';
-import { findProjectRoot } from '../dirs/project.js';
+import { findProjectRoot, projectDir } from '../dirs/project.js';
 import { isGlobalInitialized, loadGlobalConfig } from '../dirs/global.js';
+import { readObject } from '../store/objects.js';
 import type { ModelEntry } from '../extractor/models.js';
 
-/** One project's scope in the scan, shown before processing. */
 interface PlanProject {
   project: string;
   sessions: number;
@@ -16,23 +18,23 @@ interface PlanProject {
   chunks: number;
 }
 
-/** The scan result shown to the human/agent before anything is processed. */
 export interface GrabPlan {
   projects: PlanProject[];
   totalSessions: number;
   totalMessages: number;
   totalChunks: number;
   extractor: string;
+  /** Filtered-out counts, for transparency in the UI. */
+  skippedAlreadyGrabbed: number;
+  skippedTooSmall: number;
+  skippedOutOfRange: number;
 }
 
-/** Decision returned by a confirm handler. `projects` undefined = all. */
 export type GrabDecision = { proceed: false } | { proceed: true; projects?: string[] };
 
 export interface GrabResult {
   plan: GrabPlan;
-  /** Did extraction actually run? (false for dry run, declined confirm, or no TTY). */
   confirmed: boolean;
-  /** True when processing was skipped because no confirmation was available. */
   needsConfirm: boolean;
   dryRun: boolean;
   handprintsCreated: number;
@@ -52,17 +54,56 @@ export interface GrabOptions {
   limit?: number;
   dryRun?: boolean;
   source?: string;
-  /** Only sessions whose project path contains one of these substrings (case-insensitive). */
   project?: string[];
+  /** Only sessions last active on/after this (ISO date or relative like 7d, 24h). */
+  since?: string;
+  /** Only sessions last active on/before this (ISO date or relative). */
+  until?: string;
+  /** Shorthand for since = now - days. */
+  days?: number;
+  /** Skip sessions with fewer than this many messages. */
+  minMessages?: number;
+  /** Re-grab sessions already in the local chain (default: skip them). */
+  redo?: boolean;
   extractor?: 'local' | 'host';
-  /** Skip the confirm step and process everything (for agents / scripts). */
   yes?: boolean;
-  /** Interactive confirm. Receives the plan, returns whether/what to process. */
   confirm?: (plan: GrabPlan) => Promise<GrabDecision>;
-  provider?: ExtractorProvider; // injectable for tests
+  provider?: ExtractorProvider;
   onDownload?: (entry: ModelEntry) => Promise<boolean>;
-  /** Progress sink (defaults to stderr). */
   log?: (line: string) => void;
+  /** Injectable clock for testability. */
+  now?: number;
+}
+
+const isRecord = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null;
+
+/** Parse a date bound: ISO date, or relative `<n>d` / `<n>h` / `<n>m` (ago). */
+function parseWhen(s: string, now: number): number {
+  const rel = s.trim().match(/^(\d+)\s*([dhm])$/i);
+  if (rel) {
+    const n = Number(rel[1]);
+    const unit = rel[2].toLowerCase();
+    const ms = unit === 'd' ? 86400000 : unit === 'h' ? 3600000 : 60000;
+    return now - n * ms;
+  }
+  const t = Date.parse(s);
+  if (Number.isNaN(t)) throw new Error(`invalid date: "${s}" (use ISO like 2026-06-01 or relative like 7d)`);
+  return t;
+}
+
+/** Session ids already extracted into this project's chain (for idempotency). */
+function grabbedSessionIds(projectRoot: string): Set<string> {
+  const set = new Set<string>();
+  const hpDir = projectDir(projectRoot);
+  const logPath = join(hpDir, 'log');
+  if (!existsSync(logPath)) return set;
+  for (const hash of readFileSync(logPath, 'utf-8').split('\n').filter(Boolean)) {
+    const obj = readObject(hpDir, hash);
+    if (!isRecord(obj)) continue;
+    const source = obj.source;
+    if (isRecord(source) && typeof source.session === 'string') set.add(source.session);
+  }
+  return set;
 }
 
 interface Scanned {
@@ -75,7 +116,8 @@ interface Scanned {
 
 export async function grab(cwd: string, options: GrabOptions = {}): Promise<GrabResult> {
   const log = options.log ?? ((l: string) => console.error(l));
-  const start = Date.now();
+  const now = options.now ?? Date.now();
+  const start = now;
 
   const projectRoot = findProjectRoot(cwd);
   if (!projectRoot && !options.dryRun) {
@@ -96,24 +138,58 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
     });
   const extractor = provider.label();
 
-  // ── Discovery + project targeting ─────────────────────────
+  // ── Discovery ─────────────────────────────────────────────
   let sessions = discoverSessions({
     homeDir: options.homeDir,
     sourceId: options.source,
     sources: config?.sources,
   });
+
+  // ── Time window (by session last-activity / file mtime) ───
+  const sinceMs = options.days != null ? now - options.days * 86400000 : options.since ? parseWhen(options.since, now) : undefined;
+  const untilMs = options.until ? parseWhen(options.until, now) : undefined;
+  let skippedOutOfRange = 0;
+  if (sinceMs != null || untilMs != null) {
+    sessions = sessions.filter((s) => {
+      const ok = (sinceMs == null || s.mtimeMs >= sinceMs) && (untilMs == null || s.mtimeMs <= untilMs);
+      if (!ok) skippedOutOfRange++;
+      return ok;
+    });
+  }
+
+  // ── Project targeting ─────────────────────────────────────
   if (options.project && options.project.length > 0) {
     const needles = options.project.map((p) => p.toLowerCase());
     sessions = sessions.filter((s) => needles.some((n) => s.project.toLowerCase().includes(n)));
   }
+
+  // ── Idempotency: drop already-grabbed sessions ────────────
+  let skippedAlreadyGrabbed = 0;
+  if (!options.redo && projectRoot) {
+    const done = grabbedSessionIds(projectRoot);
+    if (done.size > 0) {
+      sessions = sessions.filter((s) => {
+        const seen = done.has(s.sessionId);
+        if (seen) skippedAlreadyGrabbed++;
+        return !seen;
+      });
+    }
+  }
+
   sessions = sessions.slice(0, options.limit ?? sessions.length);
 
-  // ── Scan (no model): count messages + chunks per session ──
+  // ── Scan (no model): counts + min-messages filter ─────────
+  const minMessages = options.minMessages ?? 0;
   const scanned: Scanned[] = [];
+  let skippedTooSmall = 0;
   for (const ref of sessions) {
     const adapter = adapterById(ref.sourceId);
     if (!adapter) continue;
     const { entries } = adapter.parse(ref);
+    if (entries.length < minMessages) {
+      skippedTooSmall++;
+      continue;
+    }
     scanned.push({
       sourceId: ref.sourceId,
       sessionId: ref.sessionId,
@@ -137,6 +213,9 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
     totalMessages: scanned.reduce((n, s) => n + s.messages, 0),
     totalChunks: scanned.reduce((n, s) => n + s.chunks, 0),
     extractor,
+    skippedAlreadyGrabbed,
+    skippedTooSmall,
+    skippedOutOfRange,
   };
 
   const base: GrabResult = {
@@ -152,10 +231,10 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   };
 
   if (scanned.length === 0) return base;
-  if (options.dryRun) return base; // dry run = scan only
+  if (options.dryRun) return base;
 
-  // ── Decide what to process (confirm / --yes / safe stop) ──
-  let allowed: Set<string> | null = null; // null = all projects
+  // ── Decide what to process ────────────────────────────────
+  let allowed: Set<string> | null = null;
   if (options.yes) {
     allowed = null;
   } else if (options.confirm) {
@@ -163,7 +242,6 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
     if (!decision.proceed) return base;
     allowed = decision.projects ? new Set(decision.projects) : null;
   } else {
-    // No confirmation available (e.g. non-interactive) and no --yes: stop safely.
     return { ...base, needsConfirm: true };
   }
 
@@ -177,9 +255,8 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
     const s = toProcess[i];
     const adapter = adapterById(s.sourceId);
     if (!adapter) continue;
-    const ref = { sourceId: s.sourceId, sessionId: s.sessionId, project: s.project, locator: '', mtimeMs: 0 };
-    // Re-resolve the full ref from discovery (locator needed to parse).
-    const full = sessions.find((x) => x.sessionId === s.sessionId && x.sourceId === s.sourceId) ?? ref;
+    const full = sessions.find((x) => x.sessionId === s.sessionId && x.sourceId === s.sourceId);
+    if (!full) continue;
     const { entries } = adapter.parse(full);
     messagesProcessed += entries.length;
 

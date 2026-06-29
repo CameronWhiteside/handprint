@@ -85,6 +85,11 @@ program
   .option('-n, --limit <n>', 'Max sessions to scan', parseInt)
   .option('--source <id>', 'Only scan one source (claude-code, opencode)')
   .option('--project <name...>', 'Only sessions whose project path contains this (repeatable)')
+  .option('--days <n>', 'Only sessions active in the last N days', parseInt)
+  .option('--since <when>', 'Only sessions active on/after this (ISO date or relative like 7d)')
+  .option('--until <when>', 'Only sessions active on/before this (ISO date or relative)')
+  .option('--min-messages <n>', 'Skip sessions with fewer than N messages', parseInt)
+  .option('--redo', 'Re-grab sessions already in the local chain (default: skip them)')
   .option('--extractor <kind>', 'Extractor: local | host')
   .option('-y, --yes', 'Skip the confirm step and process everything (for agents/scripts)')
   .option('--dry-run', 'Quick scan: preview scope without processing or confirming')
@@ -110,6 +115,11 @@ program
               );
             });
             console.log(`Extractor: ${plan.extractor}`);
+            const skipped: string[] = [];
+            if (plan.skippedAlreadyGrabbed) skipped.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
+            if (plan.skippedTooSmall) skipped.push(`${plan.skippedTooSmall} below --min-messages`);
+            if (plan.skippedOutOfRange) skipped.push(`${plan.skippedOutOfRange} outside the time window`);
+            if (skipped.length) console.log(`Skipped: ${skipped.join(', ')}.`);
             const rl = createInterface({ input: process.stdin, output: process.stdout });
             const ans = (await rl.question('\nProcess [a]ll, pick numbers (e.g. 1,3), or [n]o? ')).trim().toLowerCase();
             rl.close();
@@ -125,6 +135,11 @@ program
         limit: opts.limit,
         source: opts.source,
         project: opts.project,
+        days: opts.days,
+        since: opts.since,
+        until: opts.until,
+        minMessages: opts.minMessages,
+        redo: opts.redo,
         extractor: opts.extractor,
         dryRun: opts.dryRun,
         yes: opts.yes,
@@ -148,6 +163,11 @@ program
           console.log(`  ${pr.project}  ${pr.sessions} · ${pr.messages} msgs · ${pr.chunks} chunks`);
         }
         console.log(`Extractor: ${plan.extractor}`);
+        const skips: string[] = [];
+        if (plan.skippedAlreadyGrabbed) skips.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
+        if (plan.skippedTooSmall) skips.push(`${plan.skippedTooSmall} below --min-messages`);
+        if (plan.skippedOutOfRange) skips.push(`${plan.skippedOutOfRange} outside the time window`);
+        if (skips.length) console.log(`Skipped: ${skips.join(', ')}.`);
       };
 
       if (result.dryRun) {

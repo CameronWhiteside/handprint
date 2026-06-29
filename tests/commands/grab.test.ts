@@ -105,4 +105,33 @@ describe('grab scan / confirm / target', () => {
     const res = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, project: ['definitely-not-a-project'], provider: fakeProvider(), log: () => {} });
     expect(res.plan.totalSessions).toBe(0);
   });
+
+  it('filters by --days (recent session is included)', async () => {
+    const res = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, days: 1, provider: fakeProvider(), log: () => {} });
+    expect(res.plan.totalSessions).toBe(1);
+  });
+
+  it('drops sessions outside the --until window', async () => {
+    const res = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, until: '2020-01-01', provider: fakeProvider(), log: () => {} });
+    expect(res.plan.totalSessions).toBe(0);
+    expect(res.plan.skippedOutOfRange).toBe(1);
+  });
+
+  it('skips sessions below --min-messages', async () => {
+    const res = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, minMessages: 5, provider: fakeProvider(), log: () => {} });
+    expect(res.plan.totalSessions).toBe(0);
+    expect(res.plan.skippedTooSmall).toBe(1);
+  });
+
+  it('is idempotent: skips already-grabbed sessions, --redo forces a re-grab', async () => {
+    const first = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, yes: true, provider: fakeProvider(), log: () => {} });
+    expect(first.handprintsCreated).toBe(1);
+
+    const second = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, provider: fakeProvider(), log: () => {} });
+    expect(second.plan.totalSessions).toBe(0);
+    expect(second.plan.skippedAlreadyGrabbed).toBe(1);
+
+    const redo = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, dryRun: true, redo: true, provider: fakeProvider(), log: () => {} });
+    expect(redo.plan.totalSessions).toBe(1);
+  });
 });
