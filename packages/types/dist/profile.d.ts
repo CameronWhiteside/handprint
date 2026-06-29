@@ -1,111 +1,88 @@
 import { z } from 'zod';
 export declare const socialLinkSchema: z.ZodObject<{
     url: z.ZodString;
-    visibility: z.ZodEnum<["private", "unlisted", "public"]>;
     verified: z.ZodOptional<z.ZodBoolean>;
 }, "strip", z.ZodTypeAny, {
     url: string;
-    visibility: "private" | "unlisted" | "public";
     verified?: boolean | undefined;
 }, {
     url: string;
-    visibility: "private" | "unlisted" | "public";
     verified?: boolean | undefined;
 }>;
 export type SocialLink = z.infer<typeof socialLinkSchema>;
 export declare const socialProfileSchema: z.ZodObject<{
     github: z.ZodOptional<z.ZodObject<{
         url: z.ZodString;
-        visibility: z.ZodEnum<["private", "unlisted", "public"]>;
         verified: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }>>;
     linkedin: z.ZodOptional<z.ZodObject<{
         url: z.ZodString;
-        visibility: z.ZodEnum<["private", "unlisted", "public"]>;
         verified: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }>>;
     website: z.ZodOptional<z.ZodObject<{
         url: z.ZodString;
-        visibility: z.ZodEnum<["private", "unlisted", "public"]>;
         verified: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }>>;
     email: z.ZodOptional<z.ZodObject<{
         url: z.ZodString;
-        visibility: z.ZodEnum<["private", "unlisted", "public"]>;
         verified: z.ZodOptional<z.ZodBoolean>;
     }, "strip", z.ZodTypeAny, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }, {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     }>>;
 }, "strip", z.ZodTypeAny, {
     github?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
     linkedin?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
     website?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
     email?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
 }, {
     github?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
     linkedin?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
     website?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
     email?: {
         url: string;
-        visibility: "private" | "unlisted" | "public";
         verified?: boolean | undefined;
     } | undefined;
 }>;
@@ -118,96 +95,76 @@ export declare const handprintProfileSchema: z.ZodObject<{
     social: z.ZodOptional<z.ZodObject<{
         github: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
         linkedin: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
         website: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
         email: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
     }, "strip", z.ZodTypeAny, {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     }, {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     }>>;
@@ -298,22 +255,18 @@ export declare const handprintProfileSchema: z.ZodObject<{
     social?: {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     } | undefined;
@@ -349,22 +302,18 @@ export declare const handprintProfileSchema: z.ZodObject<{
     social?: {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     } | undefined;
@@ -373,16 +322,13 @@ export declare const handprintProfileSchema: z.ZodObject<{
 export type HandprintProfile = z.infer<typeof handprintProfileSchema>;
 export declare const projectConfigSchema: z.ZodObject<{
     version: z.ZodString;
-    visibility: z.ZodDefault<z.ZodEnum<["private", "unlisted", "public"]>>;
     createdAt: z.ZodString;
 }, "strip", z.ZodTypeAny, {
-    visibility: "private" | "unlisted" | "public";
     version: string;
     createdAt: string;
 }, {
     version: string;
     createdAt: string;
-    visibility?: "private" | "unlisted" | "public" | undefined;
 }>;
 export type ProjectConfig = z.infer<typeof projectConfigSchema>;
 export declare const extractionConfigSchema: z.ZodObject<{
@@ -421,96 +367,76 @@ export declare const globalConfigSchema: z.ZodObject<{
     social: z.ZodOptional<z.ZodObject<{
         github: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
         linkedin: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
         website: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
         email: z.ZodOptional<z.ZodObject<{
             url: z.ZodString;
-            visibility: z.ZodEnum<["private", "unlisted", "public"]>;
             verified: z.ZodOptional<z.ZodBoolean>;
         }, "strip", z.ZodTypeAny, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }, {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         }>>;
     }, "strip", z.ZodTypeAny, {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     }, {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     }>>;
@@ -551,22 +477,18 @@ export declare const globalConfigSchema: z.ZodObject<{
     social?: {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     } | undefined;
@@ -590,22 +512,18 @@ export declare const globalConfigSchema: z.ZodObject<{
     social?: {
         github?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         linkedin?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         website?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
         email?: {
             url: string;
-            visibility: "private" | "unlisted" | "public";
             verified?: boolean | undefined;
         } | undefined;
     } | undefined;

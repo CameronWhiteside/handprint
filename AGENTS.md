@@ -110,6 +110,18 @@ No account. No cloud. No prompts.
 
 ---
 
-## 6. Acceptable use
+## 6. Visibility
+
+Visibility (private / unlisted / public) is a hub concept, not part of the protocol or the signed record. The CLI does not set or read a visibility field.
+
+When you push, the hub assigns the handprint a visibility level:
+
+- unlisted (default): metadata is searchable but not listed on your public profile.
+- public: listed on your public profile and discoverable.
+- private: visible only to you.
+
+Set or change visibility from the hub dashboard after pushing.
+
+## 7. Acceptable use
 
 `grab` and local extraction run entirely offline and require no account. Publishing to the hub (`handprint push`) is opt-in and requires `handprint login`; hub access is rate-limited and governed by the [Human Provenance Covenant](./COVENANT.md). Use a person's provenance to benefit that person rather than to build systems that route around them.

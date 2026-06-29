@@ -1,11 +1,10 @@
 import { z } from 'zod';
-import { VISIBILITY_LEVELS, visibilitySchema, registeredKeySchema } from './handprint.js';
+import { registeredKeySchema } from './handprint.js';
 
 // ── Social links ─────────────────────────────────────────────
 
 export const socialLinkSchema = z.object({
   url: z.string(),
-  visibility: visibilitySchema,
   verified: z.boolean().optional(),
 });
 export type SocialLink = z.infer<typeof socialLinkSchema>;
@@ -54,7 +53,6 @@ export type HandprintProfile = z.infer<typeof handprintProfileSchema>;
 
 export const projectConfigSchema = z.object({
   version: z.string(),
-  visibility: visibilitySchema.default(VISIBILITY_LEVELS[0]),
   createdAt: z.string(),
 });
 export type ProjectConfig = z.infer<typeof projectConfigSchema>;

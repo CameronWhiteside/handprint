@@ -24,18 +24,11 @@ describe('project dir', () => {
     expect(existsSync(join(path, '.gitignore'))).toBe(true);
   });
 
-  it('config.json defaults to private visibility', async () => {
+  it('config.json has no visibility field', async () => {
     const { initProject, loadProjectConfig } = await import('../../src/dirs/project.js');
     initProject(TEST_DIR);
     const config = loadProjectConfig(TEST_DIR);
-    expect(config.visibility).toBe('private');
-  });
-
-  it('initProject respects visibility param', async () => {
-    const { initProject, loadProjectConfig } = await import('../../src/dirs/project.js');
-    initProject(TEST_DIR, 'public');
-    const config = loadProjectConfig(TEST_DIR);
-    expect(config.visibility).toBe('public');
+    expect('visibility' in config).toBe(false);
   });
 
   it('AGENTS.md contains correct content', async () => {

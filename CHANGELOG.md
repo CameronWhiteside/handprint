@@ -2,6 +2,12 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Changed
+- **Visibility removed from protocol and CLI.** `VISIBILITY_LEVELS`, `visibilitySchema`, and the `Visibility` type are no longer part of `@handprint/types`. The `projectConfigSchema` no longer has a `visibility` field. The `handprint init` command no longer accepts `--visibility`. The `handprint status` command no longer shows a visibility line. `handprint push` no longer gates on a private flag; it always pushes. Visibility (private / unlisted / public) is a handprint.sh hub concept: you set it from the hub dashboard after pushing. New handprints default to unlisted.
+- `socialLinkSchema` in `@handprint/types` no longer carries a `visibility` field.
+
 ## [0.3.0] - 2026-06-27
 
 ### Added

@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { isGlobalInitialized, loadSeed, loadGlobalConfig } from '../dirs/global.js';
-import { isProjectInitialized, loadProjectConfig, projectDir } from '../dirs/project.js';
+import { isProjectInitialized, projectDir } from '../dirs/project.js';
 import { deriveKeypair, fingerprint } from '../crypto/noble.js';
 import { getRef } from '../store/refs.js';
 
@@ -10,7 +10,6 @@ export interface StatusResult {
   projectInitialized: boolean;
   handle: string | null;
   fingerprint: string | null;
-  visibility: string | null;
   chainHead: string | null;
   chainLength: number;
 }
@@ -22,7 +21,6 @@ export async function status(projectRoot: string): Promise<StatusResult> {
     projectInitialized: isProjectInitialized(projectRoot),
     handle: null,
     fingerprint: null,
-    visibility: null,
     chainHead: null,
     chainLength: 0,
   };
@@ -39,9 +37,6 @@ export async function status(projectRoot: string): Promise<StatusResult> {
   }
 
   if (result.projectInitialized) {
-    const config = loadProjectConfig(projectRoot);
-    result.visibility = config.visibility;
-
     const hpDir = projectDir(projectRoot);
     result.chainHead = getRef(hpDir, 'HEAD');
 
