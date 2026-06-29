@@ -2,9 +2,10 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.4.2] - 2026-06-29
+## [0.5.0] - 2026-06-29
 
 ### Added
+- `openai` extraction provider: handprint POSTs to any local OpenAI-compatible server (Ollama, LM Studio, llama.cpp server, vLLM). No model download and no native addon. Set with `handprint config set extraction.provider openai --global`; default server is `http://localhost:11434/v1`. `--extractor ollama` is accepted as an alias. Configure model, baseUrl, and apiKey via `extraction.*` config keys.
 - `handprint grab` time and message filters: `--days <n>`, `--since <when>`, `--until <when>` (ISO date such as 2026-06-01, or relative such as 7d / 24h), and `--min-messages <n>`.
 - Always-on progress during processing: a per-session line with new-message and chunk counts, an overall `chunks done / total, percent, and ETA`, and a one-line hint for what to do if a run is slow (Ctrl-C is safe, then narrow with the filters).
 

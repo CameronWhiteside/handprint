@@ -90,7 +90,7 @@ program
   .option('--until <when>', 'Only sessions active on/before this (ISO date or relative)')
   .option('--min-messages <n>', 'Skip sessions with fewer than N messages', parseInt)
   .option('--redo', 'Re-grab sessions already in the local chain (default: skip them)')
-  .option('--extractor <kind>', 'Extractor: local | host')
+  .option('--extractor <kind>', 'Extractor: local | host | openai')
   .option('-y, --yes', 'Skip the confirm step and process everything (for agents/scripts)')
   .option('--dry-run', 'Quick scan: preview scope without processing or confirming')
   .action(async (opts) => {
@@ -132,6 +132,10 @@ program
           }
         : undefined;
 
+      // 'ollama' is an alias for 'openai' (same protocol)
+      const extractor: 'local' | 'host' | 'openai' | undefined =
+        opts.extractor === 'ollama' ? 'openai' : opts.extractor;
+
       const result = await grab(process.cwd(), {
         limit: opts.limit,
         source: opts.source,
@@ -141,7 +145,7 @@ program
         until: opts.until,
         minMessages: opts.minMessages,
         redo: opts.redo,
-        extractor: opts.extractor,
+        extractor,
         dryRun: opts.dryRun,
         yes: opts.yes,
         onDownload,

@@ -45,10 +45,12 @@ export const projectConfigSchema = z.object({
 });
 // ── Global config (~/.handprint/config.json) ─────────────────
 export const extractionConfigSchema = z.object({
-    provider: z.enum(['local', 'host']).optional(),
+    provider: z.enum(['local', 'host', 'openai']).optional(),
     model: z.string().optional(),
     agentCli: z.enum(['claude', 'opencode', 'codex']).optional(),
     sources: z.array(z.string()).optional(),
+    baseUrl: z.string().optional(),
+    apiKey: z.string().optional(),
 });
 export const globalConfigSchema = z.object({
     version: z.string(),

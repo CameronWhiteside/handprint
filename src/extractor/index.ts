@@ -6,22 +6,33 @@ import { SYSTEM_PROMPT } from './prompt.js';
 import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './window.js';
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
+import { createOpenAIProvider } from './openai.js';
 import { DEFAULT_MODEL_ID } from './models.js';
 
 export * from './types.js';
 export { MODELS, DEFAULT_MODEL_ID } from './models.js';
 
+export const OLLAMA_DEFAULT_BASE_URL = 'http://localhost:11434/v1';
+export const DEFAULT_OPENAI_MODEL = 'qwen2.5:3b';
+
 export interface ResolveOpts {
   config?: ExtractionConfig;
   homeDir?: string;
   onDownload?: LocalProviderOpts['onDownload'];
-  forceProvider?: 'local' | 'host';
+  forceProvider?: 'local' | 'host' | 'openai';
 }
 
 export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
   const provider = opts.forceProvider ?? opts.config?.provider ?? 'local';
   if (provider === 'host') {
     return createHostProvider({ cli: opts.config?.agentCli });
+  }
+  if (provider === 'openai') {
+    return createOpenAIProvider({
+      baseUrl: opts.config?.baseUrl ?? OLLAMA_DEFAULT_BASE_URL,
+      model: opts.config?.model ?? DEFAULT_OPENAI_MODEL,
+      apiKey: opts.config?.apiKey,
+    });
   }
   return createLocalProvider({
     modelId: opts.config?.model ?? DEFAULT_MODEL_ID,

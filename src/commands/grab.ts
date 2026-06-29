@@ -60,7 +60,7 @@ export interface GrabOptions {
   minMessages?: number;
   /** Re-grab whole sessions, ignoring the incremental watermark. */
   redo?: boolean;
-  extractor?: 'local' | 'host';
+  extractor?: 'local' | 'host' | 'openai';
   yes?: boolean;
   confirm?: (plan: GrabPlan) => Promise<GrabDecision>;
   provider?: ExtractorProvider;
