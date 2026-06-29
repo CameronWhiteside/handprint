@@ -84,7 +84,7 @@ program
   .option('-n, --limit <n>', 'Sessions to scan', parseInt)
   .option('--source <id>', 'Only scan one source (claude-code, opencode)')
   .option('--extractor <kind>', 'Extractor: local | host')
-  .option('--dry-run', 'Show what would be extracted')
+  .option('--dry-run', 'Quick scan: preview scope (sessions, messages, extractor) without running the model')
   .action(async (opts) => {
     try {
       const onDownload = async (entry: { id: string; sizeMb: number }) => {
@@ -102,17 +102,31 @@ program
         onDownload,
       });
 
+      const secs = (result.elapsedMs / 1000).toFixed(1);
+
+      if (result.dryRun) {
+        console.log(
+          `\nwould scan ${result.sessionsScanned} session(s), ${result.messagesScanned} message(s) across ${result.projectsScanned} project(s) with ${result.extractor}.`,
+        );
+        console.log(
+          'next: run `handprint grab` to extract · `-n N` to limit · `--extractor host` to use your installed agent.\n',
+        );
+        return;
+      }
+
       if (result.handprintsCreated === 0) {
-        console.log('no decisions found');
+        console.log(
+          `\nno decisions found (${result.sessionsScanned} sessions, ${result.messagesScanned} messages, ${secs}s).`,
+        );
         return;
       }
 
       console.log(
-        `\n${result.handprintsCreated} handprints from ${result.sessionsScanned} sessions\n`,
+        `\n${result.handprintsCreated} handprint(s) from ${result.sessionsScanned} session(s) in ${secs}s\n`,
       );
 
       for (const { hash, marks } of result.details) {
-        const prefix = opts.dryRun ? '  ' : `  ${hash.slice(0, 10)}  `;
+        const prefix = `  ${hash.slice(0, 10)}  `;
         for (const m of marks) {
           const symbol = { vision: 'o', choice: '+', method: '*' }[m.type] ?? '?';
           console.log(`${prefix}${symbol} [${m.type}/${m.subtype}]  ${m.note}`);

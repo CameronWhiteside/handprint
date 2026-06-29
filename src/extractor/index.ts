@@ -30,9 +30,15 @@ export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
   });
 }
 
+export interface ExtractProgress {
+  /** Called before each chunk is sent to the model: (chunkNumber, totalChunks, messages). */
+  onChunk?: (chunkNumber: number, totalChunks: number, messages: number) => void;
+}
+
 export async function extractFromEntries(
   entries: TranscriptEntry[],
   provider: ExtractorProvider,
+  progress: ExtractProgress = {},
 ): Promise<RawExtraction[]> {
   const chunks = chunkEntries(entries);
   const all: RawExtraction[] = [];
@@ -43,7 +49,7 @@ export async function extractFromEntries(
     const window = buildConversationWindow(chunks[i]);
     if (!window.trim()) continue;
     attempted++;
-    console.error(`  chunk ${i + 1}/${chunks.length} (${chunks[i].length} messages)...`);
+    progress.onChunk?.(i + 1, chunks.length, chunks[i].length);
     try {
       const out = await provider.extract(window, SYSTEM_PROMPT);
       const pt = buildChunkPlaintext(chunks[i]);

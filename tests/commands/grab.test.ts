@@ -1,5 +1,4 @@
-// tests/commands/grab.test.ts
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -18,24 +17,51 @@ function claudeHome(): string {
   return home;
 }
 
-const fakeProvider: ExtractorProvider = {
-  id: 'fake',
-  label: () => 'local:fake-model',
-  isAvailable: async () => true,
-  extract: async () => [{ marks: [{ type: 'choice', subtype: 'override', note: 'chose edge JWT over gateway' }], artifacts: [], timestamp: '2026-06-01T10:00:00Z' }],
-};
+function fakeProvider(extract = vi.fn(async () => [])): ExtractorProvider {
+  return { id: 'fake', label: () => 'local:fake-model', isAvailable: async () => true, extract };
+}
 
-describe('grab (dry-run, injected provider)', () => {
-  it('discovers claude sessions and records agent + extractor provenance', async () => {
-    const res = await grab('/Users/test/app', { homeDir: claudeHome(), dryRun: true, provider: fakeProvider });
-    expect(res.handprintsCreated).toBe(1);
-    expect(res.details[0].agent).toBe('claude-code');
-    expect(res.details[0].extractor).toBe('local:fake-model');
-    expect(res.details[0].marks[0].note).toContain('edge JWT');
+describe('grab', () => {
+  it('dry run is a quick scan: discovers scope WITHOUT calling the model', async () => {
+    const extract = vi.fn(async () => []);
+    const res = await grab('/Users/test/app', {
+      homeDir: claudeHome(),
+      dryRun: true,
+      provider: fakeProvider(extract),
+      log: () => {},
+    });
+    expect(extract).not.toHaveBeenCalled(); // the model is never invoked on a dry run
+    expect(res.dryRun).toBe(true);
+    expect(res.handprintsCreated).toBe(0);
+    expect(res.sessionsScanned).toBe(1);
+    expect(res.messagesScanned).toBeGreaterThan(0);
+    expect(res.projectsScanned).toBe(1);
+    expect(res.extractor).toBe('local:fake-model');
+    expect(res.preview).toHaveLength(1);
+    expect(res.preview[0].messages).toBeGreaterThan(0);
+    expect(res.preview[0].chunks).toBeGreaterThanOrEqual(1);
   });
 
-  it('honors --source filter (opencode → no claude sessions found)', async () => {
-    const res = await grab('/Users/test/app', { homeDir: claudeHome(), dryRun: true, source: 'opencode', provider: fakeProvider });
+  it('reports the configured extractor and scope in the result', async () => {
+    const res = await grab('/Users/test/app', {
+      homeDir: claudeHome(),
+      dryRun: true,
+      provider: fakeProvider(),
+      log: () => {},
+    });
+    expect(res.extractor).toBe('local:fake-model');
+    expect(typeof res.elapsedMs).toBe('number');
+  });
+
+  it('honors the --source filter (opencode finds no claude sessions)', async () => {
+    const res = await grab('/Users/test/app', {
+      homeDir: claudeHome(),
+      dryRun: true,
+      source: 'opencode',
+      provider: fakeProvider(),
+      log: () => {},
+    });
     expect(res.sessionsScanned).toBe(0);
+    expect(res.preview).toHaveLength(0);
   });
 });
