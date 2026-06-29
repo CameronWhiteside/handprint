@@ -2,7 +2,7 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.5.0] - 2026-06-29
+## [0.4.2] - 2026-06-29
 
 ### Added
 - `openai` extraction provider: handprint POSTs to any local OpenAI-compatible server (Ollama, LM Studio, llama.cpp server, vLLM). No model download and no native addon. Set with `handprint config set extraction.provider openai --global`; default server is `http://localhost:11434/v1`. `--extractor ollama` is accepted as an alias. Configure model, baseUrl, and apiKey via `extraction.*` config keys.
