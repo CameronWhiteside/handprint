@@ -1,7 +1,7 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { globalDir, loadGlobalConfig } from '../dirs/global.js';
-import { loadProjectConfig, projectDir } from '../dirs/project.js';
+import { projectDir } from '../dirs/project.js';
 import { readObject } from '../store/objects.js';
 import { createHubClient } from '../hub/client.js';
 import type { PushHandprintInput, HandprintObject } from '@handprint/types';
@@ -9,7 +9,6 @@ import type { PushHandprintInput, HandprintObject } from '@handprint/types';
 export interface PushResult {
   pushed: number;
   skipped: number;
-  visibility: string;
 }
 
 function loadToken(): string {
@@ -25,12 +24,6 @@ function loadToken(): string {
 }
 
 export async function push(projectRoot: string): Promise<PushResult> {
-  const config = loadProjectConfig(projectRoot);
-
-  if (config.visibility === 'private') {
-    return { pushed: 0, skipped: 0, visibility: 'private' };
-  }
-
   const globalConfig = loadGlobalConfig();
   const token = loadToken();
   const client = createHubClient(globalConfig.hub.url, token);
@@ -39,7 +32,7 @@ export async function push(projectRoot: string): Promise<PushResult> {
   const logPath = join(hpDir, 'log');
 
   if (!existsSync(logPath)) {
-    return { pushed: 0, skipped: 0, visibility: config.visibility };
+    return { pushed: 0, skipped: 0 };
   }
 
   const hashes = readFileSync(logPath, 'utf-8').trim().split('\n').filter(Boolean);
@@ -75,5 +68,5 @@ export async function push(projectRoot: string): Promise<PushResult> {
     }
   }
 
-  return { pushed, skipped, visibility: config.visibility };
+  return { pushed, skipped };
 }

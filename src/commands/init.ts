@@ -1,11 +1,10 @@
 import { initGlobal, isGlobalInitialized } from '../dirs/global.js';
 import { initProject, isProjectInitialized } from '../dirs/project.js';
-import type { Visibility } from '@handprint/types';
 
 
 export async function init(
   cwd: string,
-  options: { global?: boolean; visibility?: Visibility } = {},
+  options: { global?: boolean } = {},
 ): Promise<string> {
   if (options.global) {
     const { execSync } = await import('node:child_process');
@@ -21,7 +20,7 @@ export async function init(
     const path = await initGlobal({ handle, name, email });
 
     if (!isProjectInitialized(cwd)) {
-      initProject(cwd, options.visibility);
+      initProject(cwd);
     }
 
     return path;
@@ -31,5 +30,5 @@ export async function init(
     throw new Error('global config not found: run "handprint init --global" first');
   }
 
-  return initProject(cwd, options.visibility);
+  return initProject(cwd);
 }

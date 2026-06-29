@@ -75,6 +75,18 @@ handprint config set extraction.provider host    # uses your existing tool quota
 
 See [AGENTS.md](./AGENTS.md) for a full non-interactive setup guide.
 
+## Visibility (private / unlisted / public)
+
+Visibility is a property of the handprint.sh hub, not of the protocol or the signed record. Nothing in the local chain or the cryptographic handprint encodes a visibility level.
+
+When you push a handprint, the hub assigns it a visibility:
+
+- **unlisted (default):** metadata is searchable, but the handprint does not appear on your public profile page. Share the direct link to show it selectively.
+- **public:** listed on your public profile and discoverable.
+- **private:** hidden; only you can see it.
+
+You set or change visibility from the hub dashboard after pushing. The CLI does not read or write visibility.
+
 ## Security & privacy
 
 - **Local by default.** Transcripts are read and analyzed on your machine. In `local` mode nothing ever leaves the host; in `host` mode the conversation is sent only to the AI tool you already use and have authenticated.

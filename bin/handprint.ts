@@ -18,8 +18,6 @@ import {
   saveGlobalConfig,
   saveProjectConfig,
 } from '../src/commands/config.js';
-import type { Visibility } from '@handprint/types';
-
 // Item 7: read real version from package.json so dist/bin/handprint.js always
 // reports the version declared in the tarball (../../package.json from dist/bin/).
 const _require = createRequire(import.meta.url);
@@ -43,12 +41,10 @@ program
   .command('init')
   .description('Initialize handprint (global identity + project)')
   .option('--global', 'Initialize global identity at ~/.handprint/')
-  .option('--visibility <level>', 'Project visibility: private, unlisted, public', 'private')
   .action(async (opts) => {
     try {
       const path = await init(process.cwd(), {
         global: opts.global,
-        visibility: opts.visibility as Visibility,
       });
       console.log(path);
     } catch (err) {
@@ -134,10 +130,6 @@ program
   .action(async () => {
     try {
       const result = await push(process.cwd());
-      if (result.visibility === 'private') {
-        console.log('project is private, nothing pushed');
-        return;
-      }
       console.log(`pushed ${result.pushed} handprints (${result.skipped} skipped)`);
     } catch (err) {
       console.error((err as Error).message);
@@ -222,7 +214,6 @@ program
     }
     console.log(`handle:      ${s.handle}`);
     console.log(`fingerprint: ${s.fingerprint}`);
-    console.log(`visibility:  ${s.visibility ?? 'n/a (no project)'}`);
     console.log(`chain:       ${s.chainLength} handprints`);
     if (s.chainHead) {
       console.log(`head:        ${s.chainHead.slice(0, 12)}`);

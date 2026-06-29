@@ -5,7 +5,7 @@ import {
   writeFileSync,
 } from 'node:fs';
 import { join, dirname } from 'node:path';
-import type { ProjectConfig, Visibility } from '@handprint/types';
+import type { ProjectConfig } from '@handprint/types';
 
 const HANDPRINT_DIR = '.handprint';
 
@@ -36,10 +36,7 @@ export function isProjectInitialized(cwd: string = process.cwd()): boolean {
   return existsSync(join(projectDir(cwd), 'config.json'));
 }
 
-export function initProject(
-  cwd: string,
-  visibility: Visibility = 'private',
-): string {
+export function initProject(cwd: string): string {
   const dir = projectDir(cwd);
 
   if (isProjectInitialized(cwd)) {
@@ -51,7 +48,6 @@ export function initProject(
 
   const config: ProjectConfig = {
     version: '1.0.0',
-    visibility,
     createdAt: new Date().toISOString(),
   };
 

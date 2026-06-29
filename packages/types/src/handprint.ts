@@ -33,10 +33,6 @@ export const ARTIFACT_TYPES = [
   'custom',
 ] as const;
 
-// ── Visibility constants ─────────────────────────────────────
-
-export const VISIBILITY_LEVELS = ['private', 'unlisted', 'public'] as const;
-
 // ── Type schemas ─────────────────────────────────────────────
 
 export const handprintTypeSchema = z.enum(HANDPRINT_TYPES);
@@ -56,9 +52,6 @@ export type Subtype = z.infer<typeof allSubtypesSchema>;
 
 export const artifactTypeSchema = z.enum(ARTIFACT_TYPES);
 export type ArtifactType = z.infer<typeof artifactTypeSchema>;
-
-export const visibilitySchema = z.enum(VISIBILITY_LEVELS);
-export type Visibility = z.infer<typeof visibilitySchema>;
 
 export function subtypeSchemaForType(type: HandprintType) {
   const map = {

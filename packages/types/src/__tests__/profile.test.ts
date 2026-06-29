@@ -7,20 +7,19 @@ describe('projectConfigSchema', () => {
   it('accepts a valid project config', () => {
     const result = projectConfigSchema.safeParse({
       version: '1.0.0',
-      visibility: 'private',
       createdAt: '2026-06-26T00:00:00Z',
     });
     expect(result.success).toBe(true);
   });
 
-  it('defaults visibility to private', () => {
+  it('accepts config with no visibility field', () => {
     const result = projectConfigSchema.safeParse({
       version: '1.0.0',
       createdAt: '2026-06-26T00:00:00Z',
     });
     expect(result.success).toBe(true);
     if (result.success) {
-      expect(result.data.visibility).toBe('private');
+      expect('visibility' in result.data).toBe(false);
     }
   });
 });

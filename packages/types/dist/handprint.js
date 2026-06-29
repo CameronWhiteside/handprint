@@ -25,8 +25,6 @@ export const ARTIFACT_TYPES = [
     'c2pa',
     'custom',
 ];
-// ── Visibility constants ─────────────────────────────────────
-export const VISIBILITY_LEVELS = ['private', 'unlisted', 'public'];
 // ── Type schemas ─────────────────────────────────────────────
 export const handprintTypeSchema = z.enum(HANDPRINT_TYPES);
 export const visionSubtypeSchema = z.enum(VISION_SUBTYPES);
@@ -34,7 +32,6 @@ export const choiceSubtypeSchema = z.enum(CHOICE_SUBTYPES);
 export const methodSubtypeSchema = z.enum(METHOD_SUBTYPES);
 export const allSubtypesSchema = z.enum(ALL_SUBTYPES);
 export const artifactTypeSchema = z.enum(ARTIFACT_TYPES);
-export const visibilitySchema = z.enum(VISIBILITY_LEVELS);
 export function subtypeSchemaForType(type) {
     const map = {
         vision: visionSubtypeSchema,

@@ -39,7 +39,6 @@ describe('status', () => {
     expect(result.projectInitialized).toBe(true);
     expect(result.handle).toBe('test');
     expect(result.fingerprint).toMatch(/^[A-Za-z0-9_-]{16}$/);
-    expect(result.visibility).toBe('private');
     expect(result.chainLength).toBe(0);
   });
 

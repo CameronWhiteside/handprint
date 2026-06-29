@@ -11,7 +11,6 @@ export declare const SUBTYPES_BY_TYPE: {
 };
 export declare const MARK_NOTE_MAX: 280;
 export declare const ARTIFACT_TYPES: readonly ["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"];
-export declare const VISIBILITY_LEVELS: readonly ["private", "unlisted", "public"];
 export declare const handprintTypeSchema: z.ZodEnum<["vision", "choice", "method"]>;
 export type HandprintType = z.infer<typeof handprintTypeSchema>;
 export declare const visionSubtypeSchema: z.ZodEnum<["goal", "direction", "principle"]>;
@@ -24,8 +23,6 @@ export declare const allSubtypesSchema: z.ZodEnum<["goal", "direction", "princip
 export type Subtype = z.infer<typeof allSubtypesSchema>;
 export declare const artifactTypeSchema: z.ZodEnum<["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"]>;
 export type ArtifactType = z.infer<typeof artifactTypeSchema>;
-export declare const visibilitySchema: z.ZodEnum<["private", "unlisted", "public"]>;
-export type Visibility = z.infer<typeof visibilitySchema>;
 export declare function subtypeSchemaForType(type: HandprintType): z.ZodEnum<["goal", "direction", "principle"]> | z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]> | z.ZodEnum<["tool", "knowledge", "process"]>;
 export declare const visionMarkSchema: z.ZodObject<{
     type: z.ZodLiteral<"vision">;
