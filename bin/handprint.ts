@@ -3,6 +3,7 @@ import { createRequire } from 'node:module';
 import { createInterface } from 'node:readline/promises';
 import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';
+import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
 import { push } from '../src/commands/push.js';
 import { verifyChain } from '../src/commands/verify.js';
 import { listHandprints } from '../src/commands/log.js';
@@ -80,11 +81,13 @@ program
 
 program
   .command('grab')
-  .description('Extract decisions from AI transcripts')
-  .option('-n, --limit <n>', 'Sessions to scan', parseInt)
+  .description('Scan AI transcripts, confirm, then extract decisions')
+  .option('-n, --limit <n>', 'Max sessions to scan', parseInt)
   .option('--source <id>', 'Only scan one source (claude-code, opencode)')
+  .option('--project <name...>', 'Only sessions whose project path contains this (repeatable)')
   .option('--extractor <kind>', 'Extractor: local | host')
-  .option('--dry-run', 'Show what would be extracted')
+  .option('-y, --yes', 'Skip the confirm step and process everything (for agents/scripts)')
+  .option('--dry-run', 'Quick scan: preview scope without processing or confirming')
   .action(async (opts) => {
     try {
       const onDownload = async (entry: { id: string; sizeMb: number }) => {
@@ -94,25 +97,92 @@ program
         rl.close();
         return answer.trim().toLowerCase() === 'y';
       };
+
+      const isTty = Boolean(process.stdin.isTTY && process.stdout.isTTY);
+      const confirm = isTty
+        ? async (plan: GrabPlan): Promise<GrabDecision> => {
+            console.log(
+              `\nFound ${plan.totalSessions} session(s), ${plan.totalMessages} message(s), ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`,
+            );
+            plan.projects.forEach((pr, i) => {
+              console.log(
+                `  [${i + 1}] ${pr.project}  ${pr.sessions} session(s) · ${pr.messages} msgs · ${pr.chunks} chunks`,
+              );
+            });
+            console.log(`Extractor: ${plan.extractor}`);
+            const rl = createInterface({ input: process.stdin, output: process.stdout });
+            const ans = (await rl.question('\nProcess [a]ll, pick numbers (e.g. 1,3), or [n]o? ')).trim().toLowerCase();
+            rl.close();
+            if (['a', 'all', 'y', 'yes'].includes(ans)) return { proceed: true };
+            if (['', 'n', 'no'].includes(ans)) return { proceed: false };
+            const picks = ans.split(/[\s,]+/).map((x) => parseInt(x, 10)).filter((n) => !Number.isNaN(n));
+            const projects = picks.map((n) => plan.projects[n - 1]?.project).filter((x): x is string => Boolean(x));
+            return projects.length > 0 ? { proceed: true, projects } : { proceed: false };
+          }
+        : undefined;
+
       const result = await grab(process.cwd(), {
         limit: opts.limit,
-        dryRun: opts.dryRun,
         source: opts.source,
+        project: opts.project,
         extractor: opts.extractor,
+        dryRun: opts.dryRun,
+        yes: opts.yes,
         onDownload,
+        confirm,
       });
 
+      const plan = result.plan;
+      const secs = (result.elapsedMs / 1000).toFixed(1);
+
+      if (plan.totalSessions === 0) {
+        console.log('no sessions found. Run `handprint sources` to see what is detected.');
+        return;
+      }
+
+      const printScope = () => {
+        console.log(
+          `\n${plan.totalSessions} session(s), ${plan.totalMessages} message(s), ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`,
+        );
+        for (const pr of plan.projects) {
+          console.log(`  ${pr.project}  ${pr.sessions} · ${pr.messages} msgs · ${pr.chunks} chunks`);
+        }
+        console.log(`Extractor: ${plan.extractor}`);
+      };
+
+      if (result.dryRun) {
+        printScope();
+        console.log(
+          'next: `handprint grab` to process (you will confirm first) · `--project <name>` to target · `-y` to skip confirm.\n',
+        );
+        return;
+      }
+
+      if (result.needsConfirm) {
+        printScope();
+        console.log(
+          'nothing processed (no interactive terminal to confirm). Re-run with `-y` to process all, or `--project <name>` / `-n N` to target a subset.\n',
+        );
+        return;
+      }
+
+      if (!result.confirmed) {
+        console.log('cancelled. Nothing processed.');
+        return;
+      }
+
       if (result.handprintsCreated === 0) {
-        console.log('no decisions found');
+        console.log(
+          `\nno decisions found (${result.sessionsProcessed} session(s), ${result.messagesProcessed} messages, ${secs}s).`,
+        );
         return;
       }
 
       console.log(
-        `\n${result.handprintsCreated} handprints from ${result.sessionsScanned} sessions\n`,
+        `\n${result.handprintsCreated} handprint(s) from ${result.sessionsProcessed} session(s) in ${secs}s\n`,
       );
-
       for (const { hash, marks } of result.details) {
-        const prefix = opts.dryRun ? '  ' : `  ${hash.slice(0, 10)}  `;
+        const prefix = `  ${hash.slice(0, 10)}  `;
         for (const m of marks) {
           const symbol = { vision: 'o', choice: '+', method: '*' }[m.type] ?? '?';
           console.log(`${prefix}${symbol} [${m.type}/${m.subtype}]  ${m.note}`);
