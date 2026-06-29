@@ -2,6 +2,14 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.1] - 2026-06-29
+
+### Added
+- `handprint grab` time and message filters: `--days <n>`, `--since <when>`, `--until <when>` (ISO date such as 2026-06-01, or relative such as 7d / 24h), and `--min-messages <n>`.
+
+### Changed
+- `handprint grab` is now idempotent. Sessions already extracted into the local chain (matched by `source.session`) are skipped, so overlapping runs (for example last 2 days, then last 4 days) never re-grab the same session. `--redo` forces a re-grab. The plan and confirm step report what was skipped and why (already grabbed, below `--min-messages`, or outside the time window).
+
 ## [0.4.0] - 2026-06-29
 
 ### Changed
