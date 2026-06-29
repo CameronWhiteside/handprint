@@ -6,12 +6,10 @@ import { SYSTEM_PROMPT } from './prompt.js';
 import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './window.js';
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
-import { DEFAULT_MODEL_ID, type ModelEntry } from './models.js';
+import { DEFAULT_MODEL_ID } from './models.js';
 
 export * from './types.js';
-export { SYSTEM_PROMPT, buildUserPrompt, TRANSCRIPT_OPEN, TRANSCRIPT_CLOSE } from './prompt.js';
-export { MODELS, DEFAULT_MODEL_ID, modelById, isModelDownloaded } from './models.js';
-export { detectAgentCli } from './host-agent.js';
+export { MODELS, DEFAULT_MODEL_ID } from './models.js';
 
 export interface ResolveOpts {
   config?: ExtractionConfig;
@@ -64,4 +62,3 @@ export async function extractFromEntries(
   return all;
 }
 
-export type { ModelEntry };

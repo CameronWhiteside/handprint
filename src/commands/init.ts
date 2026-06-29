@@ -2,7 +2,6 @@ import { initGlobal, isGlobalInitialized } from '../dirs/global.js';
 import { initProject, isProjectInitialized } from '../dirs/project.js';
 import type { Visibility } from '@handprint/types';
 
-export { isGlobalInitialized, isProjectInitialized };
 
 export async function init(
   cwd: string,

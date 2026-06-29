@@ -10,20 +10,20 @@ export interface AgentCliSpec {
   buildArgs(system: string, prompt: string): string[];
 }
 
-export type Runner = (bin: string, args: string[]) => Promise<string>;
+type Runner = (bin: string, args: string[]) => Promise<string>;
 
 /**
  * Seam for detecting whether the claude CLI supports the --append-system-prompt
  * flag. Injectable via HostProviderOpts so tests can stub it without spawning
  * the real CLI.
  */
-export type FlagDetector = () => boolean;
+type FlagDetector = () => boolean;
 
 /**
  * Probes `claude --help` for the --append-system-prompt flag.
  * Returns false on any error (missing binary, old version, etc.).
  */
-export function claudeSupportsSystemFlag(): boolean {
+function claudeSupportsSystemFlag(): boolean {
   try {
     const help = execFileSync('claude', ['--help'], { encoding: 'utf8', timeout: 5000 });
     return help.includes('--append-system-prompt');
@@ -35,7 +35,7 @@ export function claudeSupportsSystemFlag(): boolean {
 // Each CLI takes a single prompt and prints the model's text to stdout.
 // For claude the actual arg shape is resolved at extract-time based on flag
 // detection; buildArgs here is kept as the degraded fallback only.
-export const AGENT_CLIS: AgentCliSpec[] = [
+const AGENT_CLIS: AgentCliSpec[] = [
   {
     id: 'claude',
     bin: 'claude',
@@ -67,7 +67,7 @@ function onPath(bin: string): boolean {
   }
 }
 
-export function detectAgentCli(): AgentCliSpec | undefined {
+function detectAgentCli(): AgentCliSpec | undefined {
   return AGENT_CLIS.find((c) => onPath(c.bin));
 }
 
