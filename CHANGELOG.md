@@ -2,7 +2,7 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
-## [0.4.1] - 2026-06-29
+## [0.4.2] - 2026-06-29
 
 ### Added
 - `handprint grab` time and message filters: `--days <n>`, `--since <when>`, `--until <when>` (ISO date such as 2026-06-01, or relative such as 7d / 24h), and `--min-messages <n>`.
@@ -10,6 +10,7 @@ All notable changes to handprint are documented here. This project adheres to [S
 
 ### Changed
 - `handprint grab` is now incremental and idempotent. It keeps a per-session watermark in `.handprint/grabbed.json` and on each run processes only messages newer than the last grab, re-grabbing a session only when it has new activity. Overlapping windows (for example last 2 days, then last 4 days) never re-grab the same work. `--redo` forces a full re-grab. The plan and confirm step report what was skipped and why (already grabbed, no new activity, below `--min-messages`, or outside the time window).
+- Local extraction now preflights its runtime: if `node-llama-cpp` is not installed, `grab` stops immediately with one clear message and the fix, instead of downloading a multi-GB model and then failing on every chunk. Host mode preflights for an installed CLI. The unpinned-checksum notice was reworded.
 
 ## [0.4.0] - 2026-06-29
 

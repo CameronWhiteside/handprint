@@ -152,4 +152,19 @@ describe('grab scan / confirm / target', () => {
     expect(grown.plan.totalSessions).toBe(1);
     expect(grown.plan.totalMessages).toBe(1);
   });
+
+  it('aborts with a clear reason when the runtime is not ready (no processing, no download)', async () => {
+    const extract = vi.fn(async () => []);
+    const provider: ExtractorProvider = {
+      id: 'local-model',
+      label: () => 'local:fake-model',
+      isAvailable: async () => true,
+      preflight: async () => ({ ok: false, reason: 'install node-llama-cpp' }),
+      extract,
+    };
+    const res = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, yes: true, provider, log: () => {} });
+    expect(res.blockedReason).toBe('install node-llama-cpp');
+    expect(res.confirmed).toBe(false);
+    expect(extract).not.toHaveBeenCalled();
+  });
 });

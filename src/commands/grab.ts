@@ -39,6 +39,8 @@ export interface GrabResult {
   confirmed: boolean;
   needsConfirm: boolean;
   dryRun: boolean;
+  /** Set when the extractor's runtime is not ready (e.g. node-llama-cpp missing). */
+  blockedReason?: string;
   handprintsCreated: number;
   sessionsProcessed: number;
   messagesProcessed: number;
@@ -238,6 +240,12 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
 
   if (scanned.length === 0) return base;
   if (options.dryRun) return base;
+
+  // Preflight the extractor BEFORE asking to confirm or downloading anything.
+  if (provider.preflight) {
+    const pf = await provider.preflight();
+    if (!pf.ok) return { ...base, blockedReason: pf.reason ?? 'extractor is not available' };
+  }
 
   let allowed: Set<string> | null = null;
   if (options.yes) {

@@ -109,6 +109,15 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
   return {
     id: 'host-agent',
     label: () => `host:${resolveSpec()?.id ?? 'none'}`,
+    async preflight() {
+      if (resolveSpec()) return { ok: true };
+      return {
+        ok: false,
+        reason:
+          'No agent CLI found on PATH (looked for claude, opencode, codex).\n' +
+          '  install one of those, or use the local model:  handprint grab --extractor local',
+      };
+    },
     async isAvailable(): Promise<boolean> {
       return resolveSpec() !== undefined;
     },

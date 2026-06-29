@@ -1,5 +1,6 @@
 // src/extractor/local-model.ts
 import { createHash } from 'node:crypto';
+import { createRequire } from 'node:module';
 import { createWriteStream, createReadStream, mkdirSync, renameSync, unlinkSync } from 'node:fs';
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
@@ -75,7 +76,7 @@ export async function ensureModel(
     } else {
       // Item 2: warn when no pinned digest is available, do not silently skip.
       process.stderr.write(
-        `model integrity not verified (no pinned digest for ${entry.id})\n`,
+        `note: ${entry.id} has no pinned checksum yet; downloaded over HTTPS.\n`,
       );
     }
 
@@ -100,6 +101,25 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
   return {
     id: 'local-model',
     label: () => `local:${entry.id}`,
+
+    async preflight() {
+      try {
+        // Resolve (do NOT load) the module: confirms node-llama-cpp is installed
+        // without executing its native addon, so a broken binary can't crash the
+        // preflight and we never download a model we can't use.
+        createRequire(import.meta.url).resolve('node-llama-cpp');
+        return { ok: true };
+      } catch {
+        return {
+          ok: false,
+          reason:
+            'Local extraction needs node-llama-cpp, a one-time install (it is not bundled).\n' +
+            '  install it:           npm i -g node-llama-cpp\n' +
+            '  or use your agent:    handprint grab --extractor host\n' +
+            '  or make host default: handprint config set extraction.provider host --global',
+        };
+      }
+    },
 
     async isAvailable(): Promise<boolean> {
       if (isModelDownloaded(entry, opts.homeDir)) return true;

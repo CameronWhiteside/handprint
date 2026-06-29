@@ -156,6 +156,11 @@ program
         return;
       }
 
+      if (result.blockedReason) {
+        console.log(`\nCannot run the ${plan.extractor} extractor:\n${result.blockedReason}\n`);
+        return;
+      }
+
       const printScope = () => {
         console.log(
           `\n${plan.totalSessions} session(s), ${plan.totalMessages} message(s), ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`,
