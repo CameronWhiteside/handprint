@@ -73,6 +73,15 @@ export async function extractFromEntries(
       const msg = err instanceof Error ? err.message : String(err);
       lastMsg = msg;
       console.error(`  chunk ${i + 1} error: ${msg}`);
+      // Fail fast: a failure on the very first chunk is almost always systemic
+      // (wrong engine, missing runtime, unparseable output), so stop now instead
+      // of grinding through every chunk and session before reporting zero.
+      if (attempted === 1) {
+        throw new Error(
+          `extraction failed on the first chunk (${msg}). Stopping early. ` +
+            `Run with HANDPRINT_DEBUG=1 to see the model output, or try a different --extractor.`,
+        );
+      }
     } finally {
       progress.onChunkDone?.();
     }

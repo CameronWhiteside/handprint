@@ -2,6 +2,14 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.8] - 2026-06-30
+
+### Added
+- `handprint reset`: deletes the local handprint chain (objects, log, and grab watermark) so you can re-ingest from scratch. Requires a hard confirmation (type "reset"); `--force` skips it for scripts. Your identity, signing keys, and handprints already published to the hub are not affected.
+
+### Changed
+- Extraction now fails fast. A failure on the very first chunk (wrong engine, missing runtime, unparseable output) stops the run immediately with an actionable message instead of grinding through every chunk and session before reporting zero. Host extraction throws on genuinely unparseable output (rather than silently returning nothing), so the fail-fast can trigger and `HANDPRINT_DEBUG=1` shows the raw output.
+
 ## [0.4.7] - 2026-06-30
 
 ### Fixed

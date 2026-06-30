@@ -14,6 +14,7 @@ import { listHandprints } from '../src/commands/log.js';
 import { showHandprint } from '../src/commands/show.js';
 import { status } from '../src/commands/status.js';
 import { login } from '../src/commands/login.js';
+import { reset, type ResetPlan } from '../src/commands/reset.js';
 import { keysAdd, keysList, keysRotate, keysExport } from '../src/commands/keys.js';
 import { listSources } from '../src/commands/sources.js';
 import {
@@ -507,6 +508,41 @@ skillCmd
       } else {
         console.log(`Skill not found at ${result.path} (nothing removed)`);
       }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(msg);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('reset')
+  .description('Delete the local handprint chain so you can re-ingest (identity and keys are kept)')
+  .option('--force', 'Skip the confirmation prompt (for scripts)')
+  .action(async (opts: { force?: boolean }) => {
+    try {
+      const confirm = async (plan: ResetPlan): Promise<boolean> => {
+        if (!process.stdin.isTTY) return false;
+        console.log(`\nThis permanently deletes ${plan.handprints} local handprint(s) from:`);
+        console.log(`  ${plan.projectRoot}/.handprint`);
+        console.log('It removes the stored objects, the chain log, and the grab watermark.');
+        console.log('Your identity and signing keys are NOT affected, and handprints already');
+        console.log('published to the hub are NOT affected.\n');
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+        const answer = await rl.question('Type "reset" to confirm: ');
+        rl.close();
+        return answer.trim() === 'reset';
+      };
+      const result = await reset(process.cwd(), { force: opts.force, confirm });
+      if (result.needsConfirm) {
+        console.log('Refusing to reset without a terminal to confirm. Re-run with --force.');
+        return;
+      }
+      if (!result.confirmed) {
+        console.log('Aborted. Nothing was deleted.');
+        return;
+      }
+      console.log(`Reset complete. Deleted ${result.removed} local handprint(s). Run "handprint grab" to re-ingest.`);
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(msg);

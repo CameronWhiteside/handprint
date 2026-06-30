@@ -201,4 +201,13 @@ describe('host-agent provider', () => {
     expect(call).toBe(1);
     expect(out).toHaveLength(0);
   });
+
+  it('throws (not silent empty) when the model returns no JSON array even after retry', async () => {
+    const p = createHostProvider({
+      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (_s, pr) => ['-p', pr] }),
+      claudeFlagDetector: () => true,
+      run: async () => 'I am sorry, there is nothing here I can turn into JSON.',
+    });
+    await expect(p.extract('w', 's')).rejects.toThrow(/did not return a JSON array/);
+  });
 });
