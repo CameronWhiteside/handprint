@@ -81,6 +81,17 @@ ollama pull qwen2.5:3b
 #   extraction.provider host    (your installed agent; runs in the cloud)
 ```
 
+For the `host` engine, the claude path defaults to the cheap, fast `haiku` model (extraction is a structured task, so this avoids burning Opus). Override it per machine:
+
+```sh
+handprint config set extraction.provider host --global
+handprint config set extraction.model sonnet --global   # optional; default is haiku
+```
+
+Without `extraction.model`, the claude host engine uses `haiku`. The model is recorded in each handprint's source (for example `host:claude:haiku`) so you know what extracted it.
+
+The grab plan always shows a rough input-token estimate and names the engine (e.g. `host:claude (Claude Code)`) so you can confirm the scope before any tokens are billed.
+
 If the chosen engine is not ready (no Ollama server, `node-llama-cpp` not installed, or no agent CLI), `grab` stops with a one-line fix instead of failing mid-run. See [AGENTS.md](./AGENTS.md) for non-interactive setup.
 
 ## Visibility (private / unlisted / public)

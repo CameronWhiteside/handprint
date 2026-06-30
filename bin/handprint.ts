@@ -4,6 +4,7 @@ import { createInterface } from 'node:readline/promises';
 import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';
 import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
+import { agentBrand } from '../src/extractor/host-agent.js';
 import { push } from '../src/commands/push.js';
 import { verifyChain } from '../src/commands/verify.js';
 import { listHandprints } from '../src/commands/log.js';
@@ -30,6 +31,38 @@ function isVersionedPackage(v: unknown): v is { version: string } {
 
 const _pkg: unknown = _require('../../package.json');
 const version = isVersionedPackage(_pkg) ? _pkg.version : '0.0.0';
+
+/** Format a token count for human display: 2_500_000 -> "2.5M", 740_000 -> "740k". */
+function humanTokens(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1).replace(/\.0$/, '')}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}k`;
+  return String(n);
+}
+
+/**
+ * Return a label for the extractor suitable for one-line display.
+ * host: engines include the agent brand; ollama/local note they are on-machine.
+ */
+function extractorLabel(extractor: string): string {
+  if (extractor.startsWith('host:')) {
+    const [id, model] = extractor.slice('host:'.length).split(':');
+    const brand = agentBrand(id);
+    return model ? `${extractor} (${brand}, model: ${model})` : `${extractor} (${brand})`;
+  }
+  if (extractor.startsWith('ollama:') || extractor.startsWith('local:')) {
+    return `${extractor} (on your machine)`;
+  }
+  return extractor;
+}
+
+/** Build the estimate line appropriate for the extractor type. */
+function estimateLine(plan: GrabPlan): string {
+  if (plan.extractor.startsWith('host:')) {
+    const id = plan.extractor.slice('host:'.length).split(':')[0];
+    return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, billed to your ${agentBrand(id)} quota.`;
+  }
+  return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, runs on your machine (nothing billed).`;
+}
 
 const program = new Command();
 
@@ -114,7 +147,8 @@ program
                 `  [${i + 1}] ${pr.project}  ${pr.sessions} session(s) · ${pr.messages} msgs · ${pr.chunks} chunks`,
               );
             });
-            console.log(`Extractor: ${plan.extractor}`);
+            console.log(`Extractor: ${extractorLabel(plan.extractor)}`);
+            console.log(estimateLine(plan));
             const skipped: string[] = [];
             if (plan.skippedAlreadyGrabbed) skipped.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
             if (plan.skippedUnchanged) skipped.push(`${plan.skippedUnchanged} with no new activity`);
@@ -160,11 +194,6 @@ program
         return;
       }
 
-      if (result.blockedReason) {
-        console.log(`\nCannot run the ${plan.extractor} extractor:\n${result.blockedReason}\n`);
-        return;
-      }
-
       const printScope = () => {
         console.log(
           `\n${plan.totalSessions} session(s), ${plan.totalMessages} message(s), ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`,
@@ -172,7 +201,8 @@ program
         for (const pr of plan.projects) {
           console.log(`  ${pr.project}  ${pr.sessions} · ${pr.messages} msgs · ${pr.chunks} chunks`);
         }
-        console.log(`Extractor: ${plan.extractor}`);
+        console.log(`Extractor: ${extractorLabel(plan.extractor)}`);
+        console.log(estimateLine(plan));
         const skips: string[] = [];
         if (plan.skippedAlreadyGrabbed) skips.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
         if (plan.skippedUnchanged) skips.push(`${plan.skippedUnchanged} with no new activity`);
@@ -180,6 +210,12 @@ program
         if (plan.skippedOutOfRange) skips.push(`${plan.skippedOutOfRange} outside the time window`);
         if (skips.length) console.log(`Skipped: ${skips.join(', ')}.`);
       };
+
+      if (result.blockedReason) {
+        printScope();
+        console.log(`\nCannot run the ${plan.extractor} extractor:\n${result.blockedReason}\n`);
+        return;
+      }
 
       if (result.dryRun) {
         printScope();
