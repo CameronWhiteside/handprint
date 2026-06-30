@@ -94,6 +94,16 @@ The grab plan always shows a rough input-token estimate and names the engine (e.
 
 If the chosen engine is not ready (no Ollama server, `node-llama-cpp` not installed, or no agent CLI), `grab` stops with a one-line fix instead of failing mid-run. See [AGENTS.md](./AGENTS.md) for non-interactive setup.
 
+## The `/handprint` skill (capture from inside your agent)
+
+handprint ships a Claude Code skill so you can leave a handprint without dropping to the terminal. Install it once:
+
+```sh
+mkdir -p ~/.handprint-skill && cp -R "$(npm root -g)/handprint-sh/skills/handprint" ~/.claude/skills/handprint
+```
+
+Then in Claude Code run `/handprint` (or just say "handprint this"). The skill asks how far back to capture (Today by default), previews the size and token estimate, captures the decisions (`grab`), and publishes them (`push`) as unlisted, logging you in if needed. It is only an orchestration of the CLI primitives. Nothing runs in the background; capture happens when you ask.
+
 ## Visibility (private / unlisted / public)
 
 Visibility is a property of the handprint.sh hub, not of the protocol or the signed record. Nothing in the local chain or the cryptographic handprint encodes a visibility level.

@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.4] - 2026-06-29
+
+### Added
+- A Claude Code skill at `skills/handprint/SKILL.md` (shipped in the npm package). Run `/handprint` (or say "handprint this") to capture and publish from inside your agent: it asks how far back, previews the size with `grab --dry-run`, then runs `grab` (extract, sign, store) and `push` (publish as unlisted), logging in if needed. It is purely an orchestration of the existing CLI primitives, with no background behavior and no new CLI commands.
+
 ## [0.4.3] - 2026-06-29
 
 ### Added

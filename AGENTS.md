@@ -164,3 +164,13 @@ Set or change visibility from the hub dashboard after pushing.
 ## 7. Acceptable use
 
 `grab` and local extraction run entirely offline and require no account. Publishing to the hub (`handprint push`) is opt-in and requires `handprint login`; hub access is rate-limited and governed by the [Human Provenance Covenant](./COVENANT.md). Use a person's provenance to benefit that person rather than to build systems that route around them.
+
+## The handprint skill
+
+For interactive use inside an agent, handprint ships a Claude Code skill at `skills/handprint/SKILL.md` (also published in the npm package). Install it with:
+
+```sh
+cp -R "$(npm root -g)/handprint-sh/skills/handprint" ~/.claude/skills/handprint
+```
+
+It orchestrates the CLI: it asks how far back to capture, previews the size with `grab --dry-run`, runs `grab` (extract, sign, store) then `push` (publish as unlisted), and logs in if needed. It adds no background behavior and no new CLI commands.
