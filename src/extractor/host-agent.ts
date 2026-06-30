@@ -4,6 +4,14 @@ import type { ExtractorProvider, RawExtraction } from './types.js';
 import { parseExtractionJson } from './types.js';
 import { buildUserPrompt } from './prompt.js';
 
+/** Map a CLI id to its user-facing brand name. */
+export function agentBrand(id: string): string {
+  if (id === 'claude') return 'Claude Code';
+  if (id === 'opencode') return 'opencode';
+  if (id === 'codex') return 'Codex';
+  return id;
+}
+
 export interface AgentCliSpec {
   id: 'claude' | 'opencode' | 'codex';
   bin: string;
@@ -67,7 +75,7 @@ function onPath(bin: string): boolean {
   }
 }
 
-function detectAgentCli(): AgentCliSpec | undefined {
+export function detectAgentCli(): AgentCliSpec | undefined {
   return AGENT_CLIS.find((c) => onPath(c.bin));
 }
 
@@ -79,23 +87,36 @@ const defaultRunner: Runner = (bin, args) =>
     });
   });
 
+// Extraction is a structured classification task, not open-ended generation,
+// so the host default is the cheapest capable Claude model. Override per machine
+// with `handprint config set extraction.model <model>` (e.g. sonnet for higher
+// fidelity). The 'haiku' alias resolves to the current Haiku in the user's CLI.
+const DEFAULT_CLAUDE_HOST_MODEL = 'haiku';
+
 export interface HostProviderOpts {
   cli?: 'claude' | 'opencode' | 'codex';
   run?: Runner;
   detect?: () => AgentCliSpec | undefined;
   /** Injectable seam for claude flag detection, defaults to claudeSupportsSystemFlag(). */
   claudeFlagDetector?: FlagDetector;
+  /**
+   * Model to pass to the claude CLI via --model. Only claude supports this for
+   * now; opencode and codex do not accept a --model flag and ignore this option.
+   */
+  model?: string;
 }
 
 /** Build claude CLI args, separating system prompt at the correct authority level. */
-function buildClaudeArgs(supportsFlag: boolean, system: string, prompt: string): string[] {
+function buildClaudeArgs(supportsFlag: boolean, system: string, prompt: string, model: string | undefined): string[] {
+  // Prepend --model when the caller selected a specific model.
+  const modelArgs: string[] = model ? ['--model', model] : [];
   if (supportsFlag) {
     // Item 1 fix: deliver SECURITY system rules at the dedicated flag authority,
     // not concatenated into the user message.
-    return ['-p', prompt, '--append-system-prompt', system];
+    return [...modelArgs, '-p', prompt, '--append-system-prompt', system];
   }
   // Degraded fallback: flag unsupported (old claude version or missing binary).
-  return ['-p', `${system}\n\n${prompt}`];
+  return [...modelArgs, '-p', `${system}\n\n${prompt}`];
 }
 
 export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvider {
@@ -105,10 +126,17 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
     if (opts.cli) return AGENT_CLIS.find((c) => c.id === opts.cli);
     return detect();
   };
+  // claude is the only host CLI that takes --model today, so the sensible
+  // default applies only there; opencode/codex keep their own defaults.
+  const claudeModel = (): string => opts.model ?? DEFAULT_CLAUDE_HOST_MODEL;
 
   return {
     id: 'host-agent',
-    label: () => `host:${resolveSpec()?.id ?? 'none'}`,
+    label: () => {
+      const s = resolveSpec();
+      const model = s?.id === 'claude' ? claudeModel() : undefined;
+      return `host:${s?.id ?? 'none'}${model ? `:${model}` : ''}`;
+    },
     async preflight() {
       if (resolveSpec()) return { ok: true };
       return {
@@ -131,7 +159,7 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
         // Item 1: use the injectable flag-detection seam so this path is
         // testable without the real claude binary.
         const detector = opts.claudeFlagDetector ?? claudeSupportsSystemFlag;
-        args = buildClaudeArgs(detector(), system, prompt);
+        args = buildClaudeArgs(detector(), system, prompt, claudeModel());
       } else {
         args = s.buildArgs(system, prompt);
       }

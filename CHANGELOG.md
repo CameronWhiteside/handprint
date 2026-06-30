@@ -7,6 +7,15 @@ All notable changes to handprint are documented here. This project adheres to [S
 ### Added
 - A Claude Code skill at `skills/handprint/SKILL.md` (shipped in the npm package). Run `/handprint` (or say "handprint this") to capture and publish from inside your agent: it asks how far back, previews the size with `grab --dry-run`, then runs `grab` (extract, sign, store) and `push` (publish as unlisted), logging in if needed. It is purely an orchestration of the existing CLI primitives, with no background behavior and no new CLI commands.
 
+## [0.4.3] - 2026-06-29
+
+### Added
+- `grab` plan now prints a rough input-token estimate: the scan step shows `~N model calls, ~Xk input tokens` so you can gauge cost before confirming. For host engines the line notes the tokens are billed to your quota; for on-machine engines it notes nothing is billed.
+- The extractor line in the grab plan now names the agent by brand (e.g. `host:claude (Claude Code)`) and says whether it runs locally or bills a quota.
+- Host engine model selection via `extraction.model`: passes `--model <model>` to the claude CLI. The claude host engine now defaults to the cheap, fast `haiku` model (extraction is a structured task, so this avoids inheriting an expensive Opus default); override with `handprint config set extraction.model sonnet --global`. The chosen model is recorded in the extractor label (for example `host:claude:haiku`).
+- Blocked runs (engine not ready) now show the full plan and estimate before the error, so you can see the scope and decide which alternative to use.
+- The local-engine block message now names any agent CLI already on PATH (e.g. "or use your installed agent (Claude Code)") so the ready alternative is obvious.
+
 ## [0.4.2] - 2026-06-29
 
 ### Added

@@ -88,6 +88,16 @@ Routes extraction through the agent that is already running on the machine (whic
 handprint config set extraction.provider host --global
 ```
 
+Extraction is a structured task, not open-ended generation, so the claude host engine defaults to the cheap, fast `haiku` model rather than inheriting your Claude Code default (which could be Opus). Override per machine with `extraction.model` (passed as `--model` to the claude CLI), for example `sonnet` for higher fidelity:
+
+```sh
+handprint config set extraction.model sonnet --global   # default is haiku
+```
+
+Without this setting the agent uses its own default model.
+
+The grab plan names the detected agent by brand (e.g. `host:claude (Claude Code)`) and shows a rough input-token estimate so you can see what will be billed before confirming.
+
 ---
 
 ## 3. Scope discovery to specific sources
