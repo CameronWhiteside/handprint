@@ -119,6 +119,12 @@ function buildClaudeArgs(supportsFlag: boolean, system: string, prompt: string, 
   return [...modelArgs, '-p', `${system}\n\n${prompt}`];
 }
 
+/** Strip a single surrounding markdown code fence (```json ... ```), if present. */
+function stripCodeFence(text: string): string {
+  const fenced = text.trim().match(/^```(?:json)?\s*\n?([\s\S]*?)\n?```$/);
+  return fenced?.[1] ?? text;
+}
+
 export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvider {
   const detect = opts.detect ?? detectAgentCli;
   const run = opts.run ?? defaultRunner;
@@ -152,22 +158,32 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
     async extract(window: string, system: string): Promise<RawExtraction[]> {
       const s = resolveSpec();
       if (!s) throw new Error('no agent CLI found on PATH (claude / opencode / codex)');
-      const prompt = buildUserPrompt(window);
+      const debug = Boolean(process.env.HANDPRINT_DEBUG);
 
-      let args: string[];
-      if (s.id === 'claude') {
-        // Item 1: use the injectable flag-detection seam so this path is
-        // testable without the real claude binary.
-        const detector = opts.claudeFlagDetector ?? claudeSupportsSystemFlag;
-        args = buildClaudeArgs(detector(), system, prompt, claudeModel());
-      } else {
-        args = s.buildArgs(system, prompt);
+      const runWith = (userPrompt: string): Promise<string> => {
+        const args =
+          s.id === 'claude'
+            ? buildClaudeArgs((opts.claudeFlagDetector ?? claudeSupportsSystemFlag)(), system, userPrompt, claudeModel())
+            : s.buildArgs(system, userPrompt);
+        return run(s.bin, args);
+      };
+
+      const basePrompt = buildUserPrompt(window);
+      let stdout = await runWith(basePrompt);
+      if (debug) console.error(`[handprint] ${s.id} output (${stdout.length} chars):\n${stdout.slice(0, 4000)}\n`);
+      let result = parseExtractionJson(stripCodeFence(stdout));
+
+      // Host models routinely wrap JSON in a ```json fence or prose; stripCodeFence
+      // plus the tolerant scanner handle that. Only when there is no JSON array at
+      // all do we retry once asking for a bare array. An empty [] is a real "no
+      // decisions" answer and is not retried.
+      if (result.length === 0 && !/\[[\s\S]*\]/.test(stdout)) {
+        const retryPrompt = `${basePrompt}\n\nRespond with ONLY a raw JSON array. No markdown code fences, no prose. If there are no decisions, respond with exactly [].`;
+        stdout = await runWith(retryPrompt);
+        if (debug) console.error(`[handprint] ${s.id} retry output (${stdout.length} chars):\n${stdout.slice(0, 4000)}\n`);
+        result = parseExtractionJson(stripCodeFence(stdout));
       }
-
-      const stdout = await run(s.bin, args);
-      // Item 3: require output to start with '[', rejects leading prose /
-      // JSON front-running attacks in host-agent output.
-      return parseExtractionJson(stdout, { requireLeadingArray: true });
+      return result;
     },
   };
 }
