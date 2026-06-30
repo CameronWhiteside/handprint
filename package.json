@@ -33,6 +33,7 @@
   },
   "files": [
     "dist/bin/",
+    "skills/",
     "README.md",
     "AGENTS.md",
     "CHANGELOG.md",
