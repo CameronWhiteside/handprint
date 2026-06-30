@@ -2,6 +2,14 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.5] - 2026-06-30
+
+### Added
+- `handprint init` now installs the bundled `/handprint` Claude Code skill into `~/.claude/skills/handprint/` automatically when `~/.claude` already exists. If it does not, a tip is printed to run `handprint skill install` after installing Claude Code.
+- Silent auto-resync: every CLI invocation checks whether the installed skill matches the current CLI version and re-copies it when the version has changed or the file is missing. This means `npm i -g handprint-sh@latest` upgrades the skill automatically. Set `HANDPRINT_NO_SKILL_SYNC=1` to disable.
+- `handprint skill install [--project] [--force]`: explicitly install the bundled skill into `~/.claude/skills/handprint/` (global, default) or `.claude/skills/handprint/` (project scope with `--project`).
+- `handprint skill uninstall [--project]`: remove the skill directory.
+
 ## [0.4.4] - 2026-06-29
 
 ### Added

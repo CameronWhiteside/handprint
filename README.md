@@ -96,11 +96,20 @@ If the chosen engine is not ready (no Ollama server, `node-llama-cpp` not instal
 
 ## The `/handprint` skill (capture from inside your agent)
 
-handprint ships a Claude Code skill so you can leave a handprint without dropping to the terminal. Install it once:
+handprint ships a Claude Code skill so you can leave a handprint without dropping to the terminal.
+
+**The skill installs automatically.** `handprint init` copies it to `~/.claude/skills/handprint/`, and every subsequent CLI invocation silently re-syncs it when a newer version is available. After `npm i -g handprint-sh@latest` the skill upgrades itself on the next run.
+
+For explicit control:
 
 ```sh
-mkdir -p ~/.handprint-skill && cp -R "$(npm root -g)/handprint-sh/skills/handprint" ~/.claude/skills/handprint
+handprint skill install           # install or re-sync globally (~/.claude/skills/handprint/)
+handprint skill install --project # install into the current project's .claude/skills/
+handprint skill uninstall         # remove the global copy
+handprint skill uninstall --project
 ```
+
+Set `HANDPRINT_NO_SKILL_SYNC=1` to disable the automatic background sync.
 
 Then in Claude Code run `/handprint` (or just say "handprint this"). The skill asks how far back to capture (Today by default), previews the size and token estimate, captures the decisions (`grab`), and publishes them (`push`) as unlisted, logging you in if needed. It is only an orchestration of the CLI primitives. Nothing runs in the background; capture happens when you ask.
 

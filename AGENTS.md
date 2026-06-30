@@ -167,10 +167,17 @@ Set or change visibility from the hub dashboard after pushing.
 
 ## The handprint skill
 
-For interactive use inside an agent, handprint ships a Claude Code skill at `skills/handprint/SKILL.md` (also published in the npm package). Install it with:
+For interactive use inside an agent, handprint ships a Claude Code skill at `skills/handprint/SKILL.md` (also published in the npm package).
+
+**The skill installs and stays in sync automatically.** `handprint init` installs it into `~/.claude/skills/handprint/`, and every subsequent CLI invocation silently re-syncs it when the recorded version does not match the running CLI. Running `npm i -g handprint-sh@latest` upgrades the skill on the next invocation.
+
+For explicit control:
 
 ```sh
-cp -R "$(npm root -g)/handprint-sh/skills/handprint" ~/.claude/skills/handprint
+handprint skill install           # install or re-sync globally
+handprint skill install --project # install into .claude/skills/ in the current project
+handprint skill uninstall         # remove the global copy
+HANDPRINT_NO_SKILL_SYNC=1 handprint <cmd>  # disable auto-resync for one run
 ```
 
 It orchestrates the CLI: it asks how far back to capture, previews the size with `grab --dry-run`, runs `grab` (extract, sign, store) then `push` (publish as unlisted), and logs in if needed. It adds no background behavior and no new CLI commands.
