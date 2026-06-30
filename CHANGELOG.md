@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.6] - 2026-06-30
+
+### Changed
+- `handprint login` now signs you in through a browser loopback instead of a manual code. It opens GitHub sign-in (the one-time user code rides in the OAuth state, so there is nothing to type), runs a localhost loopback server that lands you on a success page, and finishes automatically. Polling remains the source of truth, so login still works over SSH or when a browser cannot open. This replaces the device-code prompt and the broken verification page.
+
 ## [0.4.5] - 2026-06-30
 
 ### Added
