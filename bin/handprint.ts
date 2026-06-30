@@ -1,6 +1,9 @@
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
 import { createInterface } from 'node:readline/promises';
+import { existsSync } from 'node:fs';
+import { homedir } from 'node:os';
+import { join } from 'node:path';
 import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';
 import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
@@ -20,6 +23,7 @@ import {
   saveGlobalConfig,
   saveProjectConfig,
 } from '../src/commands/config.js';
+import { ensureSkillSynced, installSkill, uninstallSkill } from '../src/skill/install.js';
 // Item 7: read real version from package.json so dist/bin/handprint.js always
 // reports the version declared in the tarball (../../package.json from dist/bin/).
 const _require = createRequire(import.meta.url);
@@ -64,6 +68,12 @@ function estimateLine(plan: GrabPlan): string {
   return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, runs on your machine (nothing billed).`;
 }
 
+// Silently keep the bundled skill in sync with the installed CLI version.
+// Wrapped in try/catch so it can never block a normal command.
+try {
+  ensureSkillSynced();
+} catch { /* ignore */ }
+
 const program = new Command();
 
 program
@@ -81,6 +91,18 @@ program
         global: opts.global,
       });
       console.log(path);
+      // Install the bundled /handprint skill when ~/.claude already exists.
+      const claudeHome = join(homedir(), '.claude');
+      if (existsSync(claudeHome)) {
+        try {
+          const result = installSkill({ scope: 'global' });
+          console.log(`Installed the /handprint skill to ${result.path}`);
+        } catch { /* non-fatal */ }
+      } else {
+        console.log(
+          'Tip: install Claude Code, then run `handprint skill install` to enable the /handprint skill.',
+        );
+      }
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
@@ -449,6 +471,45 @@ configCmd
       console.log(`set ${path} = ${JSON.stringify(getConfigValue(updated, path))}`);
     } catch (err) {
       console.error((err as Error).message);
+      process.exit(1);
+    }
+  });
+
+const skillCmd = program.command('skill').description('Manage the bundled /handprint Claude Code skill');
+
+skillCmd
+  .command('install')
+  .description('Install the /handprint skill into ~/.claude/skills (or .claude/skills with --project)')
+  .option('--project', 'Install into the current project .claude/skills instead of global')
+  .option('--force', 'Overwrite even if already installed at the same version')
+  .action((opts) => {
+    try {
+      const scope: 'global' | 'project' = opts.project ? 'project' : 'global';
+      const result = installSkill({ scope, force: opts.force });
+      console.log(`Installed the /handprint skill (v${result.version}) to ${result.path}`);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(msg);
+      process.exit(1);
+    }
+  });
+
+skillCmd
+  .command('uninstall')
+  .description('Remove the /handprint skill from ~/.claude/skills (or .claude/skills with --project)')
+  .option('--project', 'Remove from the current project .claude/skills instead of global')
+  .action((opts) => {
+    try {
+      const scope: 'global' | 'project' = opts.project ? 'project' : 'global';
+      const result = uninstallSkill({ scope });
+      if (result.removed) {
+        console.log(`Removed the /handprint skill from ${result.path}`);
+      } else {
+        console.log(`Skill not found at ${result.path} (nothing removed)`);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(msg);
       process.exit(1);
     }
   });
