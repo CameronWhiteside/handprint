@@ -183,6 +183,15 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
         if (debug) console.error(`[handprint] ${s.id} retry output (${stdout.length} chars):\n${stdout.slice(0, 4000)}\n`);
         result = parseExtractionJson(stripCodeFence(stdout));
       }
+
+      // Fail loud on a genuine parse failure (no JSON array at all, even after the
+      // retry). Returning [] would look like "no decisions" and silently waste a
+      // long run; throwing lets grab stop early.
+      if (result.length === 0 && !/\[[\s\S]*\]/.test(stdout)) {
+        throw new Error(
+          `${s.id} did not return a JSON array` + (debug ? '' : ' (run with HANDPRINT_DEBUG=1 to see the raw output)'),
+        );
+      }
       return result;
     },
   };
