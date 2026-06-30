@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.7] - 2026-06-30
+
+### Fixed
+- Host extraction (claude / opencode / codex) reported "no decisions found" even when the model produced valid output. Host models wrap the JSON array in a markdown ```json code fence, and the parser required the response to start exactly with `[`, so every result was silently dropped. The host path now strips code fences and tolerantly scans for the JSON array (each mark is still validated by the zod schema). Added `HANDPRINT_DEBUG=1` to print the raw model output, and a single retry that asks for a bare array when the model returns no JSON at all.
+
 ## [0.4.6] - 2026-06-30
 
 ### Changed

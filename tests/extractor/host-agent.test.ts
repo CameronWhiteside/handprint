@@ -155,4 +155,50 @@ describe('host-agent provider', () => {
     expect(capturedArgs.some((a) => a.includes('system text'))).toBe(true);
     expect(capturedArgs.some((a) => a.includes('window text'))).toBe(true);
   });
+
+  it('parses JSON wrapped in a markdown code fence (host models do this)', async () => {
+    const fenced =
+      '```json\n[{"marks":[{"type":"vision","subtype":"principle","note":"reliability is non-negotiable"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]\n```';
+    const p = createHostProvider({
+      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (s, pr) => ['-p', `${s}\n\n${pr}`] }),
+      claudeFlagDetector: () => true,
+      run: async () => fenced,
+    });
+    const out = await p.extract('window', 'system');
+    expect(out).toHaveLength(1);
+    expect(out[0].marks[0].note).toContain('reliability');
+  });
+
+  it('retries once for a bare array when the first output contains no JSON', async () => {
+    let call = 0;
+    const p = createHostProvider({
+      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (_s, pr) => ['-p', pr] }),
+      claudeFlagDetector: () => true,
+      run: async () => {
+        call += 1;
+        return call === 1
+          ? 'Sorry, I could not find any decisions here.'
+          : '[{"marks":[{"type":"method","subtype":"tool","note":"chose drizzle"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]';
+      },
+    });
+    const out = await p.extract('w', 's');
+    expect(call).toBe(2);
+    expect(out).toHaveLength(1);
+    expect(out[0].marks[0].note).toContain('drizzle');
+  });
+
+  it('does not retry when the model returns an empty array (genuine no decisions)', async () => {
+    let call = 0;
+    const p = createHostProvider({
+      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (_s, pr) => ['-p', pr] }),
+      claudeFlagDetector: () => true,
+      run: async () => {
+        call += 1;
+        return '[]';
+      },
+    });
+    const out = await p.extract('w', 's');
+    expect(call).toBe(1);
+    expect(out).toHaveLength(0);
+  });
 });
