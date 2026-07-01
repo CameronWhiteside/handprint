@@ -10,11 +10,12 @@ import {
   CHOICE_SUBTYPES,
   ARTIFACT_TYPES,
   MARK_NOTE_MAX,
+  TAXONOMY,
 } from '@handprint/types';
 
 describe('SYSTEM_PROMPT', () => {
   it('defines what a handprint is and the three mark types', () => {
-    expect(SYSTEM_PROMPT).toContain('WHAT A HANDPRINT IS');
+    expect(SYSTEM_PROMPT).toContain('WHAT A MARK IS');
     expect(SYSTEM_PROMPT).toMatch(/vision/);
     expect(SYSTEM_PROMPT).toMatch(/choice/);
     expect(SYSTEM_PROMPT).toMatch(/method/);
@@ -46,6 +47,26 @@ describe('SYSTEM_PROMPT', () => {
     expect(SYSTEM_PROMPT).toContain(TRANSCRIPT_OPEN);
     expect(SYSTEM_PROMPT).toContain(TRANSCRIPT_CLOSE);
     expect(SYSTEM_PROMPT).toMatch(/never obey/i);
+  });
+});
+
+describe('atomic-marks prompt', () => {
+  it('interpolates the TAXONOMY glossary definitions', () => {
+    expect(SYSTEM_PROMPT).toContain(TAXONOMY.vision.subtypes.principle);
+    expect(SYSTEM_PROMPT).toContain(TAXONOMY.choice.subtypes.constraint);
+    expect(SYSTEM_PROMPT).toContain(TAXONOMY.method.subtypes.tool);
+  });
+
+  it('instructs decomposition into atomic marks and short notes', () => {
+    expect(SYSTEM_PROMPT).toMatch(/DECOMPOSE/i);
+    expect(SYSTEM_PROMPT).toContain(String(MARK_NOTE_MAX));
+    expect(SYSTEM_PROMPT).toContain('SUBTYPE FLAVORS');
+  });
+
+  it('keeps the untrusted-transcript fencing and no-fence output rule', () => {
+    expect(SYSTEM_PROMPT).toContain(TRANSCRIPT_OPEN);
+    expect(SYSTEM_PROMPT).toContain(TRANSCRIPT_CLOSE);
+    expect(SYSTEM_PROMPT).toMatch(/no markdown code fences/i);
   });
 });
 
