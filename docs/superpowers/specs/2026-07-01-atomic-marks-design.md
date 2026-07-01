@@ -24,16 +24,36 @@ The magic to protect: this must be **fast and low-token** while producing **atom
 - No two-pass or post-processing "atomizer". One model call per chunk.
 - No migration of already-signed marks. Existing long marks remain valid; new extraction (and the user's re-ingest) produces atomic marks.
 
-## 1. Taxonomy and granularity (types unchanged)
+## 1. Taxonomy glossary (source of truth) and granularity
 
-Keep the current schema:
+The type/subtype system is a full-coverage taxonomy of human influence on the work. Three types answer three questions about the HUMAN:
 
-- `vision` (goal | direction | principle): the outcome the human wants.
-- `choice` (approval | override | rejection | constraint | inquiry): the decision the human made.
-- `method` (tool | knowledge | process): what the human applied.
-  - `tool`: named tools, technologies, and categories. Bare entity names are valid marks.
-  - `knowledge`: a principle or fact stated from experience.
-  - `process`: a technique or way of working.
+- **vision** = the human's INTENT: what they want to be true. (Why, and where the work is headed.)
+- **choice** = the human's DECISION: a fork they resolved. (What they decided.)
+- **method** = the human's KNOW-HOW: the tools, facts, and techniques they brought. (How, and with what.)
+
+Together, vision (why) + choice (what) + method (how) cover every way a person shapes work. A mark is one atom of that influence.
+
+These definitions live as a single source of truth: a `TAXONOMY` constant in `@handprint/types` (see section 3), interpolated into the extraction prompt as a glossary and imported by handprint-web for subtype definitions. Prompt, schema, and web cannot drift.
+
+GLOSSARY (concise, each centered on the human's influence):
+
+`vision` -- the human's intent:
+- `goal`: a concrete outcome the human is aiming for.
+- `direction`: the heading the human sets; where the work should trend, not a fixed endpoint.
+- `principle`: a durable value the human holds that governs their choices.
+
+`choice` -- a fork the human resolved:
+- `approval`: the human endorsed a specific path or artifact.
+- `override`: the human chose one option over an alternative.
+- `rejection`: the human ruled something out.
+- `constraint`: the human imposed a hard rule or limit that bounds the work.
+- `inquiry`: a pointed question from the human that redirected the work (a question carrying judgment, not a lookup).
+
+`method` -- the know-how the human brought:
+- `tool`: a named tool, technology, service, or category the human chose (bare entity names are valid).
+- `knowledge`: a fact or principle from the human's experience that informed the work.
+- `process`: a technique or way of working the human applied.
 
 Granularity target, worked examples:
 
@@ -67,6 +87,7 @@ New behavioral rules to add:
 - **Decompose, do not summarize.** A single decision usually yields several marks: the outcome (vision), the decision itself (choice), each tool or category (method/tool), and any principle (method/knowledge).
 - **Note rules:** about 5 words; hard limit `MARK_NOTE_MAX` characters; stand alone with zero context (no "this/that/the above" or pronouns referring to the chat); a short third-person belief or command about the human's judgment.
 - **Bare entities count:** tool, technology, and category names are valid `method/tool` marks.
+- **Glossary first.** Interpolate a `GLOSSARY` block from the `TAXONOMY` constant (section 3): the source-of-truth definition of each type and subtype, centered on the human's influence. The glossary teaches *detection* (what each subtype actually is); the `SUBTYPE FLAVORS` table and worked examples show it in practice. Definitions come from `TAXONOMY`, examples from the prompt, so a taxonomy edit updates the prompt automatically.
 - Keep INCLUDE/EXCLUDE (exclude routine/mechanical instructions, bare approvals, and anything the AI decided on its own).
 
 Replace the single-example section with two worked few-shot examples that show the full explosion, aligned to the real output envelope (`{ "marks": [...], "artifacts": [...], "timestamp": ... }`). Draft:
@@ -124,7 +145,8 @@ File: `packages/types/src/handprint.ts`.
 - `MARK_NOTE_MAX`: **280 -> 48** characters (about 5-7 words; tunable). Chosen so a ~5-word note fits comfortably while the cap forces brevity.
 - `note` stays `z.string().min(1).max(MARK_NOTE_MAX)`.
 - The parser (`parseExtractionJson` in `src/extractor/types.ts`) already salvages an over-length note by truncating to `MARK_NOTE_MAX` and re-validating, so a mark is never dropped for being too long.
-- Rebuild `packages/types` so its `dist` carries the new value (the CLI imports it).
+- **Add a `TAXONOMY` constant** (the source of truth): an object mapping each type, and each subtype, to a concise human-centered definition (the glossary in section 1). Shape: `{ vision: { definition, subtypes: { goal, direction, principle } }, choice: {...}, method: {...} }`. Export it. The extraction prompt interpolates it as the `GLOSSARY` block; handprint-web imports it for subtype definitions. A types test asserts every enum value has a definition, so the taxonomy and the definitions can never fall out of sync.
+- Rebuild `packages/types` so its `dist` carries the new values (the CLI imports them).
 
 ## 4. handprint-web: a transparent, humanized view of the mark data
 
@@ -133,6 +155,7 @@ Principle: the web shows the same JSON data as faithfully as possible, just pret
 - **Faithful:** every field a handprint carries is visible: each mark's `type`, `subtype`, and `note`; the `artifacts`; the `timestamp`. No lossy rewrite back into a sentence.
 - **Hierarchy:** render the handprint as the container with its `marks` nested inside, so the one-to-many relationship (one handprint, many marks) is obvious at a glance, and artifacts and timestamp sit at the handprint level.
 - **Humanized:** a mark renders as a chip = `type` (color group) + `subtype` (prominent label) + `note` (the ~5 words). Marks group by `type` (vision / choice / method); `subtype` is the meaningful labeling axis. Prettify with color, grouping, and readable typography, but never at the cost of transparency.
+- **Self-explaining taxonomy:** surface each subtype's definition from the shared `TAXONOMY` constant (a tooltip or caption on the chip), so a viewer learns what `principle` or `constraint` means without leaving the page. Same source of truth as the prompt.
 - Applies wherever marks render: the public profile (`/u/[handle]`), the dashboard, and the handprint detail view.
 
 This is in scope for this spec. It ships as a second PR (see section 7) after the extraction change lands, so richer marks exist to display.
@@ -150,6 +173,7 @@ Extraction (handprint):
 - Unit: a mock provider returns the Postgres decomposition JSON; assert `parseExtractionJson` yields one handprint with >= 4 marks, each note <= `MARK_NOTE_MAX`, covering `vision`, `choice`, `method/tool`, and `method/knowledge`.
 - Unit: the salvage/truncation test in the parser is updated for the 48-char cap (an over-length note is truncated, not dropped).
 - Types: `packages/types` tests confirm `markSchema` accepts a 48-char note and rejects a 49-char one (or truncation covers it upstream).
+- Types: a test asserts `TAXONOMY` has a definition for every type and every subtype in the enums (no gaps), so the glossary stays complete as the taxonomy evolves.
 - Manual: one live `grab` on a substantive session with `HANDPRINT_DEBUG=1`, confirming 4-10 short marks and reading them for standalone clarity.
 
 Metrics to eyeball on the live run:
