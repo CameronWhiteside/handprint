@@ -51,7 +51,7 @@ handprint status
 | Command | Description |
 |---------|-------------|
 | `handprint init [--global]` | Initialize global identity or project |
-| `handprint grab [--days N] [--project <name>] [--min-messages N] [--dry-run] [-y] [--extractor <engine>]` | Scan, confirm, then extract decisions |
+| `handprint grab [path] [--days N] [--project <name>] [--min-messages N] [--dry-run] [-y] [--extractor <engine>]` | Scan, confirm, then extract decisions (path sets where the chain is stored, default: current dir) |
 | `handprint sources` | List available source adapters and their status |
 | `handprint push` | Publish handprints to the hub (opt-in; requires `handprint login`) |
 | `handprint log` | List local handprints |

@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.4.9] - 2026-06-30
+
+### Added
+- `handprint grab [path]` takes an optional directory that sets where the handprints are stored (the local chain), defaulting to the current directory. Use `handprint grab .` or `handprint grab ~/project`. `--project <name>` still controls which sessions are grabbed; the path controls where they land.
+
 ## [0.4.8] - 2026-06-30
 
 ### Added

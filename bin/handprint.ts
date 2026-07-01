@@ -3,7 +3,7 @@ import { createRequire } from 'node:module';
 import { createInterface } from 'node:readline/promises';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve } from 'node:path';
 import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';
 import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
@@ -138,6 +138,7 @@ program
 program
   .command('grab')
   .description('Scan AI transcripts, confirm, then extract decisions')
+  .argument('[path]', 'Directory to store the handprints in (default: current directory)')
   .option('-n, --limit <n>', 'Max sessions to scan', parseInt)
   .option('--source <id>', 'Only scan one source (claude-code, opencode)')
   .option('--project <name...>', 'Only sessions whose project path contains this (repeatable)')
@@ -149,7 +150,7 @@ program
   .option('--extractor <kind>', 'Extractor: local | host | openai')
   .option('-y, --yes', 'Skip the confirm step and process everything (for agents/scripts)')
   .option('--dry-run', 'Quick scan: preview scope without processing or confirming')
-  .action(async (opts) => {
+  .action(async (pathArg: string | undefined, opts) => {
     try {
       const onDownload = async (entry: { id: string; sizeMb: number }) => {
         if (!process.stdin.isTTY) return false;
@@ -193,7 +194,7 @@ program
       const extractor: 'local' | 'host' | 'openai' | undefined =
         opts.extractor === 'ollama' ? 'openai' : opts.extractor;
 
-      const result = await grab(process.cwd(), {
+      const result = await grab(pathArg ? resolve(pathArg) : process.cwd(), {
         limit: opts.limit,
         source: opts.source,
         project: opts.project,
