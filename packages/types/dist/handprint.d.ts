@@ -9,6 +9,41 @@ export declare const SUBTYPES_BY_TYPE: {
     readonly choice: readonly ["approval", "override", "rejection", "constraint", "inquiry"];
     readonly method: readonly ["tool", "knowledge", "process"];
 };
+/**
+ * The taxonomy of human influence, as a single source of truth consumed by the
+ * extraction prompt (as a glossary) and by handprint-web (as subtype
+ * definitions). vision = intent (why), choice = decision (what), method =
+ * know-how (how). Keys MUST match HANDPRINT_TYPES and SUBTYPES_BY_TYPE; a test
+ * enforces full coverage.
+ */
+export declare const TAXONOMY: {
+    readonly vision: {
+        readonly definition: "The human's intent: what they want to be true.";
+        readonly subtypes: {
+            readonly goal: "A concrete outcome the human is aiming for.";
+            readonly direction: "The heading the human sets; where the work should trend.";
+            readonly principle: "A durable value the human holds that governs their choices.";
+        };
+    };
+    readonly choice: {
+        readonly definition: "A fork the human resolved: a decision that shaped the work.";
+        readonly subtypes: {
+            readonly approval: "The human endorsed a specific path or artifact.";
+            readonly override: "The human chose one option over an alternative.";
+            readonly rejection: "The human ruled something out.";
+            readonly constraint: "The human imposed a hard rule or limit that bounds the work.";
+            readonly inquiry: "A pointed question from the human that redirected the work.";
+        };
+    };
+    readonly method: {
+        readonly definition: "The know-how the human brought: how the work got done.";
+        readonly subtypes: {
+            readonly tool: "A named tool, technology, service, or category the human chose.";
+            readonly knowledge: "A fact or principle from the human's experience.";
+            readonly process: "A technique or way of working the human applied.";
+        };
+    };
+};
 export declare const MARK_NOTE_MAX: 48;
 export declare const ARTIFACT_TYPES: readonly ["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"];
 export declare const handprintTypeSchema: z.ZodEnum<["vision", "choice", "method"]>;

@@ -19,6 +19,42 @@ export const SUBTYPES_BY_TYPE = {
   method: METHOD_SUBTYPES,
 } as const;
 
+/**
+ * The taxonomy of human influence, as a single source of truth consumed by the
+ * extraction prompt (as a glossary) and by handprint-web (as subtype
+ * definitions). vision = intent (why), choice = decision (what), method =
+ * know-how (how). Keys MUST match HANDPRINT_TYPES and SUBTYPES_BY_TYPE; a test
+ * enforces full coverage.
+ */
+export const TAXONOMY = {
+  vision: {
+    definition: "The human's intent: what they want to be true.",
+    subtypes: {
+      goal: 'A concrete outcome the human is aiming for.',
+      direction: 'The heading the human sets; where the work should trend.',
+      principle: 'A durable value the human holds that governs their choices.',
+    },
+  },
+  choice: {
+    definition: 'A fork the human resolved: a decision that shaped the work.',
+    subtypes: {
+      approval: 'The human endorsed a specific path or artifact.',
+      override: 'The human chose one option over an alternative.',
+      rejection: 'The human ruled something out.',
+      constraint: 'The human imposed a hard rule or limit that bounds the work.',
+      inquiry: 'A pointed question from the human that redirected the work.',
+    },
+  },
+  method: {
+    definition: 'The know-how the human brought: how the work got done.',
+    subtypes: {
+      tool: 'A named tool, technology, service, or category the human chose.',
+      knowledge: "A fact or principle from the human's experience.",
+      process: 'A technique or way of working the human applied.',
+    },
+  },
+} as const;
+
 export const MARK_NOTE_MAX = 48 as const;
 
 // ── Artifact constants ───────────────────────────────────────
