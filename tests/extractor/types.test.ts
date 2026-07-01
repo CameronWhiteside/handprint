@@ -1,6 +1,7 @@
 // tests/extractor/types.test.ts
 import { describe, it, expect } from 'vitest';
 import { parseExtractionJson } from '../../src/extractor/types.js';
+import { MARK_NOTE_MAX } from '@handprint/types';
 
 describe('parseExtractionJson', () => {
   it('parses valid marks and drops invalid ones', () => {
@@ -34,7 +35,7 @@ describe('parseExtractionJson', () => {
 // Item 11: note-length salvage
 describe('parseExtractionJson note-length salvage', () => {
   it('keeps a mark whose note exceeds MARK_NOTE_MAX by truncating to the max', () => {
-    const longNote = 'x'.repeat(400); // 400 > MARK_NOTE_MAX (280)
+    const longNote = 'x'.repeat(400); // 400 > MARK_NOTE_MAX
     const text = JSON.stringify([{
       marks: [{ type: 'choice', subtype: 'override', note: longNote }],
       artifacts: [],
@@ -43,8 +44,8 @@ describe('parseExtractionJson note-length salvage', () => {
     const out = parseExtractionJson(text);
     expect(out).toHaveLength(1);
     expect(out[0].marks).toHaveLength(1);
-    expect(out[0].marks[0].note.length).toBe(280);
-    expect(out[0].marks[0].note).toBe(longNote.slice(0, 280));
+    expect(out[0].marks[0].note.length).toBe(MARK_NOTE_MAX);
+    expect(out[0].marks[0].note).toBe(longNote.slice(0, MARK_NOTE_MAX));
   });
 
   it('still drops marks with a genuinely invalid enum (bad type), not just a long note', () => {
@@ -84,6 +85,20 @@ describe('parseExtractionJson requireLeadingArray', () => {
   });
 });
 
+describe('note length cap', () => {
+  it('truncates an over-length note to MARK_NOTE_MAX instead of dropping the mark', () => {
+    const longNote = 'x'.repeat(120);
+    const json = JSON.stringify([
+      { marks: [{ type: 'choice', subtype: 'override', note: longNote }], artifacts: [], timestamp: '2026-06-01T10:00:00Z' },
+    ]);
+    const out = parseExtractionJson(json);
+    expect(out).toHaveLength(1);
+    expect(out[0].marks).toHaveLength(1);
+    expect(out[0].marks[0].note.length).toBeLessThanOrEqual(MARK_NOTE_MAX);
+    expect(MARK_NOTE_MAX).toBe(48);
+  });
+});
+
 // Item 4: ISO-8601 timestamp validation
 describe('parseExtractionJson timestamp validation', () => {
   it('rejects SQL-injection-style timestamp and falls back to valid ISO string', () => {
@@ -109,5 +124,30 @@ describe('parseExtractionJson timestamp validation', () => {
     // '2026-06-01' does not match /^\d{4}-\d{2}-\d{2}T/ so should fall back.
     expect(out[0].timestamp).not.toBe('2026-06-01');
     expect(/^\d{4}-\d{2}-\d{2}T/.test(out[0].timestamp)).toBe(true);
+  });
+});
+
+describe('atomic-mark fan-out', () => {
+  it('keeps many marks in one handprint spanning vision/choice/method', () => {
+    const json = JSON.stringify([
+      {
+        marks: [
+          { type: 'choice', subtype: 'override', note: 'Postgres over MongoDB' },
+          { type: 'vision', subtype: 'goal', note: 'Maintain transaction integrity' },
+          { type: 'vision', subtype: 'principle', note: 'Transactions must be reliable' },
+          { type: 'method', subtype: 'tool', note: 'Postgres' },
+          { type: 'method', subtype: 'knowledge', note: 'Postgres has stronger transactions' },
+        ],
+        artifacts: [],
+        timestamp: '2026-06-01T10:00:00Z',
+      },
+    ]);
+    const out = parseExtractionJson(json);
+    expect(out).toHaveLength(1);
+    expect(out[0].marks.length).toBeGreaterThanOrEqual(4);
+    const types = new Set(out[0].marks.map((m) => m.type));
+    expect(types.has('vision')).toBe(true);
+    expect(types.has('choice')).toBe(true);
+    expect(types.has('method')).toBe(true);
   });
 });

@@ -13,6 +13,7 @@ import {
   SUBTYPES_BY_TYPE,
   subtypeSchemaForType,
   MARK_NOTE_MAX,
+  TAXONOMY,
 } from '../handprint.js';
 
 // ── Mark schemas ────────────────────────────────────────────────
@@ -63,7 +64,7 @@ describe('markSchema', () => {
     expect(result.success).toBe(false);
   });
 
-  it('rejects a note over 280 chars', () => {
+  it('rejects a note over MARK_NOTE_MAX chars', () => {
     const result = markSchema.safeParse({
       type: 'vision',
       subtype: 'goal',
@@ -307,5 +308,20 @@ describe('constants', () => {
   it('subtypeSchemaForType(vision) rejects tool', () => {
     const schema = subtypeSchemaForType('vision');
     expect(schema.safeParse('tool').success).toBe(false);
+  });
+});
+
+describe('TAXONOMY source of truth', () => {
+  it('defines every type and every subtype (no gaps)', () => {
+    for (const type of HANDPRINT_TYPES) {
+      const entry = TAXONOMY[type];
+      expect(entry.definition.length).toBeGreaterThan(0);
+      // Use Object.keys (string[]) rather than indexing the subtypes object with
+      // a union key, which does not typecheck cleanly under strict settings.
+      const definedSubtypes = Object.keys(entry.subtypes);
+      for (const subtype of SUBTYPES_BY_TYPE[type]) {
+        expect(definedSubtypes).toContain(subtype);
+      }
+    }
   });
 });
