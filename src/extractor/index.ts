@@ -8,6 +8,7 @@ import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
 import { createOllamaProvider } from './ollama.js';
 import { DEFAULT_MODEL_ID } from './models.js';
+import { dedupeMarks } from './dedupe.js';
 
 export * from './types.js';
 export { MODELS, DEFAULT_MODEL_ID } from './models.js';
@@ -89,6 +90,8 @@ export async function extractFromEntries(
   if (attempted > 0 && errored === attempted) {
     throw new Error(`extraction failed for all ${attempted} chunks (last error: ${lastMsg})`);
   }
-  return all;
+  // Dedupe near-duplicate marks ACROSS this session's chunks (same decision,
+  // re-described in a later chunk shouldn't produce a second chip).
+  return dedupeMarks(all);
 }
 
