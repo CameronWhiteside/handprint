@@ -2,6 +2,14 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.0] - 2026-07-01
+
+### Changed
+- Extraction now decomposes each human decision into many tiny, standalone marks (typically 4-8 per decision) instead of one long sentence. Notes target ~5 words; `MARK_NOTE_MAX` dropped from 280 to 48 (over-length notes are truncated, never dropped). The `vision` / `choice` / `method` taxonomy is unchanged.
+
+### Added
+- `TAXONOMY` in `@handprint/types`: a single source of truth mapping every type and subtype to a concise, human-centered definition. The extraction prompt interpolates it as a glossary (so the model learns what each subtype means), and it is available to consumers (e.g. handprint-web) for subtype definitions.
+
 ## [0.4.9] - 2026-06-30
 
 ### Added
