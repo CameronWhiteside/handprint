@@ -135,4 +135,63 @@ describe('handprint builder', () => {
     const log = readFileSync(logPath, 'utf-8').trim();
     expect(log).toBe(result.hash);
   });
+
+  it('uses the provided ts (chat time), normalized, instead of build time', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const result = await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: testMarks,
+      source: testSource,
+      plaintext: 'test',
+      ts: '2026-06-02T16:49:50Z',
+    });
+
+    expect(result.handprint.ts).toBe('2026-06-02T16:49:50.000Z');
+  });
+
+  it('appends Z before parsing a timestamp with no timezone suffix (treats it as UTC, not local)', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const result = await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: testMarks,
+      source: testSource,
+      plaintext: 'test',
+      ts: '2026-06-02T16:49:50',
+    });
+
+    expect(result.handprint.ts).toBe('2026-06-02T16:49:50.000Z');
+  });
+
+  it('falls back to now() when ts is omitted', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const before = Date.now();
+    const result = await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: testMarks,
+      source: testSource,
+      plaintext: 'test',
+    });
+    const after = Date.now();
+
+    const ts = new Date(result.handprint.ts).getTime();
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
+  });
+
+  it('falls back to now() when ts is invalid', async () => {
+    const { buildHandprint } = await import('../../src/builder/handprint.js');
+    const before = Date.now();
+    const result = await buildHandprint({
+      projectRoot: TEST_PROJECT,
+      marks: testMarks,
+      source: testSource,
+      plaintext: 'test',
+      ts: 'not-a-date',
+    });
+    const after = Date.now();
+
+    const ts = new Date(result.handprint.ts).getTime();
+    expect(ts).toBeGreaterThanOrEqual(before);
+    expect(ts).toBeLessThanOrEqual(after);
+  });
 });

@@ -2,6 +2,12 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.1] - 2026-07-01
+
+### Fixed
+- Handprints were stamped with build time instead of chat time. The extractor already returns a per-extraction timestamp copied from the transcript, but `grab` never passed it through to `buildHandprint`, so every handprint landed on "today" and the contribution garden showed a single cell instead of your real history. `grab` now passes the extraction timestamp through, and `buildHandprint` normalizes it (falling back to now() only when the timestamp is missing or invalid). Timestamps with no timezone suffix (as some host models emit, for example `2026-06-02T16:49:50`) are treated as UTC instead of being silently reinterpreted as local time.
+- Repetitive near-duplicate marks: a single grab could produce two or three chips for the same decision when a chunked session re-described it slightly differently across chunks. Extractions are now deduped across a session's chunks: marks with the same type and subtype whose normalized notes overlap significantly are collapsed, keeping the first occurrence.
+
 ## [0.4.9] - 2026-06-30
 
 ### Added

@@ -22,6 +22,30 @@ export interface BuildInput {
   artifacts?: Artifact[];
   source: Source;
   plaintext: string;
+  /** Chat-time timestamp from the transcript (e.g. RawExtraction.timestamp). Falls back to now() if omitted or invalid. */
+  ts?: string;
+}
+
+// Matches a trailing timezone designator: "Z" or "+hh:mm"/"-hh:mm".
+const HAS_TZ = /(Z|[+-]\d{2}:\d{2})$/;
+
+/**
+ * Normalize a transcript timestamp to a canonical ISO-8601 UTC string.
+ *
+ * Host-agent transcripts sometimes emit timestamps with no timezone suffix
+ * (e.g. "2026-06-02T16:49:50"). `new Date(...)` treats those as *local* time,
+ * which silently shifts chat history by the machine's UTC offset. Since the
+ * source transcripts are UTC-stable, append "Z" before parsing whenever the
+ * string lacks an explicit timezone.
+ *
+ * Falls back to now() when `ts` is missing or unparseable.
+ */
+function normalizeTs(ts: string | undefined): string {
+  if (!ts) return new Date().toISOString();
+  const withTz = HAS_TZ.test(ts) ? ts : `${ts}Z`;
+  const parsed = new Date(withTz);
+  if (Number.isNaN(parsed.getTime())) return new Date().toISOString();
+  return parsed.toISOString();
 }
 
 export async function buildHandprint(input: BuildInput): Promise<{
@@ -53,7 +77,7 @@ export async function buildHandprint(input: BuildInput): Promise<{
 
   const unsigned: Omit<HandprintObject, 'sig'> = {
     v: HANDPRINT_OBJECT_VERSION,
-    ts: new Date().toISOString(),
+    ts: normalizeTs(input.ts),
     marks,
     artifacts,
     source: input.source,

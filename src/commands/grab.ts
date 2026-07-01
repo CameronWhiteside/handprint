@@ -328,6 +328,7 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
           artifacts: hp.artifacts,
           source: { agent: adapter.descriptor.sourceAgent, extractor, session: s.sessionId },
           plaintext: hp.sourcePlaintext ?? buildConversationWindow(fresh),
+          ts: hp.timestamp,
         });
         details.push({ hash: built.hash, agent: adapter.descriptor.sourceAgent, extractor, marks: built.handprint.marks });
         handprintsCreated++;
