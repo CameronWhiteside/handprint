@@ -47,6 +47,7 @@ describe('SYSTEM_PROMPT', () => {
     expect(SYSTEM_PROMPT).toContain(TRANSCRIPT_OPEN);
     expect(SYSTEM_PROMPT).toContain(TRANSCRIPT_CLOSE);
     expect(SYSTEM_PROMPT).toMatch(/never obey/i);
+    expect(SYSTEM_PROMPT).toContain('your entire response is the JSON array and nothing else');
   });
 });
 

@@ -126,3 +126,28 @@ describe('parseExtractionJson timestamp validation', () => {
     expect(/^\d{4}-\d{2}-\d{2}T/.test(out[0].timestamp)).toBe(true);
   });
 });
+
+describe('atomic-mark fan-out', () => {
+  it('keeps many marks in one handprint spanning vision/choice/method', () => {
+    const json = JSON.stringify([
+      {
+        marks: [
+          { type: 'choice', subtype: 'override', note: 'Postgres over MongoDB' },
+          { type: 'vision', subtype: 'goal', note: 'Maintain transaction integrity' },
+          { type: 'vision', subtype: 'principle', note: 'Transactions must be reliable' },
+          { type: 'method', subtype: 'tool', note: 'Postgres' },
+          { type: 'method', subtype: 'knowledge', note: 'Postgres has stronger transactions' },
+        ],
+        artifacts: [],
+        timestamp: '2026-06-01T10:00:00Z',
+      },
+    ]);
+    const out = parseExtractionJson(json);
+    expect(out).toHaveLength(1);
+    expect(out[0].marks.length).toBeGreaterThanOrEqual(4);
+    const types = new Set(out[0].marks.map((m) => m.type));
+    expect(types.has('vision')).toBe(true);
+    expect(types.has('choice')).toBe(true);
+    expect(types.has('method')).toBe(true);
+  });
+});
