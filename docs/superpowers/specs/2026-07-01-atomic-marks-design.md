@@ -41,6 +41,7 @@ Granularity target, worked examples:
 
 - `choice/override` "Postgres over MongoDB"
 - `vision/goal` "Maintain transaction integrity"
+- `vision/principle` "Transactions must be reliable"
 - `method/tool` "Postgres"
 - `method/tool` "MongoDB"
 - `method/tool` "SQL vs NoSQL"
@@ -50,9 +51,12 @@ Granularity target, worked examples:
 
 - `vision/goal` "Unify tag management"
 - `vision/direction` "Consistent cross-platform tracking"
+- `vision/principle` "Consistency reduces tracking bugs"
 - `choice/override` "Reuse one GTM container ID"
 - `method/tool` "Google Tag Manager"
 - `method/knowledge` "Shared GTM containers stay consistent"
+
+Every subtype should be teachable from short examples. The prompt includes a one-line flavor for each of the 11 subtypes (see section 2), so `direction`, `principle`, `approval`, `rejection`, `constraint`, `inquiry`, and `process` are all demonstrated, not just `override`/`tool`/`knowledge`.
 
 ## 2. Prompt rewrite (one pass)
 
@@ -68,14 +72,29 @@ New behavioral rules to add:
 Replace the single-example section with two worked few-shot examples that show the full explosion, aligned to the real output envelope (`{ "marks": [...], "artifacts": [...], "timestamp": ... }`). Draft:
 
 ```
+SUBTYPE FLAVORS  (one atomic mark each; ~5 words; standalone)
+  vision/goal        an outcome to reach             "Maintain transaction integrity"
+  vision/direction   where the work should head      "Move toward event-driven design"
+  vision/principle   a value the human holds         "Correctness beats performance"
+  choice/approval    endorsed a specific path        "Approved the Stripe integration"
+  choice/override    picked one option over another  "Postgres over MongoDB"
+  choice/rejection   ruled something out             "No microservices yet"
+  choice/constraint  a hard rule or limit            "Never store plaintext secrets"
+  choice/inquiry     a pointed, shaping question     "Why not use a queue?"
+  method/tool        a named tool, tech, or category "Google Tag Manager"
+  method/knowledge   a principle from experience     "Shared containers stay consistent"
+  method/process     a technique or way of working   "Refactor prompts for shorter output"
+
 DECOMPOSE, DON'T SUMMARIZE
 One decision usually becomes several marks. Emit one handprint whose "marks"
-array holds every atomic facet.
+array holds every atomic facet: the outcome, the principle behind it, the
+decision, each tool or category, and any hard-won knowledge.
 
 Example. Human: "use Postgres, not Mongo, we need transactions"
 [{"marks":[
   {"type":"choice","subtype":"override","note":"Postgres over MongoDB"},
   {"type":"vision","subtype":"goal","note":"Maintain transaction integrity"},
+  {"type":"vision","subtype":"principle","note":"Transactions must be reliable"},
   {"type":"method","subtype":"tool","note":"Postgres"},
   {"type":"method","subtype":"tool","note":"MongoDB"},
   {"type":"method","subtype":"tool","note":"SQL vs NoSQL"},
@@ -87,6 +106,7 @@ careers for consistency"
 [{"marks":[
   {"type":"vision","subtype":"goal","note":"Unify tag management"},
   {"type":"vision","subtype":"direction","note":"Consistent cross-platform tracking"},
+  {"type":"vision","subtype":"principle","note":"Consistency reduces tracking bugs"},
   {"type":"choice","subtype":"override","note":"Reuse one GTM container ID"},
   {"type":"method","subtype":"tool","note":"Google Tag Manager"},
   {"type":"method","subtype":"knowledge","note":"Shared GTM containers stay consistent"}
