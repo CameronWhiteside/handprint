@@ -106,15 +106,16 @@ File: `packages/types/src/handprint.ts`.
 - The parser (`parseExtractionJson` in `src/extractor/types.ts`) already salvages an over-length note by truncating to `MARK_NOTE_MAX` and re-validating, so a mark is never dropped for being too long.
 - Rebuild `packages/types` so its `dist` carries the new value (the CLI imports it).
 
-## 4. handprint-web: type and subtype first-class
+## 4. handprint-web: a transparent, humanized view of the mark data
 
-Repo: handprint-web. Since a handprint now holds many marks, replace the single-sentence mark rendering with a **dense grid of atomic chips**:
+Principle: the web shows the same JSON data as faithfully as possible, just prettified. It reveals the actual structure and hierarchy of the record rather than abstracting or summarizing it. The display maps one-to-one to the data; do not transform, only humanize.
 
-- Group marks by `type` (vision / choice / method) as visual color groups.
-- Show the `subtype` as a prominent label on each chip (subtype is the meaningful axis).
+- **Faithful:** every field a handprint carries is visible: each mark's `type`, `subtype`, and `note`; the `artifacts`; the `timestamp`. No lossy rewrite back into a sentence.
+- **Hierarchy:** render the handprint as the container with its `marks` nested inside, so the one-to-many relationship (one handprint, many marks) is obvious at a glance, and artifacts and timestamp sit at the handprint level.
+- **Humanized:** a mark renders as a chip = `type` (color group) + `subtype` (prominent label) + `note` (the ~5 words). Marks group by `type` (vision / choice / method); `subtype` is the meaningful labeling axis. Prettify with color, grouping, and readable typography, but never at the cost of transparency.
 - Applies wherever marks render: the public profile (`/u/[handle]`), the dashboard, and the handprint detail view.
 
-This is a separate, mechanical implementation piece and gets its own plan and PR **after** the extraction change lands, so richer marks exist to display.
+This is in scope for this spec. It ships as a second PR (see section 7) after the extraction change lands, so richer marks exist to display.
 
 ## 5. Backward compatibility
 
