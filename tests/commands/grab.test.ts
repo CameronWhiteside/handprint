@@ -159,6 +159,21 @@ describe('grab scan / confirm / target', () => {
     expect(res.plan.estTokensIn).toBeGreaterThan(0);
   });
 
+  it('stamps the handprint with the extraction (chat) timestamp, not build time', async () => {
+    const res = await grab(TEST_PROJECT, { homeDir: CLAUDE_HOME, yes: true, provider: fakeProvider(), log: () => {} });
+    expect(res.handprintsCreated).toBe(1);
+
+    const { readObject } = await import('../../src/store/objects.js');
+    const { projectDir } = await import('../../src/dirs/project.js');
+    const hpDir = projectDir(TEST_PROJECT);
+    const stored = readObject(hpDir, res.details[0].hash);
+
+    // fakeProvider's extraction timestamp is '2026-06-01T10:00:00Z'; the stored
+    // handprint must reflect that, not Date.now() at grab-time.
+    expect(stored).not.toBeNull();
+    expect(stored?.ts).toBe('2026-06-01T10:00:00.000Z');
+  });
+
   it('aborts with a clear reason when the runtime is not ready (no processing, no download)', async () => {
     const extract = vi.fn(async () => []);
     const provider: ExtractorProvider = {
