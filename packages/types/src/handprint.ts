@@ -19,7 +19,7 @@ export const SUBTYPES_BY_TYPE = {
   method: METHOD_SUBTYPES,
 } as const;
 
-export const MARK_NOTE_MAX = 280 as const;
+export const MARK_NOTE_MAX = 48 as const;
 
 // ── Artifact constants ───────────────────────────────────────
 

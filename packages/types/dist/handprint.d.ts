@@ -9,7 +9,7 @@ export declare const SUBTYPES_BY_TYPE: {
     readonly choice: readonly ["approval", "override", "rejection", "constraint", "inquiry"];
     readonly method: readonly ["tool", "knowledge", "process"];
 };
-export declare const MARK_NOTE_MAX: 280;
+export declare const MARK_NOTE_MAX: 48;
 export declare const ARTIFACT_TYPES: readonly ["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"];
 export declare const handprintTypeSchema: z.ZodEnum<["vision", "choice", "method"]>;
 export type HandprintType = z.infer<typeof handprintTypeSchema>;

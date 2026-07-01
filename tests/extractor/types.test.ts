@@ -1,6 +1,7 @@
 // tests/extractor/types.test.ts
 import { describe, it, expect } from 'vitest';
 import { parseExtractionJson } from '../../src/extractor/types.js';
+import { MARK_NOTE_MAX } from '@handprint/types';
 
 describe('parseExtractionJson', () => {
   it('parses valid marks and drops invalid ones', () => {
@@ -34,7 +35,7 @@ describe('parseExtractionJson', () => {
 // Item 11: note-length salvage
 describe('parseExtractionJson note-length salvage', () => {
   it('keeps a mark whose note exceeds MARK_NOTE_MAX by truncating to the max', () => {
-    const longNote = 'x'.repeat(400); // 400 > MARK_NOTE_MAX (280)
+    const longNote = 'x'.repeat(400); // 400 > MARK_NOTE_MAX
     const text = JSON.stringify([{
       marks: [{ type: 'choice', subtype: 'override', note: longNote }],
       artifacts: [],
@@ -43,8 +44,8 @@ describe('parseExtractionJson note-length salvage', () => {
     const out = parseExtractionJson(text);
     expect(out).toHaveLength(1);
     expect(out[0].marks).toHaveLength(1);
-    expect(out[0].marks[0].note.length).toBe(280);
-    expect(out[0].marks[0].note).toBe(longNote.slice(0, 280));
+    expect(out[0].marks[0].note.length).toBe(MARK_NOTE_MAX);
+    expect(out[0].marks[0].note).toBe(longNote.slice(0, MARK_NOTE_MAX));
   });
 
   it('still drops marks with a genuinely invalid enum (bad type), not just a long note', () => {
@@ -81,6 +82,20 @@ describe('parseExtractionJson requireLeadingArray', () => {
     const text = '   [{"marks":[{"type":"choice","subtype":"approval","note":"ws ok"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]';
     const out = parseExtractionJson(text, { requireLeadingArray: true });
     expect(out).toHaveLength(1);
+  });
+});
+
+describe('note length cap', () => {
+  it('truncates an over-length note to MARK_NOTE_MAX instead of dropping the mark', () => {
+    const longNote = 'x'.repeat(120);
+    const json = JSON.stringify([
+      { marks: [{ type: 'choice', subtype: 'override', note: longNote }], artifacts: [], timestamp: '2026-06-01T10:00:00Z' },
+    ]);
+    const out = parseExtractionJson(json);
+    expect(out).toHaveLength(1);
+    expect(out[0].marks).toHaveLength(1);
+    expect(out[0].marks[0].note.length).toBeLessThanOrEqual(MARK_NOTE_MAX);
+    expect(MARK_NOTE_MAX).toBe(48);
   });
 });
 

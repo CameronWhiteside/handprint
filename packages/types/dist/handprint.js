@@ -14,7 +14,7 @@ export const SUBTYPES_BY_TYPE = {
     choice: CHOICE_SUBTYPES,
     method: METHOD_SUBTYPES,
 };
-export const MARK_NOTE_MAX = 280;
+export const MARK_NOTE_MAX = 48;
 // ── Artifact constants ───────────────────────────────────────
 export const ARTIFACT_TYPES = [
     'git-commit',
