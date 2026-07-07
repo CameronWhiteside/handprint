@@ -1,10 +1,10 @@
 # handprint
 
-Human decision provenance for the age of AI. *(npm package: `handprint-sh`)*
+A signed, hash-linked record of the human decisions behind your AI-assisted work. *(npm package: `handprint-sh`)*
 
 handprint captures the decisions you and your AI make (what you chose, why, and what you ruled out) and records them in a hash-linked chain, each entry signed with your local key. Your handprint stays with your work.
 
-> **Why this exists.** A record of *who decided what* should keep humans in the loop rather than erase them. handprint is built on the [Human Provenance Covenant](./COVENANT.md): respect people's data, credit their judgment, and use their provenance to benefit *them* rather than to train systems that route around them. See [License & Covenant](#license--covenant).
+> **Why this exists.** As AI writes more of the work, a record of who actually decided what helps keep people in the loop. handprint is built on the [Human Provenance Covenant](./COVENANT.md): respect people's data, credit their judgment, and use their provenance to benefit *them* rather than to train systems that route around them. See [License & Covenant](#license--covenant).
 
 ## Install
 
