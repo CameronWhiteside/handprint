@@ -1,4 +1,10 @@
 import { describe, it, expect } from 'vitest';
+import {
+  VISION_SUBTYPES,
+  CHOICE_SUBTYPES,
+  METHOD_SUBTYPES,
+  ARTIFACT_TYPES,
+} from '@handprint/types';
 import { EXTRACTION_GBNF } from '../../src/extractor/grammar.js';
 
 describe('extraction grammar', () => {
@@ -35,5 +41,21 @@ describe('extraction grammar', () => {
 
   it('dispatches mark to the three coupled sub-rules', () => {
     expect(EXTRACTION_GBNF).toContain('mark          ::= vision-mark | choice-mark | method-mark');
+  });
+
+  // Drift guard: the grammar is generated from @handprint/types, so every enum
+  // value must appear. If someone adds a subtype to the taxonomy, this fails
+  // until the grammar picks it up (it does automatically now), and if someone
+  // reverts the grammar to a hardcoded copy that misses a value, this catches it.
+  it('stays in sync with every @handprint/types enum value', () => {
+    const all = [
+      ...VISION_SUBTYPES,
+      ...CHOICE_SUBTYPES,
+      ...METHOD_SUBTYPES,
+      ...ARTIFACT_TYPES,
+    ];
+    for (const value of all) {
+      expect(EXTRACTION_GBNF).toContain(`"${value}"`);
+    }
   });
 });
