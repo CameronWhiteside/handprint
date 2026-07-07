@@ -111,19 +111,7 @@ handprint skill uninstall --project
 
 Set `HANDPRINT_NO_SKILL_SYNC=1` to disable the automatic background sync.
 
-Then in Claude Code run `/handprint` (or just say "handprint this"). The skill asks how far back to capture (Today by default), previews the size and token estimate, captures the decisions (`grab`), and publishes them (`push`) as unlisted, logging you in if needed. It is only an orchestration of the CLI primitives. Nothing runs in the background; capture happens when you ask.
-
-## Visibility (private / unlisted / public)
-
-Visibility is a property of the handprint.sh hub, not of the protocol or the signed record. Nothing in the local chain or the cryptographic handprint encodes a visibility level.
-
-When you push a handprint, the hub assigns it a visibility:
-
-- **unlisted (default):** metadata is searchable, but the handprint does not appear on your public profile page. Share the direct link to show it selectively.
-- **public:** listed on your public profile and discoverable.
-- **private:** hidden; only you can see it.
-
-You set or change visibility from the hub dashboard after pushing. The CLI does not read or write visibility.
+Then in Claude Code run `/handprint` (or just say "handprint this"). The skill asks how far back to capture (Today by default), previews the size and token estimate, captures the decisions (`grab`), and publishes them (`push`), logging you in if needed. It is only an orchestration of the CLI primitives. Nothing runs in the background; capture happens when you ask.
 
 ## Security & privacy
 
