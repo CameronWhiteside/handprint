@@ -5,6 +5,7 @@ import { createWriteStream, createReadStream, mkdirSync, renameSync, unlinkSync 
 import { Readable } from 'node:stream';
 import { pipeline } from 'node:stream/promises';
 import type { ReadableStream as WebReadableStream } from 'node:stream/web';
+import type { LlamaContextSequence, LlamaGrammar } from 'node-llama-cpp';
 import type { ExtractorProvider, RawExtraction } from './types.js';
 import { parseExtractionJson } from './types.js';
 import { buildUserPrompt } from './prompt.js';
@@ -99,6 +100,12 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
   const entry = modelById(opts.modelId);
   if (!entry) throw new Error(`unknown model: ${opts.modelId}`);
 
+  // Loading the model is the expensive part (seconds, plus a one-line log
+  // warning from llama.cpp's tokenizer check). Cache it and the grammar and
+  // sequence across extract() calls in this process instead of reloading
+  // per chunk; only the chat history is reset between chunks.
+  let ready: Promise<{ sequence: LlamaContextSequence; grammar: LlamaGrammar }> | undefined;
+
   return {
     id: 'local-model',
     label: () => `local:${entry.id}`,
@@ -135,34 +142,46 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
     },
 
     async extract(window: string, system: string): Promise<RawExtraction[]> {
-      const ready = await ensureModel(entry, opts.homeDir, opts.onDownload);
-      if (!ready) throw new Error('local model not available, run "handprint grab" to download it');
+      const downloaded = await ensureModel(entry, opts.homeDir, opts.onDownload);
+      if (!downloaded) throw new Error('local model not available, run "handprint grab" to download it');
 
-      // node-llama-cpp is not bundled or installed by default; local-model users
-      // add it with `npm i -g node-llama-cpp`. Lazy import keeps it off the hot
-      // path and lets us give a clear hint if it is missing.
-      const llamaModule = await import('node-llama-cpp').catch(() => {
-        throw new Error(
-          'the local model needs node-llama-cpp, which is not installed.\n' +
-            'install it once with:  npm i -g node-llama-cpp\n' +
-            'or switch to a host agent:  handprint config set extraction.provider host',
-        );
-      });
-      const { getLlama, LlamaChatSession } = llamaModule;
-      const llama = await getLlama();
-      const model = await llama.loadModel({ modelPath: modelPath(entry, opts.homeDir) });
-      const context = await model.createContext();
-      const grammar = await llama.createGrammar({ grammar: EXTRACTION_GBNF });
-      const session = new LlamaChatSession({ contextSequence: context.getSequence(), systemPrompt: system });
-      const prompt = buildUserPrompt(window);
-      let answer: string;
-      try {
-        answer = await session.prompt(prompt, { grammar, maxTokens: 4096 });
-      } finally {
-        await context.dispose();
-        await model.dispose();
+      // Model load takes seconds and logs a one-line tokenizer warning; do it
+      // once per process and reuse across every chunk instead of per-extract().
+      if (!ready) {
+        ready = (async () => {
+          // node-llama-cpp is not bundled or installed by default; local-model users
+          // add it with `npm i -g node-llama-cpp`. Lazy import keeps it off the hot
+          // path and lets us give a clear hint if it is missing.
+          const llamaModule = await import('node-llama-cpp').catch(() => {
+            throw new Error(
+              'the local model needs node-llama-cpp, which is not installed.\n' +
+                'install it once with:  npm i -g node-llama-cpp\n' +
+                'or switch to a host agent:  handprint config set extraction.provider host',
+            );
+          });
+          const { getLlama, LlamaLogLevel } = llamaModule;
+          const llama = await getLlama({ logLevel: LlamaLogLevel.error });
+          const model = await llama.loadModel({ modelPath: modelPath(entry, opts.homeDir) });
+          const context = await model.createContext();
+          const grammar = await llama.createGrammar({ grammar: EXTRACTION_GBNF });
+          return { sequence: context.getSequence(), grammar };
+        })();
       }
-      return parseExtractionJson(answer);
+      const { sequence, grammar } = await ready;
+
+      const llamaModule = await import('node-llama-cpp');
+      const { LlamaChatSession } = llamaModule;
+      // Each chunk is an independent extraction: reuse the loaded model/context
+      // but dispose the chat history (not the sequence) after every call so
+      // one chunk's content never leaks into the next chunk's prompt.
+      const session = new LlamaChatSession({ contextSequence: sequence, systemPrompt: system });
+      const prompt = buildUserPrompt(window);
+      try {
+        const answer = await session.prompt(prompt, { grammar, maxTokens: 4096 });
+        return parseExtractionJson(answer);
+      } finally {
+        session.dispose({ disposeSequence: false });
+      }
     },
   };
 }
