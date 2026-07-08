@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.1] - 2026-07-08
+
+### Added
+- `handprint purge`: delete all your handprints from the hub (with a typed confirmation, or `--force`). Pairs with `handprint reset` (which clears the local chain) for a clean re-grab — e.g. to re-attribute existing history now that grab infers artifacts.
+
 ## [0.6.0] - 2026-07-08
 
 ### Added

@@ -9,6 +9,7 @@ import { grab } from '../src/commands/grab.js';
 import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
 import { agentBrand } from '../src/extractor/host-agent.js';
 import { push } from '../src/commands/push.js';
+import { purge } from '../src/commands/purge.js';
 import { verifyChain } from '../src/commands/verify.js';
 import { listHandprints } from '../src/commands/log.js';
 import { showHandprint } from '../src/commands/show.js';
@@ -315,6 +316,33 @@ program
       );
     } catch (err) {
       console.error((err as Error).message);
+      process.exit(1);
+    }
+  });
+
+program
+  .command('purge')
+  .description('Delete ALL your handprints from the hub (local chain untouched; use `reset` for that)')
+  .option('--force', 'Skip the confirmation prompt')
+  .action(async (opts) => {
+    try {
+      if (!opts.force) {
+        if (!process.stdin.isTTY) {
+          console.log('Refusing to purge without a terminal to confirm. Re-run with --force.');
+          return;
+        }
+        const rl = createInterface({ input: process.stdin, output: process.stdout });
+        const answer = await rl.question('This deletes ALL your handprints from the hub. Type "purge" to confirm: ');
+        rl.close();
+        if (answer.trim() !== 'purge') {
+          console.log('cancelled.');
+          return;
+        }
+      }
+      const result = await purge();
+      console.log(`purged ${result.purged} handprint(s) from the hub`);
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
       process.exit(1);
     }
   });

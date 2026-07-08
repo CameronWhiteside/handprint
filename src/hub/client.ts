@@ -9,6 +9,7 @@ export interface BatchPushResult {
 export interface HubClient {
   pushHandprint(handprint: PushHandprintInput): Promise<{ ok: boolean }>;
   pushHandprints(batch: PushHandprintInput[]): Promise<BatchPushResult>;
+  purge(): Promise<{ purged: number }>;
   registerKey(input: RegisterKeyInput): Promise<{ ok: boolean }>;
   deviceCodeStart(): Promise<{
     deviceCode: string;
@@ -94,6 +95,11 @@ export function createHubClient(hubUrl: string, token?: string): HubClient {
         duplicates: Number(data.duplicates ?? 0),
         errors,
       };
+    },
+
+    async purge(): Promise<{ purged: number }> {
+      const data = await request('/api/v1/purge', 'POST', { confirm: 'purge' });
+      return { purged: Number(data.purged ?? 0) };
     },
 
     async registerKey(input: RegisterKeyInput) {
