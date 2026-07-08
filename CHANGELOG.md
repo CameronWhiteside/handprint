@@ -2,6 +2,22 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.5.4] - 2026-07-07
+
+### Changed
+- GBNF grammar enums (mark types and subtypes) are now derived from `@handprint/types` instead of being hand-maintained in the extractor, so the local model's grammar can never drift from the taxonomy.
+- Trimmed visibility language from the CLI copy and chilled the README (removed the Contributor Covenant code of conduct).
+
+## [0.5.3] - 2026-07-06
+
+### Fixed
+- The local extractor reloaded the model from disk once per chunk, so a multi-chunk session paid the full load cost repeatedly. The model is now loaded once and reused across all chunks in a run. Also silenced a noisy tokenizer warning.
+
+## [0.5.2] - 2026-07-06
+
+### Fixed
+- The local extractor's GBNF grammar failed to parse under llama.cpp when rules spanned multiple lines. Grammar rules are now collapsed to single lines so the parser accepts them.
+
 ## [0.5.1] - 2026-07-01
 
 ### Fixed
