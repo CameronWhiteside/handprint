@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  launchd agent for incremental handprint capture (macOS).
+
+  Install:
+    1. Edit the two REPLACE_ME paths and HANDPRINT_ROOT below.
+    2. cp scripts/sh.handprint.grab.plist ~/Library/LaunchAgents/
+    3. launchctl load ~/Library/LaunchAgents/sh.handprint.grab.plist
+
+  Runs every 30 min at low priority so it never fights your foreground work.
+  Uses the local extractor by default (keeps scheduled runs off your Claude
+  subscription). Logs to /tmp/handprint-capture.{out,err}.log.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>sh.handprint.grab</string>
+
+  <key>ProgramArguments</key>
+  <array>
+    <string>/bin/bash</string>
+    <string>REPLACE_ME/handprint/scripts/handprint-capture.sh</string>
+  </array>
+
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>HANDPRINT_ROOT</key>
+    <string>REPLACE_ME</string>
+    <key>HANDPRINT_EXTRACTOR</key>
+    <string>local</string>
+    <key>PATH</key>
+    <string>/usr/local/bin:/opt/homebrew/bin:/usr/bin:/bin</string>
+  </dict>
+
+  <key>StartInterval</key>
+  <integer>1800</integer>
+
+  <key>Nice</key>
+  <integer>10</integer>
+
+  <key>LowPriorityIO</key>
+  <true/>
+
+  <key>StandardOutPath</key>
+  <string>/tmp/handprint-capture.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/tmp/handprint-capture.err.log</string>
+</dict>
+</plist>
