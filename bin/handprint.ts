@@ -148,6 +148,10 @@ program
   .option('--min-messages <n>', 'Skip sessions with fewer than N messages', parseInt)
   .option('--redo', 'Re-grab sessions already in the local chain (default: skip them)')
   .option('--extractor <kind>', 'Extractor: local | host | openai')
+  .option('--base-url <url>', 'Extractor base URL (openai-compatible endpoints)')
+  .option('--model <model>', 'Extractor model id')
+  .option('--concurrency <n>', 'Chunks extracted in parallel per session (default 1; keep 1 for local)', parseInt)
+  .option('--push', 'Publish to the hub after grabbing')
   .option('-y, --yes', 'Skip the confirm step and process everything (for agents/scripts)')
   .option('--dry-run', 'Quick scan: preview scope without processing or confirming')
   .action(async (pathArg: string | undefined, opts) => {
@@ -204,6 +208,9 @@ program
         minMessages: opts.minMessages,
         redo: opts.redo,
         extractor,
+        baseUrl: opts.baseUrl,
+        model: opts.model,
+        concurrency: opts.concurrency,
         dryRun: opts.dryRun,
         yes: opts.yes,
         onDownload,
@@ -279,6 +286,16 @@ program
           console.log(`${prefix}${symbol} [${m.type}/${m.subtype}]  ${m.note}`);
         }
       }
+
+      if (opts.push && result.handprintsCreated > 0) {
+        const root = pathArg ? resolve(pathArg) : process.cwd();
+        const p = await push(root);
+        console.log(
+          `\npushed ${p.pushed} handprint(s)` +
+            `${p.duplicates ? `, ${p.duplicates} already on hub` : ''}` +
+            `${p.skipped ? `, ${p.skipped} skipped` : ''}`,
+        );
+      }
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);
@@ -291,7 +308,11 @@ program
   .action(async () => {
     try {
       const result = await push(process.cwd());
-      console.log(`pushed ${result.pushed} handprints (${result.skipped} skipped)`);
+      console.log(
+        `pushed ${result.pushed} handprints` +
+          `${result.duplicates ? `, ${result.duplicates} already on hub` : ''}` +
+          ` (${result.skipped} skipped)`,
+      );
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);

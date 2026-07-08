@@ -3,6 +3,7 @@ import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { discoverSessions, adapterById } from '../sources/index.js';
 import { resolveProvider, extractFromEntries } from '../extractor/index.js';
+import { makeArtifactResolver } from '../extractor/infer-artifact.js';
 import { buildConversationWindow, chunkEntries } from '../extractor/window.js';
 import { SYSTEM_PROMPT } from '../extractor/prompt.js';
 import type { ExtractorProvider } from '../extractor/types.js';
@@ -67,6 +68,12 @@ export interface GrabOptions {
   /** Re-grab whole sessions, ignoring the incremental watermark. */
   redo?: boolean;
   extractor?: 'local' | 'host' | 'ollama' | 'openai';
+  /** Override the extractor base URL (openai-compatible endpoints). */
+  baseUrl?: string;
+  /** Override the extractor model id. */
+  model?: string;
+  /** Max chunks extracted in parallel per session (default 1; keep 1 for local). */
+  concurrency?: number;
   yes?: boolean;
   confirm?: (plan: GrabPlan) => Promise<GrabDecision>;
   provider?: ExtractorProvider;
@@ -148,11 +155,25 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   if (!projectRoot && !options.dryRun) throw new Error('not initialized: run "handprint init" first');
   if (!isGlobalInitialized() && !options.dryRun) throw new Error('global config not found: run "handprint init --global" first');
 
-  const config = isGlobalInitialized() ? loadGlobalConfig().extraction : undefined;
+  const baseConfig = isGlobalInitialized() ? loadGlobalConfig().extraction : undefined;
+  // Flag overrides for base URL / model (e.g. pointing the openai extractor at a
+  // specific endpoint for a fast backfill) win over the stored config.
+  const config =
+    options.baseUrl || options.model
+      ? {
+          ...(baseConfig ?? {}),
+          ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
+          ...(options.model ? { model: options.model } : {}),
+        }
+      : baseConfig;
   const provider =
     options.provider ??
     resolveProvider({ config, homeDir: options.homeDir, forceProvider: options.extractor, onDownload: options.onDownload });
   const extractor = provider.label();
+
+  // Resolve each chunk's work artifact (repo) from where the conversation
+  // happened — memoized across the whole run. Kills the "other" bucket.
+  const resolveArtifacts = makeArtifactResolver();
 
   let sessions = discoverSessions({ homeDir: options.homeDir, sourceId: options.source, sources: config?.sources });
 
@@ -311,6 +332,8 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
 
     if (fresh.length > 0) {
       const extractions = await extractFromEntries(fresh, provider, {
+        concurrency: options.concurrency,
+        resolveArtifacts,
         onChunkDone: () => {
           chunksDone++;
           const elapsed = Date.now() - t0;

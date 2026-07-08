@@ -1,5 +1,5 @@
 // src/extractor/index.ts
-import type { ExtractionConfig } from '@handprint/types';
+import type { ExtractionConfig, Artifact } from '@handprint/types';
 import type { TranscriptEntry } from '../sources/types.js';
 import type { ExtractorProvider, RawExtraction } from './types.js';
 import { SYSTEM_PROMPT } from './prompt.js';
@@ -9,6 +9,19 @@ import { createHostProvider } from './host-agent.js';
 import { createOllamaProvider } from './ollama.js';
 import { DEFAULT_MODEL_ID } from './models.js';
 import { dedupeMarks } from './dedupe.js';
+import { mergeArtifacts } from './infer-artifact.js';
+
+/** Run an async fn over items with a bounded number in flight at once. */
+async function mapPool<T>(items: T[], limit: number, fn: (item: T) => Promise<void>): Promise<void> {
+  let idx = 0;
+  const workers = Array.from({ length: Math.min(Math.max(1, limit), items.length) }, async () => {
+    while (idx < items.length) {
+      const cur = idx++;
+      await fn(items[cur]);
+    }
+  });
+  await Promise.all(workers);
+}
 
 export * from './types.js';
 export { MODELS, DEFAULT_MODEL_ID } from './models.js';
@@ -47,6 +60,12 @@ export interface ExtractProgress {
   onChunk?: (chunkNumber: number, totalChunks: number, messages: number) => void;
   /** Called after each chunk's extraction settles (success or error). */
   onChunkDone?: () => void;
+  /** Max chunks extracted in parallel (default 1). Keep at 1 for the local
+   *  llama provider — its single context is not concurrency-safe. */
+  concurrency?: number;
+  /** Infer a chunk's work artifacts from its entries; merged into each
+   *  extraction the chunk produces (deduped by uri). */
+  resolveArtifacts?: (entries: TranscriptEntry[]) => Artifact[];
 }
 
 export async function extractFromEntries(
@@ -54,44 +73,65 @@ export async function extractFromEntries(
   provider: ExtractorProvider,
   progress: ExtractProgress = {},
 ): Promise<RawExtraction[]> {
-  const chunks = chunkEntries(entries);
-  const all: RawExtraction[] = [];
+  const chunks = chunkEntries(entries).filter((c) => buildConversationWindow(c).trim());
+  const total = chunks.length;
+  if (total === 0) return [];
+
+  const results: RawExtraction[][] = new Array(total).fill(null).map(() => []);
   let attempted = 0;
   let errored = 0;
   let lastMsg = '';
-  for (let i = 0; i < chunks.length; i++) {
-    const window = buildConversationWindow(chunks[i]);
-    if (!window.trim()) continue;
-    attempted++;
-    progress.onChunk?.(i + 1, chunks.length, chunks[i].length);
+
+  const runChunk = async (i: number): Promise<boolean> => {
+    const chunkEntries = chunks[i];
+    const window = buildConversationWindow(chunkEntries);
+    progress.onChunk?.(i + 1, total, chunkEntries.length);
     try {
       const out = await provider.extract(window, SYSTEM_PROMPT);
-      const pt = buildChunkPlaintext(chunks[i]);
-      for (const e of out) e.sourcePlaintext = pt;
-      all.push(...out);
+      const pt = buildChunkPlaintext(chunkEntries);
+      const inferred = progress.resolveArtifacts?.(chunkEntries) ?? [];
+      for (const e of out) {
+        e.sourcePlaintext = pt;
+        if (inferred.length) e.artifacts = mergeArtifacts(e.artifacts, inferred);
+      }
+      results[i] = out;
+      return true;
     } catch (err) {
       errored++;
-      const msg = err instanceof Error ? err.message : String(err);
-      lastMsg = msg;
-      console.error(`  chunk ${i + 1} error: ${msg}`);
-      // Fail fast: a failure on the very first chunk is almost always systemic
-      // (wrong engine, missing runtime, unparseable output), so stop now instead
-      // of grinding through every chunk and session before reporting zero.
-      if (attempted === 1) {
-        throw new Error(
-          `extraction failed on the first chunk (${msg}). Stopping early. ` +
-            `Run with HANDPRINT_DEBUG=1 to see the model output, or try a different --extractor.`,
-        );
-      }
+      lastMsg = err instanceof Error ? err.message : String(err);
+      console.error(`  chunk ${i + 1} error: ${lastMsg}`);
+      return false;
     } finally {
       progress.onChunkDone?.();
     }
+  };
+
+  // Fail fast: run the first chunk alone. A first-chunk failure is almost always
+  // systemic (wrong engine, missing runtime, unparseable output), so stop now
+  // instead of grinding through every chunk and session before reporting zero.
+  attempted++;
+  const firstOk = await runChunk(0);
+  if (!firstOk) {
+    throw new Error(
+      `extraction failed on the first chunk (${lastMsg}). Stopping early. ` +
+        `Run with HANDPRINT_DEBUG=1 to see the model output, or try a different --extractor.`,
+    );
   }
+
+  // Remaining chunks in a bounded pool (concurrency 1 = serial, as before).
+  if (total > 1) {
+    const rest = Array.from({ length: total - 1 }, (_, k) => k + 1);
+    await mapPool(rest, progress.concurrency ?? 1, async (i) => {
+      attempted++;
+      await runChunk(i);
+    });
+  }
+
   if (attempted > 0 && errored === attempted) {
     throw new Error(`extraction failed for all ${attempted} chunks (last error: ${lastMsg})`);
   }
   // Dedupe near-duplicate marks ACROSS this session's chunks (same decision,
   // re-described in a later chunk shouldn't produce a second chip).
-  return dedupeMarks(all);
+  return dedupeMarks(results.flat());
 }
 

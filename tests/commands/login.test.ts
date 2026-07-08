@@ -9,6 +9,7 @@ let HOME: string;
 
 const fakeClient = (overrides: Partial<HubClient> = {}): HubClient => ({
   pushHandprint: async () => ({ ok: true }),
+  pushHandprints: async () => ({ accepted: 0, duplicates: 0, errors: [] }),
   registerKey: async () => ({ ok: true }),
   deviceCodeStart: async () => ({
     deviceCode: 'dev-code',

@@ -13,7 +13,11 @@ import { listJsonlFiles, readJsonlLines } from './jsonl-glob.js';
 interface ContentItem {
   type: string;
   text?: string;
+  input?: Record<string, unknown>;
 }
+
+// Tool-input keys that carry a file path (Edit/Write/Read/MultiEdit/NotebookEdit).
+const PATH_KEYS = ['file_path', 'notebook_path', 'path'] as const;
 
 interface RawEntry {
   type: string;
@@ -37,6 +41,20 @@ function extractText(content: string | ContentItem[]): string {
     .join('');
 }
 
+/** File paths referenced by tool_use blocks in a message (for repo attribution). */
+function extractPaths(content: string | ContentItem[]): string[] {
+  if (!Array.isArray(content)) return [];
+  const paths: string[] = [];
+  for (const item of content) {
+    if (item.type !== 'tool_use' || !item.input || typeof item.input !== 'object') continue;
+    for (const k of PATH_KEYS) {
+      const v = item.input[k];
+      if (typeof v === 'string' && v) paths.push(v);
+    }
+  }
+  return paths;
+}
+
 export function parseClaudeLine(
   line: string,
   ref: SessionRef,
@@ -46,7 +64,10 @@ export function parseClaudeLine(
     if (raw.type !== 'user' && raw.type !== 'assistant') return null;
     if (!raw.message) return null;
     const text = extractText(raw.message.content);
-    if (!text) return null;
+    const paths = extractPaths(raw.message.content);
+    // Keep the entry if it has conversation text OR touched files (a pure
+    // tool_use message still tells us which repo was changed).
+    if (!text && paths.length === 0) return null;
     return {
       role: raw.type,
       text,
@@ -54,6 +75,7 @@ export function parseClaudeLine(
       cwd: raw.cwd ?? '',
       sessionId: raw.sessionId ?? ref.sessionId,
       gitBranch: raw.gitBranch ?? '',
+      ...(paths.length ? { paths } : {}),
     };
   } catch {
     return null;

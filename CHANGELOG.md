@@ -2,6 +2,14 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.0] - 2026-07-08
+
+### Added
+- **Batch push.** `handprint push` now sends handprints to the hub in batches of up to 500 (one request per batch) instead of one request per handprint, and retries on rate-limit / transient errors with backoff (honoring `Retry-After`). A backfill of thousands of handprints that used to 429 now lands in seconds. Backed by the hub's new `POST /api/v1/push/handprints` endpoint.
+- **`handprint grab --push`.** Grab and publish in one step — the basis for scheduled, mid-session capture (no need to wait for a session to end).
+- **Artifact inference.** Grab now attributes each handprint to the repo it actually changed, inferred from the file paths touched in the conversation's tool calls (falling back to the launch `cwd` when nothing was touched). A session launched from `~` that edits three repos produces handprints attributed to all three — instead of everything landing in "other". GitHub remotes resolve to `org/repo`; local-only projects become `local/<name>`.
+- **`handprint grab --concurrency <n>`.** Extract multiple chunks per session in parallel (default 1; keep at 1 for the local llama provider, raise it for `host`/`openai`). Plus `--base-url` and `--model` to point the openai-compatible extractor at any endpoint.
+
 ## [0.5.4] - 2026-07-07
 
 ### Changed

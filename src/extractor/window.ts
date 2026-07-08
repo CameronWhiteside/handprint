@@ -18,13 +18,16 @@ export function buildChunkPlaintext(entries: TranscriptEntry[]): string {
 
 export function isNoise(entry: TranscriptEntry): boolean {
   const t = entry.text;
+  // An entry that touched files carries repo-attribution signal even with little
+  // or no text (a pure tool_use message), so it is never noise.
+  const touchedFiles = (entry.paths?.length ?? 0) > 0;
   if (t.startsWith('Base directory for this skill')) return true;
   if (t.startsWith('<local-command-caveat>')) return true;
   if (t.startsWith('<command-name>')) return true;
   if (t.startsWith('<task-notification>')) return true;
   if (t.startsWith('This session is being continued from')) return true;
   if (t.startsWith('<system-reminder>')) return true;
-  if (t.length < 15) return true;
+  if (t.length < 15 && !touchedFiles) return true;
   if (entry.role === 'user' && t.startsWith('{')) return true;
   if (entry.role === 'user' && t.includes('tool_result')) return true;
   return false;

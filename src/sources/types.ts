@@ -6,6 +6,9 @@ export interface TranscriptEntry {
   cwd: string;
   sessionId: string;
   gitBranch: string;
+  /** Absolute file paths touched in this message's tool calls, if any. Used to
+   *  attribute the handprint to the repo it changed (not just where it ran). */
+  paths?: string[];
 }
 
 export interface SessionRef {
