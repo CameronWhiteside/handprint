@@ -2,6 +2,11 @@
 
 All notable changes to `@handprint/types` are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.1] - 2026-07-08
+
+### Added
+- `pushHandprintsInputSchema` / `PushHandprintsInput` and `PUSH_HANDPRINTS_MAX` (500): batch push payload — many handprints in one request. Backs the new `POST /api/v1/push/handprints` endpoint and the CLI's batched push, so a large backfill lands in a handful of requests instead of one-per-handprint.
+
 ## [0.3.0] - 2026-07-08
 
 ### Added

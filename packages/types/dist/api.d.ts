@@ -147,6 +147,207 @@ export declare const pushHandprintInputSchema: z.ZodObject<{
     }[] | undefined;
 }>;
 export type PushHandprintInput = z.infer<typeof pushHandprintInputSchema>;
+export declare const PUSH_HANDPRINTS_MAX: 500;
+export declare const pushHandprintsInputSchema: z.ZodObject<{
+    handprints: z.ZodArray<z.ZodObject<{
+        v: z.ZodLiteral<1>;
+        ts: z.ZodString;
+        marks: z.ZodArray<z.ZodDiscriminatedUnion<"type", [z.ZodObject<{
+            type: z.ZodLiteral<"vision">;
+            subtype: z.ZodEnum<["goal", "direction", "principle"]>;
+            note: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "vision";
+            subtype: "goal" | "direction" | "principle";
+            note: string;
+        }, {
+            type: "vision";
+            subtype: "goal" | "direction" | "principle";
+            note: string;
+        }>, z.ZodObject<{
+            type: z.ZodLiteral<"choice">;
+            subtype: z.ZodEnum<["approval", "override", "rejection", "constraint", "inquiry"]>;
+            note: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "choice";
+            subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+            note: string;
+        }, {
+            type: "choice";
+            subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+            note: string;
+        }>, z.ZodObject<{
+            type: z.ZodLiteral<"method">;
+            subtype: z.ZodEnum<["tool", "knowledge", "process"]>;
+            note: z.ZodString;
+        }, "strip", z.ZodTypeAny, {
+            type: "method";
+            subtype: "tool" | "knowledge" | "process";
+            note: string;
+        }, {
+            type: "method";
+            subtype: "tool" | "knowledge" | "process";
+            note: string;
+        }>]>, "many">;
+        artifacts: z.ZodDefault<z.ZodArray<z.ZodObject<{
+            type: z.ZodEnum<["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"]>;
+            uri: z.ZodEffects<z.ZodString, string, string>;
+            hash: z.ZodOptional<z.ZodString>;
+            parent: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
+            type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+            uri: string;
+            hash?: string | undefined;
+            parent?: string | undefined;
+        }, {
+            type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+            uri: string;
+            hash?: string | undefined;
+            parent?: string | undefined;
+        }>, "many">>;
+        source: z.ZodObject<{
+            agent: z.ZodString;
+            extractor: z.ZodOptional<z.ZodString>;
+            session: z.ZodOptional<z.ZodString>;
+        }, "strip", z.ZodTypeAny, {
+            agent: string;
+            extractor?: string | undefined;
+            session?: string | undefined;
+        }, {
+            agent: string;
+            extractor?: string | undefined;
+            session?: string | undefined;
+        }>;
+        parent: z.ZodNullable<z.ZodString>;
+        sig: z.ZodString;
+        pubkey: z.ZodString;
+    }, "strip", z.ZodTypeAny, {
+        parent: string | null;
+        v: 1;
+        ts: string;
+        marks: ({
+            type: "vision";
+            subtype: "goal" | "direction" | "principle";
+            note: string;
+        } | {
+            type: "choice";
+            subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+            note: string;
+        } | {
+            type: "method";
+            subtype: "tool" | "knowledge" | "process";
+            note: string;
+        })[];
+        artifacts: {
+            type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+            uri: string;
+            hash?: string | undefined;
+            parent?: string | undefined;
+        }[];
+        source: {
+            agent: string;
+            extractor?: string | undefined;
+            session?: string | undefined;
+        };
+        sig: string;
+        pubkey: string;
+    }, {
+        parent: string | null;
+        v: 1;
+        ts: string;
+        marks: ({
+            type: "vision";
+            subtype: "goal" | "direction" | "principle";
+            note: string;
+        } | {
+            type: "choice";
+            subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+            note: string;
+        } | {
+            type: "method";
+            subtype: "tool" | "knowledge" | "process";
+            note: string;
+        })[];
+        source: {
+            agent: string;
+            extractor?: string | undefined;
+            session?: string | undefined;
+        };
+        sig: string;
+        pubkey: string;
+        artifacts?: {
+            type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+            uri: string;
+            hash?: string | undefined;
+            parent?: string | undefined;
+        }[] | undefined;
+    }>, "many">;
+}, "strip", z.ZodTypeAny, {
+    handprints: {
+        parent: string | null;
+        v: 1;
+        ts: string;
+        marks: ({
+            type: "vision";
+            subtype: "goal" | "direction" | "principle";
+            note: string;
+        } | {
+            type: "choice";
+            subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+            note: string;
+        } | {
+            type: "method";
+            subtype: "tool" | "knowledge" | "process";
+            note: string;
+        })[];
+        artifacts: {
+            type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+            uri: string;
+            hash?: string | undefined;
+            parent?: string | undefined;
+        }[];
+        source: {
+            agent: string;
+            extractor?: string | undefined;
+            session?: string | undefined;
+        };
+        sig: string;
+        pubkey: string;
+    }[];
+}, {
+    handprints: {
+        parent: string | null;
+        v: 1;
+        ts: string;
+        marks: ({
+            type: "vision";
+            subtype: "goal" | "direction" | "principle";
+            note: string;
+        } | {
+            type: "choice";
+            subtype: "approval" | "override" | "rejection" | "constraint" | "inquiry";
+            note: string;
+        } | {
+            type: "method";
+            subtype: "tool" | "knowledge" | "process";
+            note: string;
+        })[];
+        source: {
+            agent: string;
+            extractor?: string | undefined;
+            session?: string | undefined;
+        };
+        sig: string;
+        pubkey: string;
+        artifacts?: {
+            type: "git-commit" | "git-repo" | "file" | "url" | "deployment" | "c2pa" | "custom";
+            uri: string;
+            hash?: string | undefined;
+            parent?: string | undefined;
+        }[] | undefined;
+    }[];
+}>;
+export type PushHandprintsInput = z.infer<typeof pushHandprintsInputSchema>;
 export declare const registerKeyInputSchema: z.ZodObject<{
     pubkey: z.ZodString;
     label: z.ZodString;

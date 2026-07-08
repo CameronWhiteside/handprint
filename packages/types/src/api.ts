@@ -33,6 +33,15 @@ export const pushHandprintInputSchema = z.object({
 });
 export type PushHandprintInput = z.infer<typeof pushHandprintInputSchema>;
 
+// Batch push: many handprints in one request. Capped so a single request stays
+// well under Workers body / Neon statement limits; the client chunks to this.
+export const PUSH_HANDPRINTS_MAX = 500 as const;
+
+export const pushHandprintsInputSchema = z.object({
+  handprints: z.array(pushHandprintInputSchema).min(1).max(PUSH_HANDPRINTS_MAX),
+});
+export type PushHandprintsInput = z.infer<typeof pushHandprintsInputSchema>;
+
 export const registerKeyInputSchema = z.object({
   pubkey: z.string().min(1),
   label: z.string().min(1).max(64),
