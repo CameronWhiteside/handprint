@@ -148,9 +148,10 @@ program
   .option('--until <when>', 'Only sessions active on/before this (ISO date or relative)')
   .option('--min-messages <n>', 'Skip sessions with fewer than N messages', parseInt)
   .option('--redo', 'Re-grab sessions already in the local chain (default: skip them)')
-  .option('--extractor <kind>', 'Extractor: local | host | openai')
+  .option('--extractor <kind>', 'Extractor: local | host | openai | anthropic')
   .option('--base-url <url>', 'Extractor base URL (openai-compatible endpoints)')
   .option('--model <model>', 'Extractor model id')
+  .option('--api-key <key>', 'Extractor API key (anthropic / openai-compatible endpoints)')
   .option('--concurrency <n>', 'Chunks extracted in parallel per session (default 1; keep 1 for local)', parseInt)
   .option('--push', 'Publish to the hub after grabbing')
   .option('-y, --yes', 'Skip the confirm step and process everything (for agents/scripts)')
@@ -196,7 +197,7 @@ program
         : undefined;
 
       // 'ollama' is an alias for 'openai' (same protocol)
-      const extractor: 'local' | 'host' | 'openai' | undefined =
+      const extractor: 'local' | 'host' | 'openai' | 'anthropic' | undefined =
         opts.extractor === 'ollama' ? 'openai' : opts.extractor;
 
       const result = await grab(pathArg ? resolve(pathArg) : process.cwd(), {
@@ -211,6 +212,7 @@ program
         extractor,
         baseUrl: opts.baseUrl,
         model: opts.model,
+        apiKey: opts.apiKey,
         concurrency: opts.concurrency,
         dryRun: opts.dryRun,
         yes: opts.yes,

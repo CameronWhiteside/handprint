@@ -60,7 +60,7 @@ export type ProjectConfig = z.infer<typeof projectConfigSchema>;
 // ── Global config (~/.handprint/config.json) ─────────────────
 
 export const extractionConfigSchema = z.object({
-  provider: z.enum(['local', 'host', 'ollama', 'openai']).optional(),
+  provider: z.enum(['local', 'host', 'ollama', 'openai', 'anthropic']).optional(),
   model: z.string().optional(),
   agentCli: z.enum(['claude', 'opencode', 'codex']).optional(),
   sources: z.array(z.string()).optional(),

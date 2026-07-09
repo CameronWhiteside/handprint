@@ -2,6 +2,11 @@
 
 All notable changes to `@handprint/types` are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.2] - 2026-07-08
+
+### Added
+- `extractionConfigSchema.provider` now accepts `"anthropic"` (native Anthropic Messages API extractor with prompt caching), alongside `local` / `host` / `ollama` / `openai`.
+
 ## [0.3.1] - 2026-07-08
 
 ### Added

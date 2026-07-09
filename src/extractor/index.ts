@@ -7,6 +7,7 @@ import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './wi
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
 import { createHostProvider } from './host-agent.js';
 import { createOllamaProvider } from './ollama.js';
+import { createAnthropicProvider } from './anthropic.js';
 import { DEFAULT_MODEL_ID } from './models.js';
 import { dedupeMarks } from './dedupe.js';
 import { mergeArtifacts } from './infer-artifact.js';
@@ -33,13 +34,16 @@ export interface ResolveOpts {
   config?: ExtractionConfig;
   homeDir?: string;
   onDownload?: LocalProviderOpts['onDownload'];
-  forceProvider?: 'local' | 'host' | 'ollama' | 'openai';
+  forceProvider?: 'local' | 'host' | 'ollama' | 'openai' | 'anthropic';
 }
 
 export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
   const provider = opts.forceProvider ?? opts.config?.provider ?? 'local';
   if (provider === 'host') {
     return createHostProvider({ cli: opts.config?.agentCli, model: opts.config?.model });
+  }
+  if (provider === 'anthropic') {
+    return createAnthropicProvider({ apiKey: opts.config?.apiKey, model: opts.config?.model, baseUrl: opts.config?.baseUrl });
   }
   if (provider === 'ollama' || provider === 'openai') {
     return createOllamaProvider({

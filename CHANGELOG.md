@@ -2,6 +2,12 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.7.0] - 2026-07-08
+
+### Added
+- **Native Anthropic extractor** (`--extractor anthropic`). Uses the Anthropic Messages API with the (large, unchanging) system prompt in a `cache_control` block, so after the first call the taxonomy + examples are served from Anthropic's prompt cache — you stop paying to resend the full prompt every chunk, and it's fast (no per-call process boot like `host`). Pay-per-token via your API key; use `host` for the free Claude-subscription path. Defaults to `claude-haiku-4-5-20251001`; override with `--model`.
+- **`--api-key <key>`** flag on grab (also settable via `handprint config set extraction.apiKey`), for the anthropic and openai-compatible extractors.
+
 ## [0.6.2] - 2026-07-08
 
 ### Fixed

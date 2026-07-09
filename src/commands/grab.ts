@@ -67,11 +67,13 @@ export interface GrabOptions {
   minMessages?: number;
   /** Re-grab whole sessions, ignoring the incremental watermark. */
   redo?: boolean;
-  extractor?: 'local' | 'host' | 'ollama' | 'openai';
+  extractor?: 'local' | 'host' | 'ollama' | 'openai' | 'anthropic';
   /** Override the extractor base URL (openai-compatible endpoints). */
   baseUrl?: string;
   /** Override the extractor model id. */
   model?: string;
+  /** Override the extractor API key (anthropic / openai-compatible endpoints). */
+  apiKey?: string;
   /** Max chunks extracted in parallel per session (default 1; keep 1 for local). */
   concurrency?: number;
   yes?: boolean;
@@ -159,11 +161,12 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   // Flag overrides for base URL / model (e.g. pointing the openai extractor at a
   // specific endpoint for a fast backfill) win over the stored config.
   const config =
-    options.baseUrl || options.model
+    options.baseUrl || options.model || options.apiKey
       ? {
           ...(baseConfig ?? {}),
           ...(options.baseUrl ? { baseUrl: options.baseUrl } : {}),
           ...(options.model ? { model: options.model } : {}),
+          ...(options.apiKey ? { apiKey: options.apiKey } : {}),
         }
       : baseConfig;
   const provider =
