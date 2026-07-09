@@ -55,7 +55,11 @@ export const TAXONOMY = {
   },
 } as const;
 
-export const MARK_NOTE_MAX = 48 as const;
+// Hard validation ceiling for a mark note (schema + salvage truncation).
+export const MARK_NOTE_MAX = 64 as const;
+// Soft target the extraction prompt asks the model to aim for — kept shorter
+// than the hard max so notes stay atomic without being chopped at the boundary.
+export const MARK_NOTE_TARGET = 48 as const;
 
 // ── Artifact constants ───────────────────────────────────────
 

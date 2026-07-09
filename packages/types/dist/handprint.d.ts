@@ -44,7 +44,8 @@ export declare const TAXONOMY: {
         };
     };
 };
-export declare const MARK_NOTE_MAX: 48;
+export declare const MARK_NOTE_MAX: 64;
+export declare const MARK_NOTE_TARGET: 48;
 export declare const ARTIFACT_TYPES: readonly ["git-commit", "git-repo", "file", "url", "deployment", "c2pa", "custom"];
 export declare const handprintTypeSchema: z.ZodEnum<["vision", "choice", "method"]>;
 export type HandprintType = z.infer<typeof handprintTypeSchema>;

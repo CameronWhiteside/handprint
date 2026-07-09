@@ -95,7 +95,7 @@ describe('note length cap', () => {
     expect(out).toHaveLength(1);
     expect(out[0].marks).toHaveLength(1);
     expect(out[0].marks[0].note.length).toBeLessThanOrEqual(MARK_NOTE_MAX);
-    expect(MARK_NOTE_MAX).toBe(48);
+    expect(MARK_NOTE_MAX).toBe(64);
   });
 });
 

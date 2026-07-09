@@ -2,6 +2,11 @@
 
 All notable changes to `@handprint/types` are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.3.3] - 2026-07-09
+
+### Changed
+- Relaxed the mark-note limit: `MARK_NOTE_MAX` (schema hard cap + salvage truncation) 48 → 64, so slightly-longer notes are accepted instead of chopped. Added `MARK_NOTE_TARGET` (48) — the soft length the extraction prompt asks the model to aim for. Prompt still targets 48; validation now allows up to 64.
+
 ## [0.3.2] - 2026-07-08
 
 ### Added

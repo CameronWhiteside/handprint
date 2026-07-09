@@ -13,7 +13,7 @@ import {
   CHOICE_SUBTYPES,
   METHOD_SUBTYPES,
   ARTIFACT_TYPES,
-  MARK_NOTE_MAX,
+  MARK_NOTE_TARGET,
   TAXONOMY,
 } from '@handprint/types';
 
@@ -48,7 +48,7 @@ DECOMPOSE, DO NOT SUMMARIZE
 One decision usually becomes several marks. Emit one handprint whose "marks" array holds every atomic facet: the outcome (vision), the principle behind it, the decision (choice), each tool or category (method/tool), and any hard-won knowledge (method/knowledge). Prefer the most atomic pieces that still stand alone. A single dense decision typically yields 4 to 8 marks.
 
 NOTE RULES
-- About 5 words. Hard limit ${MARK_NOTE_MAX} characters (longer notes are truncated).
+- About 5 words. Aim for ${MARK_NOTE_TARGET} characters (longer notes are truncated).
 - Stand alone: readable with zero context. No "this", "that", "the above", or pronouns referring to the chat.
 - A short third-person belief or command describing the HUMAN's judgment.
 - Bare entity names (tools, technologies, categories) are valid method/tool marks.
@@ -69,7 +69,7 @@ SUBTYPE FLAVORS (one atomic mark each)
 OUTPUT SCHEMA (each item is validated; anything that does not match is discarded)
 Return a JSON array. Each element:
 {
-  "marks": [ { "type": <type>, "subtype": <subtype>, "note": <string, 1-${MARK_NOTE_MAX} chars> } ],
+  "marks": [ { "type": <type>, "subtype": <subtype>, "note": <string, 1-${MARK_NOTE_TARGET} chars> } ],
   "artifacts": [ { "type": <artifact-type>, "uri": <string> } ],
   "timestamp": <ISO-8601 string copied from the relevant transcript line>
 }

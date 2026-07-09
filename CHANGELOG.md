@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.3] - 2026-07-09
+
+### Changed
+- Mark notes may now be up to 64 characters (was 48). The extraction prompt still asks the model to aim for ~48 (`MARK_NOTE_TARGET`), but the hard cap (`MARK_NOTE_MAX`) is 64, so a slightly-longer note is kept intact instead of truncated. Requires `@handprint/types` 0.3.3.
+
 ## [0.8.2] - 2026-07-09
 
 ### Changed
