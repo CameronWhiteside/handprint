@@ -29,7 +29,9 @@ handprint grab
 `grab` scans first and shows a plan grouped by project, then asks before processing anything:
 
 - It is **incremental and idempotent**: each run processes only sessions (and only the messages) that are new since the last grab, so overlapping runs never redo work. `--redo` forces a re-grab.
+- **Attributed to the right repo:** each handprint is tied to the repo it actually changed, inferred from the files touched in the conversation — so work lands under the correct project even when you launch your agent from a parent directory (a GitHub remote resolves to `org/repo`; a local-only project to `local/<name>`).
 - Narrow what you process: `--days N` (or `--since` / `--until`), `--project <name>`, `--min-messages N`, `-n N`.
+- Choose an extractor with `--extractor local | host | ollama | anthropic` (`--concurrency N` to parallelize). See [docs/CAPTURE.md](docs/CAPTURE.md) for the cost/speed tradeoffs and one-time backfill.
 - It shows live progress and an ETA, and a bare `grab` with no terminal to confirm will scan and stop rather than run unattended. Use `-y` to skip the prompt (for agents and scripts).
 
 Publish handprints to the hub:
@@ -68,8 +70,10 @@ one-time backfill of your whole history: [`docs/CAPTURE.md`](docs/CAPTURE.md).
 | `handprint init [--global]` | Initialize global identity or project |
 | `handprint grab [path] [--days N] [--project <name>] [--min-messages N] [--dry-run] [-y] [--extractor <engine>]` | Scan, confirm, then extract decisions (path sets where the chain is stored, default: current dir) |
 | `handprint sources` | List available source adapters and their status |
-| `handprint push` | Publish handprints to the hub (opt-in; requires `handprint login`) |
+| `handprint push` | Publish handprints to the hub in batches (opt-in; requires `handprint login`) |
 | `handprint hook [--interval N]` | Ambient capture: debounced, detached `grab --push` for an agent Stop hook |
+| `handprint reset [--force]` | Clear the local chain (objects, log, watermark) to re-ingest from scratch |
+| `handprint purge [--force]` | Delete all your handprints from the hub (pairs with `reset` for a clean re-grab) |
 | `handprint log` | List local handprints |
 | `handprint show <ref>` | Show a handprint by hash or prefix |
 | `handprint verify` | Verify chain integrity and signatures |
