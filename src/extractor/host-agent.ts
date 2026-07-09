@@ -81,10 +81,13 @@ export function detectAgentCli(): AgentCliSpec | undefined {
 
 const defaultRunner: Runner = (bin, args) =>
   new Promise((resolve, reject) => {
-    execFile(bin, args, { maxBuffer: 16 * 1024 * 1024, timeout: 120_000 }, (err, stdout) => {
+    const child = execFile(bin, args, { maxBuffer: 16 * 1024 * 1024, timeout: 120_000 }, (err, stdout) => {
       if (err) reject(err);
       else resolve(stdout);
     });
+    // The prompt is passed as a `-p` arg, but `claude` still blocks ~3s waiting
+    // on stdin. Close it so the child sees EOF and proceeds immediately.
+    child.stdin?.end();
   });
 
 // Extraction is a structured classification task, not open-ended generation,

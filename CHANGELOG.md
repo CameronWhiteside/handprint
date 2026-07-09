@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.6.2] - 2026-07-08
+
+### Fixed
+- Host extractor (`--extractor host`): `claude -p` blocked ~3 seconds per chunk waiting on stdin even though the prompt is passed as an argument. The child's stdin is now closed immediately, removing the per-chunk stall (and the occasional stdin-timeout failure) — a large speedup on big backfills.
+
 ## [0.6.1] - 2026-07-08
 
 ### Added
