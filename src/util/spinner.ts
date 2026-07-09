@@ -7,6 +7,8 @@ const CLEAR_LINE = '\r\x1b[2K';
 export interface Spinner {
   /** Update the message shown next to the spinner (or print a line on non-TTY). */
   setText(text: string): void;
+  /** Print a permanent line above the spinner without stopping the animation. */
+  note(line: string): void;
   /** Stop the animation; optionally print a final line. */
   stop(finalLine?: string): void;
 }
@@ -18,6 +20,7 @@ export function createSpinner(initial: string, isTty: boolean = process.stderr.i
       setText: (text) => {
         if (text) process.stderr.write(`${text}\n`);
       },
+      note: (line) => process.stderr.write(`${line}\n`),
       stop: (finalLine) => {
         if (finalLine) process.stderr.write(`${finalLine}\n`);
       },
@@ -37,6 +40,10 @@ export function createSpinner(initial: string, isTty: boolean = process.stderr.i
   return {
     setText: (next) => {
       text = next;
+    },
+    note: (line) => {
+      // Clear the spinner line, print a permanent line, let the next frame redraw.
+      process.stderr.write(`${CLEAR_LINE}${line}\n`);
     },
     stop: (finalLine) => {
       clearInterval(timer);

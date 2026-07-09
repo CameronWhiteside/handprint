@@ -321,6 +321,7 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   let chunksDone = 0;
   let handprintsCreated = 0;
   let messagesProcessed = 0;
+  let steered = false; // one-time "this is slow, use host" nudge for local runs
   const details: GrabResult['details'] = [];
 
   // Live progress: an animated spinner on an interactive terminal, plain lines
@@ -359,9 +360,20 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
           const remaining = Math.max(0, chunksToProcess - chunksDone);
           const frac = chunksToProcess > 0 ? chunksDone / chunksToProcess : 1;
           const pct = Math.round(frac * 100);
+          const etaMs = avg * remaining;
           tick(
-            `${amber(bar(frac))} ${bold(`${pct}%`)} ${dim(`· ${chunksDone}/${chunksToProcess} chunks · ~${fmtDuration(avg * remaining)} left`)}`,
+            `${amber(bar(frac))} ${bold(`${pct}%`)} ${dim(`· ${chunksDone}/${chunksToProcess} chunks · ~${fmtDuration(etaMs)} left`)}`,
           );
+          // One-time steer: a local run projected past 30 min is worth escaping.
+          // ponytail: 30-min threshold; wait for chunk 2 so avg isn't skewed by model load.
+          if (!steered && chunksDone >= 2 && extractor.startsWith('local:') && etaMs > 30 * 60_000) {
+            steered = true;
+            const line =
+              `${amber('⚠')}  ${bold('This local run is slow')} ` +
+              dim(`(~${fmtDuration(etaMs)} left). Ctrl-C and re-run with --extractor host or --extractor anthropic to finish far faster.`);
+            if (spinner) spinner.note(line);
+            else log(line);
+          }
         },
       });
       for (const hp of extractions) {

@@ -7,7 +7,7 @@ All notable changes to handprint are documented here. This project adheres to [S
 ### Changed
 - **`host` is now the default extractor when an agent CLI (claude/opencode/codex) is on your PATH** — fast, no multi-GB model download, no slow CPU inference. Falls back to the local model only when there's no agent to defer to. An explicit `--extractor` or a configured provider still wins.
 - **Much nicer terminal output.** `grab` no longer sits silently: it shows a "Scanning your transcripts…" status, a branded header, and a live **progress bar** with a spinner, percentage, chunk count, and ETA during extraction. Marks print color-coded by type (vision/choice/method). All styling is stripped automatically for non-TTY output (agents, CI, pipes) and honors `NO_COLOR`.
-- Before a large first capture, `grab` suggests starting smaller with `--days 7` / `--project <name>` (it's incremental, so re-running continues where it left off).
+- Before a large first capture, `grab` suggests starting smaller with `--days 7` / `--project <name>` (it's incremental, so re-running continues where it left off). And if a local run's ETA blows past 30 minutes mid-way, it prints a one-time nudge to switch to `--extractor host`/`anthropic`.
 
 ## [0.9.1] - 2026-07-09
 
