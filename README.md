@@ -48,20 +48,14 @@ handprint verify
 handprint status
 ```
 
-### Capture as you work (ambient)
+### Capture as you work
 
-You don't have to run `grab` by hand. Because `grab` is incremental and
-idempotent, you can capture continuously — mid-session, without waiting for a
-session to end:
-
-- **Agent hook (Claude Code):** wire `handprint hook` to the Stop hook. It's
-  debounced (≥15 min) and runs the grab detached, so it never blocks the agent.
-  Merge [`integrations/claude/settings.snippet.json`](integrations/claude/settings.snippet.json)
-  into `~/.claude/settings.json`.
-- **Timer (any agent / macOS launchd):** see [`docs/CAPTURE.md`](docs/CAPTURE.md).
-
-Both are safe to fire constantly — nothing is captured twice. Full guide, plus
-one-time backfill of your whole history: [`docs/CAPTURE.md`](docs/CAPTURE.md).
+There's no background process — no agent hook, no daemon, no timer. Run
+`handprint grab` yourself whenever you want to pick up new work; it's
+incremental and idempotent, so re-running often is cheap and nothing is ever
+captured twice. We tried a Claude Code Stop-hook and a launchd timer and
+pulled both — see [`docs/CAPTURE.md`](docs/CAPTURE.md) for why, plus a guide
+to one-time backfill of your whole history.
 
 ## Commands
 
@@ -71,7 +65,6 @@ one-time backfill of your whole history: [`docs/CAPTURE.md`](docs/CAPTURE.md).
 | `handprint grab [path] [--days N] [--project <name>] [--min-messages N] [--dry-run] [-y] [--extractor <engine>]` | Scan, confirm, then extract decisions (path sets where the chain is stored, default: current dir) |
 | `handprint sources` | List available source adapters and their status |
 | `handprint push` | Publish handprints to the hub in batches (opt-in; requires `handprint login`) |
-| `handprint hook [--interval N]` | Ambient capture: debounced, detached `grab --push` for an agent Stop hook |
 | `handprint reset [--force]` | Clear the local chain (objects, log, watermark) to re-ingest from scratch |
 | `handprint purge [--force]` | Delete all your handprints from the hub (pairs with `reset` for a clean re-grab) |
 | `handprint log` | List local handprints |

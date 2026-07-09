@@ -1,10 +1,10 @@
 # Capturing at scale
 
-Two flows: a one-time **backfill** of your whole history, then ongoing
-**incremental capture** so new work shows up on its own.
+A one-time **backfill** of your whole history, then run `grab` again whenever
+you want to pick up new work.
 
-Both rely on grab being incremental — a per-session watermark means every run
-only processes messages newer than the last run. Re-running is cheap and safe.
+grab is incremental — a per-session watermark means every run only processes
+messages newer than the last run. Re-running is cheap and safe.
 
 ## One-time backfill
 
@@ -56,29 +56,21 @@ Pick `host` for a free backfill you can leave running in bursts, `anthropic`
 when you want it done fast and don't mind paying (the caching keeps that cheap),
 and `ollama`/`local` to keep everything on-machine.
 
-## Ongoing incremental capture (long-running sessions)
+## Ongoing capture
 
-You don't need a session to end. The watermark keeps each run to just the new
-messages, so run grab either **on activity** (an agent hook) or **on a timer**.
+Handprint has no background process of any kind — no agent hook, no daemon,
+no timer. Run `handprint grab` yourself whenever you want to pick up new work;
+the watermark means it only processes what's new since the last run, so it's
+cheap to run often.
 
-### Agent hook (recommended for Claude Code)
-
-Wire `handprint hook` to Claude Code's Stop hook — it fires each time Claude
-finishes a turn, so capture happens mid-session. It's debounced (>=15 min) and
-runs the grab detached, so it never blocks you. See
-[`integrations/claude/`](../integrations/claude/README.md) for the one-file
-settings snippet.
-
-### Timer (any agent / macOS launchd)
-
-```bash
-cp scripts/sh.handprint.grab.plist ~/Library/LaunchAgents/
-# edit the REPLACE_ME paths + HANDPRINT_ROOT first
-launchctl load ~/Library/LaunchAgents/sh.handprint.grab.plist
-```
-
-It runs `scripts/handprint-capture.sh` every 30 min at low priority, with a
-lock so runs never overlap.
-
-Both default to the **local** extractor so scheduled capture stays off your
-Claude subscription while you work — reserve `--extractor host` for the backfill.
+We tried both a Claude Code Stop-hook and a launchd timer and pulled both.
+The Stop-hook's debounce was a plain timestamp file: with several concurrent
+agent sessions, simultaneous Stop events could race past that check before
+any of them recorded a run, so more than one detached `grab --push` launched
+at once — each one a memory-hungry background process, and a machine running
+many sessions could end up with several piled up at once. The timer avoided
+that specific race (a lock file instead of a timestamp), but it's still a
+background process running on your machine on a schedule you don't control
+in the moment, extracting and encrypting conversation content whether or not
+you're thinking about it right then. Manual `grab` means capture only ever
+happens when you decide to run it.

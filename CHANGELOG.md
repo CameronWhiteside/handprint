@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-07-09
+
+### Removed
+- **All automatic capture: the agent Stop-hook and the launchd timer.** `handprint hook`'s debounce was a plain timestamp file, so with several concurrent agent sessions, simultaneous Stop events could race past the check and each spawn their own detached `grab --push`, piling up memory-hungry processes instead of one run. The launchd timer avoided that specific race but was still a background process capturing and encrypting conversation content on a schedule. Capture is now purely manual: run `handprint grab` yourself whenever you want to pick up new work — it's incremental and idempotent, so re-running often is cheap. `integrations/claude/settings.snippet.json` and `scripts/` (the launchd plist + capture script) are removed; README, CAPTURE.md, and the `/handprint` skill no longer mention either.
+
 ## [0.8.3] - 2026-07-09
 
 ### Changed

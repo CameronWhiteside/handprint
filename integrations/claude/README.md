@@ -5,7 +5,6 @@ Everything in this directory is **specific to [Claude Code](https://claude.com/c
 ```
 integrations/claude/
   skills/handprint/SKILL.md   the /handprint Claude Code skill (bundled + auto-synced by the CLI)
-  settings.snippet.json       Stop-hook config for ambient capture
 ```
 
 ## Skill
@@ -16,12 +15,8 @@ The CLI installs and keeps this skill in sync automatically (`~/.claude/skills/h
 handprint skill install     # or: handprint skill uninstall
 ```
 
-## Ambient capture (Stop hook)
+## Ongoing capture
 
-`handprint hook` captures as you work, without waiting for a session to end — useful for long-running sessions. Wire it to Claude Code's **Stop** hook (fires each time Claude finishes a turn):
-
-Merge `settings.snippet.json` into `~/.claude/settings.json` (or a project `.claude/settings.json`).
-
-It's safe to fire constantly: `handprint hook` is **debounced** (runs at most once every 15 min, tune with `--interval <seconds>`) and launches the grab **detached**, so Claude is never blocked. And grab itself is **incremental** (a per-session watermark means only new messages are processed) and **idempotent** (handprints are content-addressed and pushes upsert), so nothing is ever captured twice.
-
-By default the ambient chain is stored in `$HOME` (override with `HANDPRINT_ROOT`). For a timer-based alternative to the Stop hook, see [`docs/CAPTURE.md`](../../docs/CAPTURE.md).
+There's no agent Stop-hook here, and no background timer either — see
+[`docs/CAPTURE.md`](../../docs/CAPTURE.md) for why we shipped both and pulled
+them. Run `handprint grab` yourself whenever you want to pick up new work.
