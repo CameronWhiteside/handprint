@@ -55,11 +55,8 @@ Tell the user:
 
 Never fabricate decisions, and never push anything the user did not ask to capture.
 
-## Optional: offer scheduled capture
+## No automatic capture
 
-If the user captures often, mention they can automate it with a timer instead
-of running this each time: see `docs/CAPTURE.md` for the launchd-based setup.
-There is no Stop-hook option — it existed and was removed because its
-debounce could race across concurrent sessions and pile up duplicate
-detached `grab --push` runs. Only suggest the timer; never edit their
-settings without asking.
+There's no Stop-hook and no background timer — both existed and were removed
+(see `docs/CAPTURE.md`). If the user captures often, the answer is just to run
+`handprint grab` again; there's no automation to offer.

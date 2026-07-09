@@ -1,10 +1,10 @@
 # Capturing at scale
 
-Two flows: a one-time **backfill** of your whole history, then ongoing
-**incremental capture** so new work shows up on its own.
+A one-time **backfill** of your whole history, then run `grab` again whenever
+you want to pick up new work.
 
-Both rely on grab being incremental — a per-session watermark means every run
-only processes messages newer than the last run. Re-running is cheap and safe.
+grab is incremental — a per-session watermark means every run only processes
+messages newer than the last run. Re-running is cheap and safe.
 
 ## One-time backfill
 
@@ -56,30 +56,21 @@ Pick `host` for a free backfill you can leave running in bursts, `anthropic`
 when you want it done fast and don't mind paying (the caching keeps that cheap),
 and `ollama`/`local` to keep everything on-machine.
 
-## Ongoing incremental capture (long-running sessions)
+## Ongoing capture
 
-You don't need a session to end. The watermark keeps each run to just the new
-messages, so run grab **on a timer**.
+Handprint has no background process of any kind — no agent hook, no daemon,
+no timer. Run `handprint grab` yourself whenever you want to pick up new work;
+the watermark means it only processes what's new since the last run, so it's
+cheap to run often.
 
-### Timer (any agent / macOS launchd)
-
-```bash
-cp scripts/sh.handprint.grab.plist ~/Library/LaunchAgents/
-# edit the REPLACE_ME paths + HANDPRINT_ROOT first
-launchctl load ~/Library/LaunchAgents/sh.handprint.grab.plist
-```
-
-It runs `scripts/handprint-capture.sh` every 30 min at low priority, with a
-lock so runs never overlap.
-
-We deliberately don't offer an agent Stop-hook for this. A Stop-hook fires once
-per agent turn, and its debounce is a plain timestamp file: with several
-concurrent agent sessions, multiple Stop events can race past the check
-before any of them records a run, so more than one `grab --push` launches at
-once. Each one is a detached, memory-hungry process, and a machine running
-many sessions can end up with several piled up in the background at once. The
-timer's lock file doesn't have that failure mode — only one run is ever in
-flight.
-
-Defaults to the **local** extractor so scheduled capture stays off your
-Claude subscription while you work — reserve `--extractor host` for the backfill.
+We tried both a Claude Code Stop-hook and a launchd timer and pulled both.
+The Stop-hook's debounce was a plain timestamp file: with several concurrent
+agent sessions, simultaneous Stop events could race past that check before
+any of them recorded a run, so more than one detached `grab --push` launched
+at once — each one a memory-hungry background process, and a machine running
+many sessions could end up with several piled up at once. The timer avoided
+that specific race (a lock file instead of a timestamp), but it's still a
+background process running on your machine on a schedule you don't control
+in the moment, extracting and encrypting conversation content whether or not
+you're thinking about it right then. Manual `grab` means capture only ever
+happens when you decide to run it.

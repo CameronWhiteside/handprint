@@ -17,9 +17,6 @@ handprint skill install     # or: handprint skill uninstall
 
 ## Ongoing capture
 
-There's no agent Stop-hook here. We shipped one and pulled it: its debounce
-was a plain timestamp file, and with several concurrent Claude sessions,
-simultaneous Stop events can race past that check and each launch their own
-detached `grab --push`. For ongoing capture, use the timer-based option in
-[`docs/CAPTURE.md`](../../docs/CAPTURE.md) instead — it uses a lock file, so
-only one run is ever in flight.
+There's no agent Stop-hook here, and no background timer either — see
+[`docs/CAPTURE.md`](../../docs/CAPTURE.md) for why we shipped both and pulled
+them. Run `handprint grab` yourself whenever you want to pick up new work.

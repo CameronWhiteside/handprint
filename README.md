@@ -48,17 +48,14 @@ handprint verify
 handprint status
 ```
 
-### Capture as you work (timer)
+### Capture as you work
 
-You don't have to run `grab` by hand. Because `grab` is incremental and
-idempotent, you can capture continuously on a timer (any agent / macOS
-launchd) — see [`docs/CAPTURE.md`](docs/CAPTURE.md). We deliberately don't
-offer an agent Stop-hook: with several concurrent sessions its debounce can
-race, so multiple `grab --push` runs pile up at once. A timer with a lock file
-doesn't have that failure mode.
-
-Safe to fire constantly — nothing is captured twice. Full guide, plus
-one-time backfill of your whole history: [`docs/CAPTURE.md`](docs/CAPTURE.md).
+There's no background process — no agent hook, no daemon, no timer. Run
+`handprint grab` yourself whenever you want to pick up new work; it's
+incremental and idempotent, so re-running often is cheap and nothing is ever
+captured twice. We tried a Claude Code Stop-hook and a launchd timer and
+pulled both — see [`docs/CAPTURE.md`](docs/CAPTURE.md) for why, plus a guide
+to one-time backfill of your whole history.
 
 ## Commands
 
