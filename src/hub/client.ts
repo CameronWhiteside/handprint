@@ -1,6 +1,6 @@
 import type { PushHandprintInput, RegisterKeyInput } from '@handprint/types';
 
-export interface BatchPushResult {
+interface BatchPushResult {
   accepted: number;
   duplicates: number;
   errors: Array<{ index: number; message: string }>;

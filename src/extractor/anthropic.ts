@@ -10,8 +10,8 @@ import type { ExtractorProvider, RawExtraction } from './types.js';
 import { parseExtractionJson } from './types.js';
 import { buildUserPrompt } from './prompt.js';
 
-export const ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1';
-export const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
+const ANTHROPIC_BASE_URL = 'https://api.anthropic.com/v1';
+const DEFAULT_ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 const ANTHROPIC_VERSION = '2023-06-01';
 const MAX_TOKENS = 4096;
 

@@ -61,7 +61,7 @@ function computeArtifact(cwd: string): Artifact | null {
   return { type: 'file', uri: `file:///${basename(cwd)}` };
 }
 
-export interface InferEntry {
+interface InferEntry {
   cwd: string;
   /** Absolute file paths touched in this message's tool calls. */
   paths?: string[];
