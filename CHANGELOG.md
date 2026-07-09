@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.2] - 2026-07-09
+
+### Changed
+- `handprint push` now surfaces *why* handprints were skipped (the batch API's per-item error reasons, or a failed batch's message) instead of only a silent count — so push failures are diagnosable. Pairs with the hub's batch endpoint now validating per-item (a single malformed handprint no longer rejects the whole batch).
+
 ## [0.8.1] - 2026-07-08
 
 ### Changed

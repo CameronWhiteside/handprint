@@ -65,6 +65,7 @@ export async function push(projectRoot: string): Promise<PushResult> {
   // is safe to retry; the client retries 429/5xx with backoff internally.
   let pushed = 0;
   let duplicates = 0;
+  const skipReasons: string[] = [];
   for (let i = 0; i < inputs.length; i += PUSH_HANDPRINTS_MAX) {
     const batch = inputs.slice(i, i + PUSH_HANDPRINTS_MAX);
     try {
@@ -72,10 +73,19 @@ export async function push(projectRoot: string): Promise<PushResult> {
       pushed += result.accepted;
       duplicates += result.duplicates;
       skipped += result.errors.length;
+      for (const e of result.errors) skipReasons.push(e.message);
     } catch (err) {
-      console.error(`  failed to push batch of ${batch.length}: ${(err as Error).message}`);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error(`  failed to push batch of ${batch.length}: ${msg}`);
       skipped += batch.length;
+      skipReasons.push(msg);
     }
+  }
+
+  // Surface WHY things were skipped so failures are never opaque.
+  if (skipReasons.length > 0) {
+    const unique = [...new Set(skipReasons)].slice(0, 3);
+    console.error(`  skipped ${skipReasons.length}: ${unique.join('; ')}`);
   }
 
   return { pushed, duplicates, skipped };
