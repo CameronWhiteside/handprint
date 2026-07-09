@@ -92,6 +92,25 @@ Without `extraction.model`, the claude host engine uses `haiku`. The model is re
 
 The grab plan always shows a rough input-token estimate and names the engine (e.g. `host:claude (Claude Code)`) so you can confirm the scope before any tokens are billed.
 
+### Paid, cached cloud extraction (`anthropic`)
+
+If you have an Anthropic API key and want a fast backfill without touching your
+Claude subscription's usage limits, use the native Anthropic engine:
+
+```sh
+handprint config set extraction.provider anthropic --global
+handprint config set extraction.apiKey sk-ant-... --global
+handprint grab --extractor anthropic --concurrency 8   # or --api-key sk-ant-... inline
+```
+
+It calls the Anthropic Messages API directly (no per-chunk process boot, so it's
+faster than `host`) and puts the large, unchanging system prompt in a prompt
+**cache** — the first chunk writes the cache, every chunk after reads it, so you
+aren't re-billed the full taxonomy + examples each time. Default model is
+`claude-haiku-4-5-20251001` (extraction is a structured task); override with
+`--model`. Unlike the three engines above this is pay-per-token on your API key —
+for the free path use `--extractor host`.
+
 If the chosen engine is not ready (no Ollama server, `node-llama-cpp` not installed, or no agent CLI), `grab` stops with a one-line fix instead of failing mid-run. See [AGENTS.md](./AGENTS.md) for non-interactive setup.
 
 ## The `/handprint` skill (capture from inside your agent)
