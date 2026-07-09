@@ -2,6 +2,14 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.0] - 2026-07-08
+
+### Added
+- **`handprint hook`** — ambient capture for long-running sessions. Wire it to an agent's Stop hook (e.g. Claude Code) and it captures as you work, no session-end required. Debounced (>=15 min, `--interval` to tune) and runs the grab detached, so it never blocks the agent; safe to fire constantly because grab is incremental + idempotent. Settings snippet in `integrations/claude/`.
+
+### Changed
+- **Isolated Claude-specific assets under `integrations/claude/`.** The bundled `/handprint` skill moved from `skills/` to `integrations/claude/skills/`, joined by the Stop-hook `settings.snippet.json` and an integration README. The core CLI stays agent-agnostic; the published package now ships `integrations/` instead of `skills/`. Skill install/auto-sync behavior is unchanged.
+
 ## [0.7.0] - 2026-07-08
 
 ### Added

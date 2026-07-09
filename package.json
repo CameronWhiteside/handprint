@@ -1,6 +1,6 @@
 {
   "name": "handprint-sh",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "type": "module",
   "description": "Capture human decision provenance from your AI coding transcripts. Runs entirely on your machine, no account required.",
   "keywords": [
@@ -33,7 +33,7 @@
   },
   "files": [
     "dist/bin/",
-    "skills/",
+    "integrations/",
     "README.md",
     "AGENTS.md",
     "CHANGELOG.md",

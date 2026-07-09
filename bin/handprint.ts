@@ -10,6 +10,7 @@ import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
 import { agentBrand } from '../src/extractor/host-agent.js';
 import { push } from '../src/commands/push.js';
 import { purge } from '../src/commands/purge.js';
+import { hook } from '../src/commands/hook.js';
 import { verifyChain } from '../src/commands/verify.js';
 import { listHandprints } from '../src/commands/log.js';
 import { showHandprint } from '../src/commands/show.js';
@@ -346,6 +347,20 @@ program
     } catch (err) {
       console.error(err instanceof Error ? err.message : String(err));
       process.exit(1);
+    }
+  });
+
+program
+  .command('hook')
+  .description('Ambient capture: debounced, detached grab+push (wire to an agent Stop hook)')
+  .option('--interval <seconds>', 'Minimum seconds between runs (default 900)', parseInt)
+  .action((opts) => {
+    // Must never break the calling agent: swallow everything, always exit 0,
+    // and stay silent on stdout (hook stdout can be interpreted by the agent).
+    try {
+      hook({ intervalSeconds: opts.interval });
+    } catch (err) {
+      console.error(err instanceof Error ? err.message : String(err));
     }
   });
 

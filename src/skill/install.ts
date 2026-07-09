@@ -26,11 +26,12 @@ function isRecord(v: unknown): v is Record<string, unknown> {
  * Resolve the bundled SKILL.md from the package.
  *
  * Works in both dev (src/skill/) and the tsup bundle (dist/bin/):
- * both resolve `../../` to the repo / package root.
+ * both resolve `../../` to the repo / package root. The Claude-specific
+ * integration assets live under integrations/claude/ (see that dir's README).
  */
 export function skillSourcePath(): string {
   const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
-  const path = join(root, 'skills', 'handprint', 'SKILL.md');
+  const path = join(root, 'integrations', 'claude', 'skills', 'handprint', 'SKILL.md');
   if (!existsSync(path)) {
     throw new Error(`Bundled skill not found at ${path}`);
   }
