@@ -12,6 +12,16 @@ handprint captures the decisions you and your AI make (what you chose, why, and 
 npm i -g handprint-sh
 ```
 
+Already installed? Get the latest with `npm i -g handprint-sh@latest`.
+
+### Windows
+
+handprint works on Windows (Git Bash and PowerShell). A couple of platform notes:
+
+- **`--extractor host` is the recommended path** — it uses your installed `claude` CLI (fast, no model download). handprint resolves the npm `.cmd` shim and runs it correctly. In fact, when an agent CLI is on your PATH, `host` is now the **default** extractor.
+- **Local model, scripted/agent runs:** the local extractor downloads a ~2 GB model on first use. In a non-interactive shell (agents, CI), pass `-y` or set `HANDPRINT_AUTO_DOWNLOAD=1` to consent to the download; otherwise handprint asks interactively.
+- **CPU-only inference is slow.** The local model on a CPU can take hours for a large batch — prefer `--extractor host` (or `--extractor anthropic`) there.
+
 ## Usage
 
 Initialize your global identity (one time):

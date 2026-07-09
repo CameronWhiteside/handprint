@@ -4,6 +4,8 @@ import { join } from 'node:path';
 import { discoverSessions, adapterById } from '../sources/index.js';
 import { resolveProvider, extractFromEntries } from '../extractor/index.js';
 import { makeArtifactResolver } from '../extractor/infer-artifact.js';
+import { createSpinner } from '../util/spinner.js';
+import { dim, amber, green, bold, bar, sym } from '../util/ui.js';
 import { buildConversationWindow, chunkEntries } from '../extractor/window.js';
 import { SYSTEM_PROMPT } from '../extractor/prompt.js';
 import type { ExtractorProvider } from '../extractor/types.js';
@@ -178,6 +180,9 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   // happened — memoized across the whole run. Kills the "other" bucket.
   const resolveArtifacts = makeArtifactResolver();
 
+  // The scan reads transcripts synchronously and can take a beat — say so, so it
+  // never looks frozen.
+  if (!options.dryRun) log(dim(`${sym.hand}  Scanning your AI transcripts…`));
   let sessions = discoverSessions({ homeDir: options.homeDir, sourceId: options.source, sources: config?.sources });
 
   const sinceMs = options.days != null ? now - options.days * 86400000 : options.since ? parseWhen(options.since, now) : undefined;
@@ -308,8 +313,8 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
 
   // ── Process with rich, always-on progress + ETA ───────────
   log(
-    `Processing ${toProcess.length} session(s), ~${chunksToProcess} model call(s) with ${extractor}.\n` +
-      `Progress is saved per session. If this is slow, press Ctrl-C (finished sessions are kept) and narrow with --days N, --project NAME, or -n N.`,
+    `\n${amber(bold(`${sym.hand}  Extracting handprints`))} ${dim(`· ${toProcess.length} session(s) · ~${chunksToProcess} model call(s) · ${extractor}`)}\n` +
+      dim(`   Saved per session — Ctrl-C is safe (finished sessions are kept). Narrow with --days N · --project NAME · -n N.`),
   );
 
   const t0 = Date.now();
@@ -318,8 +323,18 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
   let messagesProcessed = 0;
   const details: GrabResult['details'] = [];
 
-  for (let i = 0; i < toProcess.length; i++) {
-    const s = toProcess[i];
+  // Live progress: an animated spinner on an interactive terminal, plain lines
+  // otherwise (agents/CI/pipes stay clean). A custom log override disables it too.
+  const useSpinner = process.stderr.isTTY === true && options.log === undefined;
+  const spinner = useSpinner ? createSpinner('warming up the extractor…', true) : null;
+  const tick = (text: string): void => {
+    if (spinner) spinner.setText(text);
+    else log(text);
+  };
+
+  try {
+    for (let i = 0; i < toProcess.length; i++) {
+      const s = toProcess[i];
     const adapter = adapterById(s.sourceId);
     if (!adapter) continue;
     const full = sessions.find((x) => x.sessionId === s.sessionId && x.sourceId === s.sourceId);
@@ -328,7 +343,7 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
     const fresh = newerThan(entries, s.lastTs);
     messagesProcessed += fresh.length;
 
-    log(
+    tick(
       `[${i + 1}/${toProcess.length}] ${s.project} · ${s.sessionId.slice(0, 8)} · ${fresh.length} new msg${fresh.length === 1 ? '' : 's'}` +
         `${s.chunks > 1 ? ` · ${s.chunks} chunks` : ''}`,
     );
@@ -342,8 +357,11 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
           const elapsed = Date.now() - t0;
           const avg = elapsed / chunksDone;
           const remaining = Math.max(0, chunksToProcess - chunksDone);
-          const pct = chunksToProcess > 0 ? Math.round((chunksDone / chunksToProcess) * 100) : 100;
-          log(`    ${chunksDone}/${chunksToProcess} chunks · ${pct}% · ~${fmtDuration(avg * remaining)} left`);
+          const frac = chunksToProcess > 0 ? chunksDone / chunksToProcess : 1;
+          const pct = Math.round(frac * 100);
+          tick(
+            `${amber(bar(frac))} ${bold(`${pct}%`)} ${dim(`· ${chunksDone}/${chunksToProcess} chunks · ~${fmtDuration(avg * remaining)} left`)}`,
+          );
         },
       });
       for (const hp of extractions) {
@@ -367,9 +385,16 @@ export async function grab(cwd: string, options: GrabOptions = {}): Promise<Grab
       index.sessions[s.sessionId] = { lastTs: maxTs(entries) || s.lastTs || '', mtimeMs: full.mtimeMs, grabbedAt: new Date(now).toISOString() };
       saveGrabIndex(projectRoot, index);
     }
+    }
+  } finally {
+    // Always clear the spinner line, even on Ctrl-C or a fail-fast throw.
+    spinner?.stop();
   }
 
-  log(`Done in ${fmtDuration(Date.now() - t0)}.`);
+  log(
+    `${green(sym.check)} ${bold(`${handprintsCreated} handprint${handprintsCreated === 1 ? '' : 's'}`)} ` +
+      dim(`from ${toProcess.length} session(s) in ${fmtDuration(Date.now() - t0)}`),
+  );
 
   return {
     ...base,

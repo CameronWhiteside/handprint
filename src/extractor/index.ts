@@ -5,7 +5,7 @@ import type { ExtractorProvider, RawExtraction } from './types.js';
 import { SYSTEM_PROMPT } from './prompt.js';
 import { chunkEntries, buildConversationWindow, buildChunkPlaintext } from './window.js';
 import { createLocalProvider, type LocalProviderOpts } from './local-model.js';
-import { createHostProvider } from './host-agent.js';
+import { createHostProvider, detectAgentCli } from './host-agent.js';
 import { createOllamaProvider } from './ollama.js';
 import { createAnthropicProvider } from './anthropic.js';
 import { DEFAULT_MODEL_ID } from './models.js';
@@ -35,10 +35,18 @@ export interface ResolveOpts {
   homeDir?: string;
   onDownload?: LocalProviderOpts['onDownload'];
   forceProvider?: 'local' | 'host' | 'ollama' | 'openai' | 'anthropic';
+  /** Detect whether a host agent CLI is on PATH (default: a real probe). Injectable for tests. */
+  detectHost?: () => boolean;
 }
 
 export function resolveProvider(opts: ResolveOpts = {}): ExtractorProvider {
-  const provider = opts.forceProvider ?? opts.config?.provider ?? 'local';
+  // Default when nothing is configured: prefer the host agent CLI (fast, no
+  // multi-GB model download, no slow CPU inference) whenever one is on PATH —
+  // most handprint users already have claude installed. Fall back to the local
+  // model only when there's no agent CLI to defer to. An explicit --extractor
+  // or a configured provider always wins.
+  const hostAvailable = opts.detectHost ?? (() => detectAgentCli() !== undefined);
+  const provider = opts.forceProvider ?? opts.config?.provider ?? (hostAvailable() ? 'host' : 'local');
   if (provider === 'host') {
     return createHostProvider({ cli: opts.config?.agentCli, model: opts.config?.model });
   }

@@ -9,6 +9,7 @@ import { grab } from '../src/commands/grab.js';
 import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
 import { agentBrand } from '../src/extractor/host-agent.js';
 import { downloadConsent } from '../src/extractor/local-model.js';
+import { dim, amber, bold, markColor, sym } from '../src/util/ui.js';
 import { push } from '../src/commands/push.js';
 import { purge } from '../src/commands/purge.js';
 import { verifyChain } from '../src/commands/verify.js';
@@ -62,11 +63,25 @@ function extractorLabel(extractor: string): string {
   return extractor;
 }
 
+/**
+ * Suggest narrowing a big first capture. grab is incremental, so starting with a
+ * small window and re-running is strictly better than one giant run.
+ * ponytail: 30-chunk threshold; make configurable if anyone asks.
+ */
+function startSmallHint(plan: GrabPlan, narrowed: boolean): string {
+  if (narrowed || plan.totalChunks <= 30) return '';
+  return (
+    '\n  Tip: large capture — consider starting with `--days 7` (or `--project <name>`) ' +
+    'and re-running to continue; grab is incremental, so nothing is redone.'
+  );
+}
+
 /** Build the estimate line appropriate for the extractor type. */
-function estimateLine(plan: GrabPlan): string {
+function estimateLine(plan: GrabPlan, narrowed: boolean): string {
+  const hint = startSmallHint(plan, narrowed);
   if (plan.extractor.startsWith('host:')) {
     const id = plan.extractor.slice('host:'.length).split(':')[0];
-    return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, billed to your ${agentBrand(id)} quota.`;
+    return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, billed to your ${agentBrand(id)} quota.${hint}`;
   }
   const base = `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, runs on your machine (nothing billed).`;
   // Local CPU inference is slow; a big batch can take hours. Steer to a fast path
@@ -192,10 +207,15 @@ program
       };
 
       const isTty = Boolean(process.stdin.isTTY && process.stdout.isTTY);
+      // Did the user already scope the run? If not, a huge plan gets a "start small" tip.
+      const narrowed = Boolean(
+        opts.days || opts.since || opts.until || (opts.project && opts.project.length) || opts.limit,
+      );
       const confirm = isTty
         ? async (plan: GrabPlan): Promise<GrabDecision> => {
             console.log(
-              `\nFound ${plan.totalSessions} session(s), ${plan.totalMessages} message(s), ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`,
+              amber(bold(`\n${sym.hand}  ${plan.totalSessions} session(s)`)) +
+                dim(` · ${plan.totalMessages} message(s) · ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`),
             );
             plan.projects.forEach((pr, i) => {
               console.log(
@@ -203,7 +223,7 @@ program
               );
             });
             console.log(`Extractor: ${extractorLabel(plan.extractor)}`);
-            console.log(estimateLine(plan));
+            console.log(estimateLine(plan, narrowed));
             const skipped: string[] = [];
             if (plan.skippedAlreadyGrabbed) skipped.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
             if (plan.skippedUnchanged) skipped.push(`${plan.skippedUnchanged} with no new activity`);
@@ -255,13 +275,14 @@ program
 
       const printScope = () => {
         console.log(
-          `\n${plan.totalSessions} session(s), ${plan.totalMessages} message(s), ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`,
+          amber(bold(`\n${sym.hand}  ${plan.totalSessions} session(s)`)) +
+            dim(` · ${plan.totalMessages} message(s) · ~${plan.totalChunks} model call(s) across ${plan.projects.length} project(s):`),
         );
         for (const pr of plan.projects) {
           console.log(`  ${pr.project}  ${pr.sessions} · ${pr.messages} msgs · ${pr.chunks} chunks`);
         }
         console.log(`Extractor: ${extractorLabel(plan.extractor)}`);
-        console.log(estimateLine(plan));
+        console.log(estimateLine(plan, narrowed));
         const skips: string[] = [];
         if (plan.skippedAlreadyGrabbed) skips.push(`${plan.skippedAlreadyGrabbed} already grabbed`);
         if (plan.skippedUnchanged) skips.push(`${plan.skippedUnchanged} with no new activity`);
@@ -299,19 +320,19 @@ program
 
       if (result.handprintsCreated === 0) {
         console.log(
-          `\nno decisions found (${result.sessionsProcessed} session(s), ${result.messagesProcessed} messages, ${secs}s).`,
+          dim(`\nNo decisions found (${result.sessionsProcessed} session(s), ${result.messagesProcessed} messages, ${secs}s).`),
         );
         return;
       }
 
-      console.log(
-        `\n${result.handprintsCreated} handprint(s) from ${result.sessionsProcessed} session(s) in ${secs}s\n`,
-      );
+      // grab already printed the "✓ N handprints …" summary; list the marks here.
+      console.log('');
       for (const { hash, marks } of result.details) {
-        const prefix = `  ${hash.slice(0, 10)}  `;
         for (const m of marks) {
-          const symbol = { vision: 'o', choice: '+', method: '*' }[m.type] ?? '?';
-          console.log(`${prefix}${symbol} [${m.type}/${m.subtype}]  ${m.note}`);
+          const paint = markColor(m.type);
+          console.log(
+            `  ${dim(hash.slice(0, 8))}  ${paint(sym.bullet)} ${paint(`${m.type}/${m.subtype}`.padEnd(16))} ${m.note}`,
+          );
         }
       }
 

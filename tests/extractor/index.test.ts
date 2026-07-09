@@ -12,8 +12,13 @@ describe('extractor resolver', () => {
     expect(p.id).toBe('host-agent');
   });
 
-  it('resolves local provider by default', () => {
-    const p = resolveProvider({ config: {}, homeDir: '/tmp/hp' });
+  it('defaults to host when an agent CLI is available', () => {
+    const p = resolveProvider({ config: {}, homeDir: '/tmp/hp', detectHost: () => true });
+    expect(p.id).toBe('host-agent');
+  });
+
+  it('falls back to the local model when no agent CLI is available', () => {
+    const p = resolveProvider({ config: {}, homeDir: '/tmp/hp', detectHost: () => false });
     expect(p.id).toBe('local-model');
     expect(p.label()).toMatch(/^local:/);
   });
