@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.8.1] - 2026-07-08
+
+### Changed
+- Setup guidance now documents ambient capture: `handprint init` prints next steps including the Stop-hook option, the README has a "Capture as you work" section, and the `/handprint` skill can offer to enable the hook. (Version bump propagates the updated skill via auto-sync.)
+
 ## [0.8.0] - 2026-07-08
 
 ### Added

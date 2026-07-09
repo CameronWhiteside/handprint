@@ -46,6 +46,21 @@ handprint verify
 handprint status
 ```
 
+### Capture as you work (ambient)
+
+You don't have to run `grab` by hand. Because `grab` is incremental and
+idempotent, you can capture continuously — mid-session, without waiting for a
+session to end:
+
+- **Agent hook (Claude Code):** wire `handprint hook` to the Stop hook. It's
+  debounced (≥15 min) and runs the grab detached, so it never blocks the agent.
+  Merge [`integrations/claude/settings.snippet.json`](integrations/claude/settings.snippet.json)
+  into `~/.claude/settings.json`.
+- **Timer (any agent / macOS launchd):** see [`docs/CAPTURE.md`](docs/CAPTURE.md).
+
+Both are safe to fire constantly — nothing is captured twice. Full guide, plus
+one-time backfill of your whole history: [`docs/CAPTURE.md`](docs/CAPTURE.md).
+
 ## Commands
 
 | Command | Description |
@@ -54,6 +69,7 @@ handprint status
 | `handprint grab [path] [--days N] [--project <name>] [--min-messages N] [--dry-run] [-y] [--extractor <engine>]` | Scan, confirm, then extract decisions (path sets where the chain is stored, default: current dir) |
 | `handprint sources` | List available source adapters and their status |
 | `handprint push` | Publish handprints to the hub (opt-in; requires `handprint login`) |
+| `handprint hook [--interval N]` | Ambient capture: debounced, detached `grab --push` for an agent Stop hook |
 | `handprint log` | List local handprints |
 | `handprint show <ref>` | Show a handprint by hash or prefix |
 | `handprint verify` | Verify chain integrity and signatures |

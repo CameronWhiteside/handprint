@@ -106,6 +106,12 @@ program
           'Tip: install Claude Code, then run `handprint skill install` to enable the /handprint skill.',
         );
       }
+      console.log('');
+      console.log('Next:');
+      console.log('  • Capture now:        handprint grab            (add --push to publish)');
+      console.log('  • Capture as you go:  wire the Stop hook so it captures mid-session —');
+      console.log('    merge integrations/claude/settings.snippet.json into ~/.claude/settings.json');
+      console.log('    (runs `handprint hook`: debounced + detached, never blocks you). See docs/CAPTURE.md.');
     } catch (err) {
       console.error((err as Error).message);
       process.exit(1);

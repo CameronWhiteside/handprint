@@ -54,3 +54,12 @@ Tell the user:
 - their profile link, from `handprint status`, if available.
 
 Never fabricate decisions, and never push anything the user did not ask to capture.
+
+## Optional: offer ambient capture
+
+If the user captures often, mention they can capture automatically without
+running this each time: wire `handprint hook` to Claude Code's **Stop** hook by
+merging `integrations/claude/settings.snippet.json` into `~/.claude/settings.json`.
+It's debounced and runs detached, so it never slows Claude down, and grab is
+incremental + idempotent so nothing is captured twice. Only suggest it; never
+edit their settings without asking.
