@@ -2,6 +2,11 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.0] - 2026-07-09
+
+### Removed
+- **`handprint hook` (the agent Stop-hook).** Its debounce was a plain timestamp file: with several concurrent agent sessions, simultaneous Stop events could race past the check and each spawn their own detached `grab --push`, piling up multiple memory-hungry processes instead of the intended single run. Use the timer-based option in `docs/CAPTURE.md` for ongoing capture — it uses a lock file, so runs never overlap. `integrations/claude/settings.snippet.json` is removed; README, CAPTURE.md, and the `/handprint` skill no longer mention the hook.
+
 ## [0.8.3] - 2026-07-09
 
 ### Changed

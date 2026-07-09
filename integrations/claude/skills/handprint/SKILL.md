@@ -55,11 +55,11 @@ Tell the user:
 
 Never fabricate decisions, and never push anything the user did not ask to capture.
 
-## Optional: offer ambient capture
+## Optional: offer scheduled capture
 
-If the user captures often, mention they can capture automatically without
-running this each time: wire `handprint hook` to Claude Code's **Stop** hook by
-merging `integrations/claude/settings.snippet.json` into `~/.claude/settings.json`.
-It's debounced and runs detached, so it never slows Claude down, and grab is
-incremental + idempotent so nothing is captured twice. Only suggest it; never
-edit their settings without asking.
+If the user captures often, mention they can automate it with a timer instead
+of running this each time: see `docs/CAPTURE.md` for the launchd-based setup.
+There is no Stop-hook option — it existed and was removed because its
+debounce could race across concurrent sessions and pile up duplicate
+detached `grab --push` runs. Only suggest the timer; never edit their
+settings without asking.

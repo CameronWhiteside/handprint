@@ -59,15 +59,7 @@ and `ollama`/`local` to keep everything on-machine.
 ## Ongoing incremental capture (long-running sessions)
 
 You don't need a session to end. The watermark keeps each run to just the new
-messages, so run grab either **on activity** (an agent hook) or **on a timer**.
-
-### Agent hook (recommended for Claude Code)
-
-Wire `handprint hook` to Claude Code's Stop hook — it fires each time Claude
-finishes a turn, so capture happens mid-session. It's debounced (>=15 min) and
-runs the grab detached, so it never blocks you. See
-[`integrations/claude/`](../integrations/claude/README.md) for the one-file
-settings snippet.
+messages, so run grab **on a timer**.
 
 ### Timer (any agent / macOS launchd)
 
@@ -80,5 +72,14 @@ launchctl load ~/Library/LaunchAgents/sh.handprint.grab.plist
 It runs `scripts/handprint-capture.sh` every 30 min at low priority, with a
 lock so runs never overlap.
 
-Both default to the **local** extractor so scheduled capture stays off your
+We deliberately don't offer an agent Stop-hook for this. A Stop-hook fires once
+per agent turn, and its debounce is a plain timestamp file: with several
+concurrent agent sessions, multiple Stop events can race past the check
+before any of them records a run, so more than one `grab --push` launches at
+once. Each one is a detached, memory-hungry process, and a machine running
+many sessions can end up with several piled up in the background at once. The
+timer's lock file doesn't have that failure mode — only one run is ever in
+flight.
+
+Defaults to the **local** extractor so scheduled capture stays off your
 Claude subscription while you work — reserve `--extractor host` for the backfill.
