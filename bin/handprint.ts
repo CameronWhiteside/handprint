@@ -8,6 +8,7 @@ import { init } from '../src/commands/init.js';
 import { grab } from '../src/commands/grab.js';
 import type { GrabPlan, GrabDecision } from '../src/commands/grab.js';
 import { agentBrand } from '../src/extractor/host-agent.js';
+import { downloadConsent } from '../src/extractor/local-model.js';
 import { push } from '../src/commands/push.js';
 import { purge } from '../src/commands/purge.js';
 import { verifyChain } from '../src/commands/verify.js';
@@ -67,7 +68,18 @@ function estimateLine(plan: GrabPlan): string {
     const id = plan.extractor.slice('host:'.length).split(':')[0];
     return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, billed to your ${agentBrand(id)} quota.`;
   }
-  return `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, runs on your machine (nothing billed).`;
+  const base = `Estimated: ~${plan.totalChunks} model calls, ~${humanTokens(plan.estTokensIn)} input tokens, runs on your machine (nothing billed).`;
+  // Local CPU inference is slow; a big batch can take hours. Steer to a fast path
+  // before the user commits — the per-chunk ETA only appears mid-run.
+  // ponytail: 20-chunk threshold; make configurable if anyone asks.
+  if (plan.extractor.startsWith('local:') && plan.totalChunks > 20) {
+    return (
+      base +
+      '\n  Heads up: local models on CPU can take hours at this size. ' +
+      '`--extractor host` (your Claude CLI) or `--extractor anthropic` is far faster.'
+    );
+  }
+  return base;
 }
 
 // Silently keep the bundled skill in sync with the installed CLI version.
@@ -163,7 +175,16 @@ program
   .action(async (pathArg: string | undefined, opts) => {
     try {
       const onDownload = async (entry: { id: string; sizeMb: number }) => {
-        if (!process.stdin.isTTY) return false;
+        const decision = downloadConsent({
+          yes: Boolean(opts.yes),
+          autoDownloadEnv: process.env.HANDPRINT_AUTO_DOWNLOAD,
+          isTty: Boolean(process.stdin.isTTY),
+        });
+        if (decision === 'auto') {
+          console.error(`Downloading local model ${entry.id} (${entry.sizeMb} MB)…`);
+          return true;
+        }
+        if (decision === 'deny') return false;
         const rl = createInterface({ input: process.stdin, output: process.stdout });
         const answer = await rl.question(`Download local model ${entry.id} (${entry.sizeMb} MB)? [y/N] `);
         rl.close();

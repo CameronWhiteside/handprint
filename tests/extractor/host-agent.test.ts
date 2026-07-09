@@ -1,6 +1,6 @@
 // tests/extractor/host-agent.test.ts
 import { describe, it, expect } from 'vitest';
-import { createHostProvider, agentBrand } from '../../src/extractor/host-agent.js';
+import { createHostProvider, agentBrand, isSafeCmdToken } from '../../src/extractor/host-agent.js';
 import type { AgentCliSpec } from '../../src/extractor/host-agent.js';
 
 describe('agentBrand', () => {
@@ -61,10 +61,12 @@ describe('host-agent provider', () => {
     expect(await p.isAvailable()).toBe(false);
   });
 
-  it('uses --append-system-prompt when claude flag detector returns true', async () => {
+  it('POSIX: system via --append-system-prompt (argv), prompt via stdin, never in argv', async () => {
     let capturedArgs: string[] = [];
-    const fakeRunner = async (_bin: string, args: string[]) => {
+    let capturedStdin: string | undefined;
+    const fakeRunner = async (_bin: string, args: string[], stdin?: string) => {
       capturedArgs = args;
+      capturedStdin = stdin;
       return '[{"marks":[{"type":"choice","subtype":"approval","note":"used flag"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]';
     };
     const claudeSpec: AgentCliSpec = {
@@ -75,24 +77,27 @@ describe('host-agent provider', () => {
     const p = createHostProvider({
       detect: () => claudeSpec,
       claudeFlagDetector: () => true, // stub: flag is supported
+      platform: 'linux', // POSIX path (not the Windows fold)
       run: fakeRunner,
     });
     const out = await p.extract('window content', 'SECURITY: follow rules');
     expect(out).toHaveLength(1);
-    // System prompt must be delivered via --append-system-prompt, not mixed into the user arg.
+    // System prompt at flag authority, in argv.
     const flagIdx = capturedArgs.indexOf('--append-system-prompt');
     expect(flagIdx).toBeGreaterThan(-1);
     expect(capturedArgs[flagIdx + 1]).toBe('SECURITY: follow rules');
-    // User prompt arg ('-p' value) must NOT contain the system prompt.
-    const pIdx = capturedArgs.indexOf('-p');
-    expect(pIdx).toBeGreaterThan(-1);
-    expect(capturedArgs[pIdx + 1]).not.toContain('SECURITY: follow rules');
+    // The untrusted transcript is delivered on stdin, never argv.
+    expect(capturedStdin).toContain('window content');
+    expect(capturedStdin).not.toContain('SECURITY: follow rules');
+    expect(capturedArgs.join(' ')).not.toContain('window content');
   });
 
-  it('falls back to concatenated args when claude flag detector returns false', async () => {
+  it('POSIX no-flag: folds system + prompt into stdin, argv stays flag-only', async () => {
     let capturedArgs: string[] = [];
-    const fakeRunner = async (_bin: string, args: string[]) => {
+    let capturedStdin: string | undefined;
+    const fakeRunner = async (_bin: string, args: string[], stdin?: string) => {
       capturedArgs = args;
+      capturedStdin = stdin;
       return '[]';
     };
     const claudeSpec: AgentCliSpec = {
@@ -103,13 +108,40 @@ describe('host-agent provider', () => {
     const p = createHostProvider({
       detect: () => claudeSpec,
       claudeFlagDetector: () => false, // stub: flag not supported
+      platform: 'linux',
       run: fakeRunner,
     });
     await p.extract('window', 'system');
     expect(capturedArgs).not.toContain('--append-system-prompt');
-    const pIdx = capturedArgs.indexOf('-p');
-    expect(pIdx).toBeGreaterThan(-1);
-    expect(capturedArgs[pIdx + 1]).toContain('system');
+    expect(capturedStdin).toContain('system');
+  });
+
+  it('Windows: folds everything into stdin even when the flag is supported', async () => {
+    let capturedArgs: string[] = [];
+    let capturedStdin: string | undefined;
+    const fakeRunner = async (_bin: string, args: string[], stdin?: string) => {
+      capturedArgs = args;
+      capturedStdin = stdin;
+      return '[]';
+    };
+    const claudeSpec: AgentCliSpec = {
+      id: 'claude',
+      bin: 'claude',
+      buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`],
+    };
+    const p = createHostProvider({
+      detect: () => claudeSpec,
+      claudeFlagDetector: () => true,
+      platform: 'win32', // system prompt can't cross cmd.exe → fold into stdin
+      run: fakeRunner,
+    });
+    await p.extract('win window', 'SECURITY rules');
+    // argv must be flag-only (safe tokens) so it survives cmd.exe.
+    expect(capturedArgs).not.toContain('--append-system-prompt');
+    for (const a of capturedArgs) expect(isSafeCmdToken(a)).toBe(true);
+    // Everything untrusted/metachar rode stdin.
+    expect(capturedStdin).toContain('SECURITY rules');
+    expect(capturedStdin).toContain('win window');
   });
 
   it('passes --model <model> to the claude CLI when a model is configured', async () => {

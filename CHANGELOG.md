@@ -2,6 +2,15 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.1] - 2026-07-09
+
+### Fixed
+- **Windows: `--extractor host` no longer fails with `spawn claude ENOENT`.** npm installs `claude` as a `.cmd` shim, which Node's spawn can't find by bare name. The runner now resolves the real binary (via `where`/`which`) and, on Windows, runs `.cmd`/`.bat` shims through `cmd.exe`. To make this safe (the transcript is untrusted and can exceed Windows' command-line length limit), the prompt is now delivered over **stdin** on every platform and only trusted flags go on the command line; a token guard rejects any unsafe argv on the Windows shim path.
+- **Windows/agents: the local-model download is no longer stuck behind a TTY.** The download prompt returned "no" in any non-interactive shell, so `grab` failed forever with "model not available" — even under `-y`. Now `-y`/`--yes` (or `HANDPRINT_AUTO_DOWNLOAD=1`) auto-consents to the download, and the non-interactive error names both, instead of implying a retry will work.
+
+### Changed
+- Local extractor logs its compute backend (CPU vs GPU) on load, and `grab` warns before a large local batch that CPU inference can take hours and points to the faster `--extractor host` / `--extractor anthropic` paths.
+
 ## [0.9.0] - 2026-07-09
 
 ### Removed

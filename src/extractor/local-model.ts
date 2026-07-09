@@ -38,6 +38,21 @@ async function hashFile(filePath: string): Promise<string> {
   return hash.digest('hex');
 }
 
+/**
+ * Decide model-download consent. `-y`/`--yes` and HANDPRINT_AUTO_DOWNLOAD=1 both
+ * mean "yes to everything" (so scripted/agent runs work); an interactive TTY is
+ * asked; anything else is denied (never download multi-GB unprompted).
+ */
+export function downloadConsent(input: {
+  yes: boolean;
+  autoDownloadEnv: string | undefined;
+  isTty: boolean;
+}): 'auto' | 'ask' | 'deny' {
+  if (input.yes || input.autoDownloadEnv === '1') return 'auto';
+  if (input.isTty) return 'ask';
+  return 'deny';
+}
+
 export async function ensureModel(
   entry: ModelEntry,
   homeDir: string | undefined,
@@ -143,7 +158,12 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
 
     async extract(window: string, system: string): Promise<RawExtraction[]> {
       const downloaded = await ensureModel(entry, opts.homeDir, opts.onDownload);
-      if (!downloaded) throw new Error('local model not available, run "handprint grab" to download it');
+      if (!downloaded)
+        throw new Error(
+          'local model not downloaded, and no consent to download it.\n' +
+            '  Re-run with -y (or set HANDPRINT_AUTO_DOWNLOAD=1) to auto-download,\n' +
+            '  or run in an interactive terminal to confirm the download.',
+        );
 
       // Model load takes seconds and logs a one-line tokenizer warning; do it
       // once per process and reuse across every chunk instead of per-extract().
@@ -161,6 +181,14 @@ export function createLocalProvider(opts: LocalProviderOpts): ExtractorProvider 
           });
           const { getLlama, LlamaLogLevel } = llamaModule;
           const llama = await getLlama({ logLevel: LlamaLogLevel.error });
+          // Surface the backend so a slow run is diagnosable (CPU vs GPU offload).
+          const backend = llama.gpu === false ? 'CPU' : llama.gpu;
+          console.error(
+            `[handprint] local backend: ${backend}` +
+              (backend === 'CPU'
+                ? ' — no GPU offload; CPU inference is slow. `--extractor host` is far faster.'
+                : ''),
+          );
           const model = await llama.loadModel({ modelPath: modelPath(entry, opts.homeDir) });
           const context = await model.createContext();
           const grammar = await llama.createGrammar({ grammar: EXTRACTION_GBNF });

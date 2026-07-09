@@ -3,7 +3,22 @@ import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mkdtempSync, mkdirSync, writeFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createLocalProvider, ensureModel } from '../../src/extractor/local-model.js';
+import { createLocalProvider, ensureModel, downloadConsent } from '../../src/extractor/local-model.js';
+
+describe('downloadConsent', () => {
+  it('auto-downloads under -y', () => {
+    expect(downloadConsent({ yes: true, autoDownloadEnv: undefined, isTty: false })).toBe('auto');
+  });
+  it('auto-downloads under HANDPRINT_AUTO_DOWNLOAD=1', () => {
+    expect(downloadConsent({ yes: false, autoDownloadEnv: '1', isTty: false })).toBe('auto');
+  });
+  it('asks in an interactive terminal', () => {
+    expect(downloadConsent({ yes: false, autoDownloadEnv: undefined, isTty: true })).toBe('ask');
+  });
+  it('denies in a non-interactive shell with no consent (the Windows/agent bug)', () => {
+    expect(downloadConsent({ yes: false, autoDownloadEnv: undefined, isTty: false })).toBe('deny');
+  });
+});
 import { DEFAULT_MODEL_ID, modelPath, modelById } from '../../src/extractor/models.js';
 
 describe('local-model provider', () => {
