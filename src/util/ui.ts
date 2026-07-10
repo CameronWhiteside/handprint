@@ -14,14 +14,13 @@ export const italic = wrap(3, 23);
 export const amber = wrap(33, 39); // brand accent
 export const green = wrap(32, 39);
 export const red = wrap(31, 39);
-export const cyan = wrap(36, 39);
-export const magenta = wrap(35, 39);
+const blue = wrap(34, 39);
 
 /** vision / choice / method get their own hue, matching the web treemap. */
 export function markColor(type: string): (s: string) => string {
-  if (type === 'vision') return amber;
-  if (type === 'choice') return cyan;
-  if (type === 'method') return magenta;
+  if (type === 'vision') return blue;
+  if (type === 'choice') return red; // orange-red
+  if (type === 'method') return green; // green-yellow
   return dim;
 }
 
