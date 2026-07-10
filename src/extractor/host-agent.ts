@@ -15,6 +15,10 @@ export function agentBrand(id: string): string {
 export interface AgentCliSpec {
   id: 'claude' | 'opencode' | 'codex';
   bin: string;
+  /** Whether host extraction is wired up for this agent today. Only claude is
+   *  proven end-to-end; opencode/codex are detected so we can say "coming soon"
+   *  rather than silently mis-running them. */
+  supported: boolean;
   buildArgs(system: string, prompt: string): string[];
 }
 
@@ -51,16 +55,19 @@ const AGENT_CLIS: AgentCliSpec[] = [
   {
     id: 'claude',
     bin: 'claude',
+    supported: true,
     buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`],
   },
   {
     id: 'opencode',
     bin: 'opencode',
+    supported: false,
     buildArgs: (system, prompt) => ['run', `${system}\n\n${prompt}`],
   },
   {
     id: 'codex',
     bin: 'codex',
+    supported: false,
     buildArgs: (system, prompt) => ['exec', `${system}\n\n${prompt}`],
   },
 ];
@@ -81,9 +88,29 @@ function resolveBin(bin: string): string | undefined {
   }
 }
 
+/** The first *supported* agent CLI on PATH (claude today). This is what host
+ *  mode actually runs, and what the auto-default keys off. */
 export function detectAgentCli(): AgentCliSpec | undefined {
+  return AGENT_CLIS.find((c) => c.supported && resolveBin(c.bin) !== undefined);
+}
+
+/** Any agent CLI on PATH, including ones not yet wired up (opencode/codex) —
+ *  used only to give a "coming soon" message instead of a bare "not found". */
+export function detectAnyAgentCli(): AgentCliSpec | undefined {
   return AGENT_CLIS.find((c) => resolveBin(c.bin) !== undefined);
 }
+
+/** The one-liner shown when the only agent(s) on PATH aren't supported yet. */
+function comingSoonReason(id: AgentCliSpec['id']): string {
+  return (
+    `handprint host mode supports Claude Code today; ${agentBrand(id)} capture is coming soon (not yet wired up).\n` +
+    '  for now:  install Claude Code (claude), or  handprint grab --extractor local  (or --extractor anthropic)'
+  );
+}
+
+const NO_AGENT_REASON =
+  'No Claude Code CLI (claude) found on PATH — handprint host mode runs your installed Claude Code.\n' +
+  '  install it, or use the local model:  handprint grab --extractor local';
 
 // On the Windows cmd.exe path, argv is joined into one command line, so every
 // arg must be a bare token — no spaces or shell metacharacters. Untrusted content
@@ -210,6 +237,11 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
     if (opts.cli) return AGENT_CLIS.find((c) => c.id === opts.cli);
     return detect();
   };
+  // Is this spec actually runnable now? Detected specs come from a probe that
+  // already checked PATH; a forced `cli` (config/flag) skipped that, so verify
+  // it's on PATH here — this is what catches "configured claude, not installed".
+  const isRunnable = (spec: AgentCliSpec): boolean =>
+    spec.supported && (opts.cli === undefined || resolveBin(spec.bin) !== undefined);
   // claude is the only host CLI that takes --model today, so the sensible
   // default applies only there; opencode/codex keep their own defaults.
   const claudeModel = (): string => opts.model ?? DEFAULT_CLAUDE_HOST_MODEL;
@@ -222,20 +254,23 @@ export function createHostProvider(opts: HostProviderOpts = {}): ExtractorProvid
       return `host:${s?.id ?? 'none'}${model ? `:${model}` : ''}`;
     },
     async preflight() {
-      if (resolveSpec()) return { ok: true };
-      return {
-        ok: false,
-        reason:
-          'No agent CLI found on PATH (looked for claude, opencode, codex).\n' +
-          '  install one of those, or use the local model:  handprint grab --extractor local',
-      };
+      const spec = resolveSpec();
+      // Explicitly asked for an agent we don't support yet (config/flag): say so.
+      if (spec && !spec.supported) return { ok: false, reason: comingSoonReason(spec.id) };
+      if (spec && isRunnable(spec)) return { ok: true };
+      // Nothing supported is runnable. If an unsupported agent IS installed,
+      // point at it ("coming soon") rather than a bare not-found.
+      const other = detectAnyAgentCli();
+      if (other && !other.supported) return { ok: false, reason: comingSoonReason(other.id) };
+      return { ok: false, reason: NO_AGENT_REASON };
     },
     async isAvailable(): Promise<boolean> {
-      return resolveSpec() !== undefined;
+      const s = resolveSpec();
+      return s !== undefined && isRunnable(s);
     },
     async extract(window: string, system: string): Promise<RawExtraction[]> {
       const s = resolveSpec();
-      if (!s) throw new Error('no agent CLI found on PATH (claude / opencode / codex)');
+      if (!s || !s.supported) throw new Error(s ? comingSoonReason(s.id) : NO_AGENT_REASON);
       const debug = Boolean(process.env.HANDPRINT_DEBUG);
 
       // On Windows the system prompt can't cross cmd.exe as an arg, so fold it

@@ -23,7 +23,7 @@ describe('agentBrand', () => {
 
 describe('host-agent provider', () => {
   it('labels itself host:<cli>:<model> and is available when a cli is detected', async () => {
-    const p = createHostProvider({ detect: () => ({ id: 'claude', bin: 'claude', buildArgs: () => [] }) });
+    const p = createHostProvider({ detect: () => ({ id: 'claude', bin: 'claude', supported: true, buildArgs: () => [] }) });
     // claude gets the sensible default model in the label for provenance + display.
     expect(p.label()).toBe('host:claude:haiku');
     expect(await p.isAvailable()).toBe(true);
@@ -36,7 +36,7 @@ describe('host-agent provider', () => {
       return '[]';
     };
     const p = createHostProvider({
-      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (s, pr) => ['-p', `${s}\n\n${pr}`] }),
+      detect: () => ({ id: 'claude', bin: 'claude', supported: true, buildArgs: (s, pr) => ['-p', `${s}\n\n${pr}`] }),
       claudeFlagDetector: () => true,
       run: fakeRunner,
     });
@@ -49,7 +49,7 @@ describe('host-agent provider', () => {
   it('does not pass --model for non-claude clis', async () => {
     let capturedArgs: string[] = [];
     const p = createHostProvider({
-      detect: () => ({ id: 'opencode', bin: 'opencode', buildArgs: (s, pr) => ['run', `${s}\n\n${pr}`] }),
+      detect: () => ({ id: 'opencode', bin: 'opencode', supported: true, buildArgs: (s, pr) => ['run', `${s}\n\n${pr}`] }),
       run: async (_b, a) => { capturedArgs = a; return '[]'; },
     });
     await p.extract('window', 'system');
@@ -72,6 +72,7 @@ describe('host-agent provider', () => {
     const claudeSpec: AgentCliSpec = {
       id: 'claude',
       bin: 'claude',
+      supported: true,
       buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`],
     };
     const p = createHostProvider({
@@ -103,6 +104,7 @@ describe('host-agent provider', () => {
     const claudeSpec: AgentCliSpec = {
       id: 'claude',
       bin: 'claude',
+      supported: true,
       buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`],
     };
     const p = createHostProvider({
@@ -127,6 +129,7 @@ describe('host-agent provider', () => {
     const claudeSpec: AgentCliSpec = {
       id: 'claude',
       bin: 'claude',
+      supported: true,
       buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`],
     };
     const p = createHostProvider({
@@ -153,6 +156,7 @@ describe('host-agent provider', () => {
     const claudeSpec: AgentCliSpec = {
       id: 'claude',
       bin: 'claude',
+      supported: true,
       buildArgs: (system, prompt) => ['-p', `${system}\n\n${prompt}`],
     };
     const p = createHostProvider({
@@ -177,7 +181,7 @@ describe('host-agent provider', () => {
       return '[{"marks":[{"type":"method","subtype":"tool","note":"chose drizzle"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]';
     };
     const p = createHostProvider({
-      detect: () => ({ id: 'opencode', bin: 'opencode', buildArgs: (system, prompt) => ['run', `${system}\n\n${prompt}`] }),
+      detect: () => ({ id: 'opencode', bin: 'opencode', supported: true, buildArgs: (system, prompt) => ['run', `${system}\n\n${prompt}`] }),
       run: fakeRunner,
     });
     const out = await p.extract('window text', 'system text');
@@ -192,7 +196,7 @@ describe('host-agent provider', () => {
     const fenced =
       '```json\n[{"marks":[{"type":"vision","subtype":"principle","note":"reliability is non-negotiable"}],"artifacts":[],"timestamp":"2026-06-01T10:00:00Z"}]\n```';
     const p = createHostProvider({
-      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (s, pr) => ['-p', `${s}\n\n${pr}`] }),
+      detect: () => ({ id: 'claude', bin: 'claude', supported: true, buildArgs: (s, pr) => ['-p', `${s}\n\n${pr}`] }),
       claudeFlagDetector: () => true,
       run: async () => fenced,
     });
@@ -204,7 +208,7 @@ describe('host-agent provider', () => {
   it('retries once for a bare array when the first output contains no JSON', async () => {
     let call = 0;
     const p = createHostProvider({
-      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (_s, pr) => ['-p', pr] }),
+      detect: () => ({ id: 'claude', bin: 'claude', supported: true, buildArgs: (_s, pr) => ['-p', pr] }),
       claudeFlagDetector: () => true,
       run: async () => {
         call += 1;
@@ -222,7 +226,7 @@ describe('host-agent provider', () => {
   it('does not retry when the model returns an empty array (genuine no decisions)', async () => {
     let call = 0;
     const p = createHostProvider({
-      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (_s, pr) => ['-p', pr] }),
+      detect: () => ({ id: 'claude', bin: 'claude', supported: true, buildArgs: (_s, pr) => ['-p', pr] }),
       claudeFlagDetector: () => true,
       run: async () => {
         call += 1;
@@ -236,10 +240,36 @@ describe('host-agent provider', () => {
 
   it('throws (not silent empty) when the model returns no JSON array even after retry', async () => {
     const p = createHostProvider({
-      detect: () => ({ id: 'claude', bin: 'claude', buildArgs: (_s, pr) => ['-p', pr] }),
+      detect: () => ({ id: 'claude', bin: 'claude', supported: true, buildArgs: (_s, pr) => ['-p', pr] }),
       claudeFlagDetector: () => true,
       run: async () => 'I am sorry, there is nothing here I can turn into JSON.',
     });
     await expect(p.extract('w', 's')).rejects.toThrow(/did not return a JSON array/);
+  });
+
+  it('preflight is ok for a detected, supported claude', async () => {
+    const p = createHostProvider({
+      detect: () => ({ id: 'claude', bin: 'claude', supported: true, buildArgs: () => [] }),
+    });
+    expect(await p.preflight!()).toEqual({ ok: true });
+  });
+
+  it('preflight says "coming soon" (not "not found") when only an unsupported agent is detected', async () => {
+    const p = createHostProvider({
+      detect: () => ({ id: 'opencode', bin: 'opencode', supported: false, buildArgs: () => [] }),
+    });
+    const pf = await p.preflight!();
+    expect(pf.ok).toBe(false);
+    expect(pf.reason).toMatch(/coming soon/i);
+    expect(pf.reason).toContain('opencode');
+    expect(await p.isAvailable()).toBe(false);
+  });
+
+  it('extract refuses an unsupported agent with the "coming soon" message', async () => {
+    const p = createHostProvider({
+      detect: () => ({ id: 'codex', bin: 'codex', supported: false, buildArgs: () => [] }),
+      run: async () => '[]',
+    });
+    await expect(p.extract('w', 's')).rejects.toThrow(/coming soon/i);
   });
 });

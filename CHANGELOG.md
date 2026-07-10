@@ -2,6 +2,13 @@
 
 All notable changes to handprint are documented here. This project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.9.3] - 2026-07-10
+
+### Changed
+- Mark colors now match the web treemap: **vision → blue, choice → orange-red, method → green**.
+- **Leaner extraction input, same quality.** The model window now trims asymmetrically: human turns keep their full budget (they carry nearly all the decision signal), while AI turns are capped much shorter with a head+tail slice that preserves both the proposal and the closing question a human replied to. AI turns in an autonomous run the human never responded to (which no decision can cite) collapse to a short resolvable stub. This packs more real signal per chunk, so `grab` makes fewer, cheaper model calls with no loss of extracted decisions. The stored `sourcePlaintext` audit record keeps the fuller, untrimmed cap.
+- **Clearer host-agent guidance.** `host` mode now states plainly that it supports **Claude Code today**: if only opencode/Codex is installed (or configured), preflight says *"coming soon — not yet wired up"* and points to `--extractor local`/`anthropic`, instead of silently mis-running an unsupported agent. A missing `claude` gives a one-line install/fallback hint, and the auto-default only picks `host` when a *supported* agent is present. (The Anthropic API path already caches the system prompt, so its per-chunk cost was already ~90% lower after the first call.)
+
 ## [0.9.2] - 2026-07-09
 
 ### Changed
