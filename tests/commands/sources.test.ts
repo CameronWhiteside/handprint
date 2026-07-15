@@ -15,7 +15,10 @@ describe('listSources', () => {
     expect(claude.implemented).toBe(true);
     expect(claude.sessions).toBe(1);
     const codex = rows.find((r) => r.id === 'codex')!;
-    expect(codex.implemented).toBe(false);
+    expect(codex.implemented).toBe(true);
     expect(codex.sessions).toBe(0);
+    const cursor = rows.find((r) => r.id === 'cursor')!;
+    expect(cursor.implemented).toBe(false);
+    expect(cursor.sessions).toBe(0);
   });
 });

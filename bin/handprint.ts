@@ -172,7 +172,7 @@ program
   .description('Scan AI transcripts, confirm, then extract decisions')
   .argument('[path]', 'Directory to store the handprints in (default: current directory)')
   .option('-n, --limit <n>', 'Max sessions to scan', parseInt)
-  .option('--source <id>', 'Only scan one source (claude-code, opencode)')
+  .option('--source <id>', 'Only scan one source (claude-code, opencode, codex)')
   .option('--project <name...>', 'Only sessions whose project path contains this (repeatable)')
   .option('--days <n>', 'Only sessions active in the last N days', parseInt)
   .option('--since <when>', 'Only sessions active on/after this (ISO date or relative like 7d)')
