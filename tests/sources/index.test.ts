@@ -6,20 +6,20 @@ import { join } from 'node:path';
 import { ALL_ADAPTERS, adapterById, enabledAdapters, discoverSessions } from '../../src/sources/index.js';
 
 describe('source registry + discovery', () => {
-  it('registers four adapters, two implemented', () => {
+  it('registers four adapters, three implemented', () => {
     expect(ALL_ADAPTERS.map((a) => a.descriptor.id).sort()).toEqual(['claude-code', 'codex', 'cursor', 'opencode']);
-    expect(ALL_ADAPTERS.filter((a) => a.descriptor.implemented).map((a) => a.descriptor.id).sort()).toEqual(['claude-code', 'opencode']);
+    expect(ALL_ADAPTERS.filter((a) => a.descriptor.implemented).map((a) => a.descriptor.id).sort()).toEqual(['claude-code', 'codex', 'opencode']);
   });
 
-  it('codex stub throws NotImplementedError on parse', () => {
-    const codex = adapterById('codex')!;
-    expect(() => codex.parse({ sourceId: 'codex', sessionId: 'x', project: 'p', locator: 'l', mtimeMs: 0 })).toThrow(/not implemented/);
+  it('cursor stub throws NotImplementedError on parse', () => {
+    const cursor = adapterById('cursor')!;
+    expect(() => cursor.parse({ sourceId: 'cursor', sessionId: 'x', project: 'p', locator: 'l', mtimeMs: 0 })).toThrow(/not implemented/);
   });
 
   it('enabledAdapters filters to implemented and to the allow-list', () => {
-    expect(enabledAdapters().map((a) => a.descriptor.id).sort()).toEqual(['claude-code', 'opencode']);
+    expect(enabledAdapters().map((a) => a.descriptor.id).sort()).toEqual(['claude-code', 'codex', 'opencode']);
     expect(enabledAdapters(['opencode']).map((a) => a.descriptor.id)).toEqual(['opencode']);
-    expect(enabledAdapters(['codex']).map((a) => a.descriptor.id)).toEqual([]); // codex not implemented
+    expect(enabledAdapters(['cursor']).map((a) => a.descriptor.id)).toEqual([]); // cursor not implemented
   });
 
   it('discoverSessions merges and sorts by mtime desc', () => {

@@ -254,7 +254,7 @@ This document tracks the status of every source adapter and what is required to 
 |---|---|---|---|
 | `claude-code` | **Shipped** | `~/.claude/projects/*/*.jsonl` | timestamps (iso), session, project, git-branch |
 | `opencode` | **Shipped** | `~/.local/share/opencode/storage` | timestamps (epoch-ms), session, project, model |
-| `codex` | **Stub** | `~/.codex/sessions` | timestamps (iso), session, project, model |
+| `codex` | **Shipped** | `~/.codex/sessions/**/*.jsonl` | timestamps (iso), session, project, model |
 | `cursor` | **Stub** | `~/Library/Application Support/Cursor` (SQLite) | timestamps (epoch-ms), session, project, model |
 | `chatgpt` | **Planned** | ChatGPT data-export ZIP | timestamps (iso), session, project (if inferred) |
 | `lovable` | **Planned** | Web capture (no local file) | timestamps (iso), session |
@@ -272,9 +272,9 @@ Reads JSONL transcripts written by Claude Code under `~/.claude/projects/<encode
 
 Reads the opencode storage hierarchy at `~/.local/share/opencode/storage`. Sessions are stored as JSON files under `storage/session/`, messages under `storage/message/<session-id>/`, and message parts (text chunks) under `storage/part/<message-id>/`. The adapter walks these trees, assembles parts into full message text, and converts epoch-ms timestamps to ISO 8601. No additional dependencies are required.
 
-### `codex` (stub: `~/.codex/sessions`, format TBD-from-disk)
+### `codex` (shipped)
 
-Codex CLI appears to persist sessions under `~/.codex/sessions`, but the exact on-disk format has not been confirmed from a live install. To implement this adapter: run Codex, inspect the files it creates, and update `src/sources/codex.ts` with a `locate()` that globs for those files and a `parse()` that deserialises them into `TranscriptEntry[]`. Set `descriptor.implemented = true` once both methods are functional. No external npm dependencies should be necessary if the format is JSONL or plain JSON.
+Reads Codex CLI rollout transcripts: one JSONL file per session under `~/.codex/sessions/<YYYY>/<MM>/<DD>/rollout-*.jsonl`, each line a `{ timestamp, type, payload }` event. The adapter takes conversation turns from `event_msg` lines (`user_message` / `agent_message`) — the `response_item` message lines mirror the same text but also carry developer/environment noise. The first line (`session_meta`) provides the session id and cwd; `turn_context` lines update the cwd per turn. File paths named in `apply_patch` tool calls are captured (resolved against the session cwd) so handprints attribute to the repo the session actually changed. No additional dependencies are required.
 
 ### `cursor` (stub: SQLite under app-support)
 
